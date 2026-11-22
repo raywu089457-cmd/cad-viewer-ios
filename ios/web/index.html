@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>DWG Viewer</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #12161c;
+        -webkit-text-size-adjust: 100%;
+      }
+      #cad-container {
+        position: absolute;
+        inset: 0;
+        touch-action: none;
+      }
+      /* Overlay shown while a drawing converts; hidden by JS. */
+      #status {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        font: 500 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #cfd8e3;
+        background: rgba(20, 26, 34, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 14px 18px;
+        max-width: 78vw;
+        text-align: center;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+      }
+      #status[hidden] {
+        display: none;
+      }
+      #status.error {
+        color: #ffb4a8;
+        border-color: rgba(255, 120, 100, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cad-container"></div>
+    <div id="status">Loading viewer…</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

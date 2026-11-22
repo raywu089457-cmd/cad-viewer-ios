@@ -1,0 +1,81 @@
+# XcodeGen spec: `xcodegen generate` produces CADViewer.xcodeproj.
+#
+# The Swift packages hold the code and their own tests; this file only exists to give them
+# an app target, a bundle id and the Info.plist keys that opening files needs.
+name: CADViewer
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    # The DWG viewer ships a 10 MB wasm engine and the geometry is double precision; both
+    # are fine, but keep bitcode off and let Xcode strip what it can.
+    ENABLE_BITCODE: NO
+    SWIFT_OPTIMIZATION_LEVEL: "-O"
+
+packages:
+  CADViewer:
+    path: CADViewer
+  DXFGeometry:
+    path: DXFGeometry
+
+targets:
+  CADViewer:
+    type: application
+    platform: iOS
+    sources:
+      - path: CADViewer/Sources/CADViewerApp
+    dependencies:
+      - package: CADViewer
+        product: CADViewer
+    info:
+      path: CADViewer/Info.plist
+      properties:
+        CFBundleDisplayName: CAD Viewer
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Opening a drawing from Files, Mail or another app.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: CAD Drawing
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - com.autodesk.dxf
+              - com.autodesk.dwg
+              - public.data
+        # Declaring the two extensions lets Files offer the app for them.
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.autodesk.dxf
+            UTTypeDescription: AutoCAD DXF Drawing
+            UTTypeConformsTo:
+              - public.data
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - dxf
+          - UTTypeIdentifier: com.autodesk.dwg
+            UTTypeDescription: AutoCAD Drawing
+            UTTypeConformsTo:
+              - public.data
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - dwg
+        # The private scheme the DWG viewer is served over.
+        LSApplicationQueriesSchemes:
+          - cadviewer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.cadviewer
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        # SwiftUI previews and the app both come from the package.
+        GENERATE_INFOPLIST_FILE: NO
