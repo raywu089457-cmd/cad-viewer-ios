@@ -203,4 +203,8 @@ jobs:
 
       - name: Check the committed snapshot is current
         working-directory: verification/dxf-geometry-harness
-        run: node ../check-fixture-fresh.mjs "$(swift build -c release --show-bin-path)/scenecheck"
+        run: |
+          binary="$(swift build -c release --show-bin-path)/scenecheck"
+          echo "built $binary"
+          ls -l "$binary" || true
+          node ../check-fixture-fresh.mjs "$binary"
