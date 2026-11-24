@@ -220,7 +220,8 @@ if (process.platform !== 'win32') {
   const scripts = [
     'ios/web/build-for-ios.sh',
     'verification/parse-check.sh',
-    'verification/dxf-geometry-harness/run.sh'
+    'verification/dxf-geometry-harness/run.sh',
+    'verification/patch-swiftdxf-for-linux.sh'
   ]
   for (const script of scripts) {
     if (!existsSync(join(root, script))) {
