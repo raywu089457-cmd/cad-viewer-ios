@@ -65,6 +65,11 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 - `WKURLSchemeHandler` 在真機的載入
 - 手勢手感
 
+**為什麼不是 Linux CI 全包**：SwiftDXF 在 Linux 上編譯不過 —— 它的 `CodePage` 用
+CoreFoundation 的 `CFStringEncoding` 解碼，guard 寫的是 `canImport(CoreFoundation)`，
+在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以幾何那 60 項檢查只能在
+Mac 上跑；CI 只做不需要 Swift 的部分（佈局檢查、DWG 網頁端建置）。
+
 ## 授權
 
 本 repo 是 MIT（見 [LICENSE](LICENSE)）。相依元件各自獨立：

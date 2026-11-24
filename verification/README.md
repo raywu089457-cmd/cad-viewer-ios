@@ -43,3 +43,11 @@ no Apple SDK.
 
 `samples/` holds four files from LibreDWG's test data (`example_2000.dwg`,
 `example_2013.dwg`, `example_2018.dwg`, `example_r12.dxf`), used by every script here.
+
+## Running on Linux
+
+Most of this runs anywhere, but the Swift checks do not: SwiftDXF decodes code pages through
+CoreFoundation's `CFStringEncoding`, guarded by `canImport(CoreFoundation)`, which is true on
+Linux where those symbols are absent. Upstream only tests on macOS. CI confirmed the same
+failure, which is why the workflow here checks the repository layout and the DWG web bundle
+instead of pretending to test Swift it cannot compile.
