@@ -28,6 +28,8 @@ let text = String(decoding: data, as: Unicode.ASCII.self)
 // the whole point of this tool.
 var options = DXF.ReadOptions()
 options.expandBlocks = true
+// Block attributes are what AutoCAD draws for a reference: part numbers and titles.
+options.expandAttributes = true
 options.skipPaperSpace = true
 
 let started = Date()

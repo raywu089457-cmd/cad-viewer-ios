@@ -68,6 +68,10 @@ enum DrawingLoader {
         var options = DXF.ReadOptions()
         options.expandBlocks = true
         options.skipPaperSpace = true
+        // Block attributes are the part numbers and titles the block carries, which AutoCAD
+        // draws and a reader must show. Without this a drawing of parts comes out as outlines
+        // with no labels at all.
+        options.expandAttributes = true
 
         let drawing: DXF.Drawing
         do {

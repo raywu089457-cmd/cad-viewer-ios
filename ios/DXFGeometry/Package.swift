@@ -24,6 +24,12 @@ let package = Package(
             name: "SwiftDXFReexport",
             dependencies: [.product(name: "SwiftDXF", package: "SwiftDXF")]
         ),
-        .testTarget(name: "DXFGeometryTests", dependencies: ["DXFGeometry"])
+        .testTarget(
+            name: "DXFGeometryTests",
+            dependencies: ["DXFGeometry"],
+            // A real DXF carrying block attributes, so the attribute test reads the format
+            // rather than a hand-written approximation of it.
+            resources: [.copy("Fixtures")]
+        )
     ]
 )

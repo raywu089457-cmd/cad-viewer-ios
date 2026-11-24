@@ -991,6 +991,42 @@ do {
     check(builder.along(a, a, 5) == a, "and stays put")
     check(builder.project(Point(1, 1), onto: a, a) == 0, "or projects to its start")
 }
+section("Block attributes")
+do {
+    // Block attributes are the part numbers and titles AutoCAD draws for a reference. They
+    // were invisible here: the reader models them, but only expands them into entities when
+    // asked, and the app never asked. A drawing of parts came out as outlines with no labels.
+    //
+    // The fixture is a real one from the DXF library, which carries four attributes across
+    // three block references.
+    let sample = "../../SwiftDXF/Tests/SwiftDXFTests/Fixtures/attributes.dxf"
+    if let text = try? String(
+        contentsOf: URL(fileURLWithPath: sample), encoding: .utf8)
+    {
+        var options = DXF.ReadOptions()
+        options.expandBlocks = true
+        options.expandAttributes = true
+        if let drawing = try? DXF.read(text: text, options: options) {
+            let scene = SceneBuilder().build(drawing)
+            check(!scene.texts.isEmpty, "attributes become text", "(scene.texts.count)")
+            // They are only there because the option was set; without it they are skipped.
+            var without = DXF.ReadOptions()
+            without.expandBlocks = true
+            if let plain = try? DXF.read(text: text, options: without) {
+                let bare = SceneBuilder().build(plain)
+                check(
+                    bare.texts.count < scene.texts.count,
+                    "and only when asked",
+                    "(bare.texts.count) vs (scene.texts.count)")
+            }
+        } else {
+            check(false, "the attribute fixture parses")
+        }
+    } else {
+        // wasm cannot read by path, so this check only runs where the file is reachable.
+        check(true, "attribute fixture not reachable here, so skipped")
+    }
+}
 // MARK: - Result
 
 print("")
