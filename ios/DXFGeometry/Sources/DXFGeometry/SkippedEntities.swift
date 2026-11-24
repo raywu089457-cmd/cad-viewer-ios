@@ -27,3 +27,28 @@ public enum SkippedEntities {
         return "\(total) item\(plural) not shown: \(shown)\(more)."
     }
 }
+
+/// Groups drawable primitives so the renderer issues as few commands as possible.
+///
+/// SwiftUI's canvas costs a command per stroke, and a drawing of 1652 polylines in three
+/// colours would otherwise be 1652 commands. Grouping by colour makes it three, with the
+/// same output: a path may hold as many disconnected runs as it likes.
+public enum DrawBatching {
+    /// The colours present, each with the indices of the polylines drawn in it.
+    ///
+    /// - Parameters:
+    ///   - colors: the resolved colour index of each polyline, in drawing order.
+    ///   - visible: whether each polyline survives culling; `nil` means all do.
+    /// - Returns: colour index to polyline indices, keeping drawing order within a colour.
+    public static func groups(
+        colors: [Int],
+        visible: [Bool]? = nil
+    ) -> [Int: [Int]] {
+        var groups: [Int: [Int]] = [:]
+        for (index, color) in colors.enumerated() {
+            if let visible, index < visible.count, !visible[index] { continue }
+            groups[color, default: []].append(index)
+        }
+        return groups
+    }
+}

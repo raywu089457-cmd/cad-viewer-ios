@@ -52,14 +52,28 @@ struct DrawingCanvas: View {
             }
         }
 
-        for line in scene.polylines {
-            guard line.points.count >= 2 else { continue }
-            guard transform.isVisible(line.bounds) else { continue }
-            var path = polylinePath(line.points)
-            if line.isClosed { path.closeSubpath() }
+        // One path per colour, not one per polyline: a drawing of 1652 polylines in three
+        // colours becomes three canvas commands instead of 1652. The grouping is a tested
+        // function rather than a loop written inline here.
+        let visible = scene.polylines.map {
+            $0.points.count >= 2 && transform.isVisible($0.bounds)
+        }
+        let groups = DrawBatching.groups(
+            colors: scene.polylines.map(\.colorIndex), visible: visible)
+
+        for (colorIndex, indices) in groups {
+            var path = Path()
+            var color = RGB.white
+            for index in indices {
+                let line = scene.polylines[index]
+                color = line.color
+                var run = polylinePath(line.points)
+                if line.isClosed { run.closeSubpath() }
+                path.addPath(run)
+            }
             context.stroke(
                 path,
-                with: .color(line.color.swiftUIColor),
+                with: .color(color.swiftUIColor),
                 style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
             )
         }

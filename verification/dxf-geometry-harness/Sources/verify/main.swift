@@ -1058,6 +1058,29 @@ do {
     let zero = SkippedEntities.summary(["X": 1], shownNames: 0)
     check(zero.contains("X"), "a zero limit still names one", "\(zero)")
 }
+section("Draw batching")
+do {
+    // A canvas costs a command per stroke; grouping by colour turns 1652 commands into three
+    // without changing what is drawn.
+    let colors = [4, 4, 8, 4, 256, 8]
+    let groups = DrawBatching.groups(colors: colors)
+    check(groups[4] == [0, 1, 3], "index 4 keeps drawing order", "\(groups[4] ?? [])")
+    check(groups[8] == [2, 5], "index 8 groups its two")
+    check(groups[256] == [4], "a single one")
+    check(groups.count == 3, "three colours, three groups", "\(groups.count)")
+
+    // Every polyline must appear exactly once, or something silently disappears.
+    let total = groups.values.reduce(0) { $0 + $1.count }
+    check(total == colors.count, "nothing is lost or duplicated", "\(total)")
+
+    // Culled polylines are left out, as before.
+    let visible = [true, false, true, true, false, true]
+    let culled = DrawBatching.groups(colors: colors, visible: visible)
+    check(culled[4] == [0, 3], "a culled one is skipped", "\(culled[4] ?? [])")
+    check(culled[256] == nil, "a colour with everything culled is absent")
+
+    check(DrawBatching.groups(colors: []).isEmpty, "nothing groups to nothing")
+}
 // MARK: - Result
 
 print("")
