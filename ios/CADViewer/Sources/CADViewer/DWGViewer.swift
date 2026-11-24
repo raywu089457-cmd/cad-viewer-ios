@@ -59,6 +59,9 @@ final class DWGViewerModel {
     @ObservationIgnored private var schemeHandler: ViewerSchemeHandler?
     @ObservationIgnored private var readyContinuation: CheckedContinuation<Void, Never>?
     @ObservationIgnored private var didBecomeReady = false
+    /// Tracks which load is live, so a timeout from an earlier one cannot touch a later
+    /// one. The rule is in , which is unit-tested.
+    @ObservationIgnored private var loadGeneration = LoadGeneration()
     @ObservationIgnored private var errorHandler: ((String) -> Void)?
 
     private static let log = Logger(subsystem: "CADViewer", category: "DWGViewer")
@@ -167,12 +170,22 @@ final class DWGViewerModel {
         // Wait for the page to report ready, so the overlay tracks the engine rather than
         // the web view's load event.
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            // A load that is still waiting is superseded by this one. Resuming it first
+            // matters: a continuation that is never resumed leaks the awaiting task, so the
+            // first open would hang forever when the user picks a second file quickly.
+            if let superseded = readyContinuation {
+                readyContinuation = nil
+                superseded.resume()
+            }
+            let generation = loadGeneration.begin()
             readyContinuation = continuation
             webView.load(URLRequest(url: pageURL))
 
             Task { @MainActor in
                 // Never leave the user staring at a spinner if the engine stays silent.
                 try? await Task.sleep(for: .seconds(45))
+                // A newer load has taken over; this timeout belongs to a load that is gone.
+                guard self.loadGeneration.isCurrent(generation) else { return }
                 if let pending = self.readyContinuation {
                     self.readyContinuation = nil
                     pending.resume()

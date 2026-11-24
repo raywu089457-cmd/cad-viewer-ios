@@ -113,3 +113,33 @@ public enum DrawingHandoff: Equatable, Sendable {
             : .viaReload
     }
 }
+
+/// The generation counter that keeps overlapping loads from interfering.
+///
+/// The app can be asked for a new drawing before the previous one has finished starting up.
+/// Two waits then share one object, and the failure modes are subtle: a timeout from the
+/// earlier load must not resume the later load's continuation, and a continuation that is
+/// replaced must be resumed rather than dropped, or the task awaiting it hangs forever.
+///
+/// This type is that rule on its own, so it can be tested without a web view.
+public struct LoadGeneration: Equatable, Sendable {
+    private var current = 0
+
+    public init() {}
+
+    /// Starts a new load and returns its generation.
+    ///
+    /// - Returns: The generation to check a timeout against.
+    public mutating func begin() -> Int {
+        current += 1
+        return current
+    }
+
+    /// Whether a timeout from `generation` still belongs to the live load.
+    public func isCurrent(_ generation: Int) -> Bool {
+        generation == current
+    }
+
+    /// The generation of the load in progress, or 0 before any.
+    public var value: Int { current }
+}

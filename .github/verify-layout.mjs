@@ -124,6 +124,7 @@ mustExist('ios/DXFGeometry/Sources/DXFGeometry/ViewerEvent.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/ViewerEventTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/ViewportTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/DrawingHandoffTests.swift')
+mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/LoadGenerationTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/FileRoutingTests.swift')
 mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
 

@@ -920,6 +920,27 @@ do {
     check(label(override: " ", width: 40) == nil, "a space override shows nothing")
 }
 
+section("Load generations")
+do {
+    // Two loads can overlap: the user picks a second drawing before the first has started.
+    // A timeout from the earlier load must not resume the later load's continuation, or the
+    // wrong drawing gets abandoned and a task hangs.
+    var generations = LoadGeneration()
+    let first = generations.begin()
+    check(generations.isCurrent(first), "the first load is current")
+
+    let second = generations.begin()
+    check(!generations.isCurrent(first), "the first load is no longer current")
+    check(generations.isCurrent(second), "the second load is")
+    check(first != second, "each load gets its own generation")
+
+    // Many loads in a row must stay monotonic, or an old generation could match a new one.
+    var many = LoadGeneration()
+    var seen: [Int] = []
+    for _ in 0..<50 { seen.append(many.begin()) }
+    check(Set(seen).count == 50, "every generation is distinct", "(Set(seen).count)")
+    check(seen == seen.sorted(), "and they increase")
+}
 // MARK: - Result
 
 print("")
