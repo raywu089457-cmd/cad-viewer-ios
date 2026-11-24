@@ -205,6 +205,12 @@ jobs:
         working-directory: verification/dxf-geometry-harness
         run: |
           binary="$(swift build -c release --show-bin-path)/scenecheck"
-          echo "built $binary"
-          ls -l "$binary" || true
-          node ../check-fixture-fresh.mjs "$binary"
+          "$binary" --json < ../fixtures/circles.dxf > /tmp/fresh.json 2>/dev/null
+          # No Node in this image, so the two files are compared directly. The harness prints
+          # deterministically; any difference is a real change in what the pipeline produces.
+          if ! diff -q /tmp/fresh.json ../fixtures/circles.json > /dev/null; then
+            echo "the committed circles.json no longer matches the pipeline"
+            diff /tmp/fresh.json ../fixtures/circles.json | head -20
+            exit 1
+          fi
+          echo "the fixture snapshot is current"
