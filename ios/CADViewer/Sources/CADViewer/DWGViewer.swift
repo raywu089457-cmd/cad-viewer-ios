@@ -90,11 +90,30 @@ final class DWGViewerModel {
         // A second open reuses the loaded page: the wasm engine stays warm, which is the
         // difference between instant and a three-second reload.
         if didBecomeReady, let webView {
-            let base64 = data.base64EncodedString()
-            let name = fileName.replacingOccurrences(of: "'", with: "\\'")
-            let script = "window.cadOpenDwg?.('\(base64)', '\(name)', 100)"
-            _ = try? await webView.evaluateJavaScript(script)
-            return
+            // The entry point is checked for, not called optimistically. An earlier version
+            // wrote `window.cadOpenDwg?.(...)` inside `try?`, so when the page did not define
+            // that function the call did nothing at all: no error, no event, no second
+            // drawing. If the page cannot take the drawing, reloading it is the honest
+            // fallback.
+            let handlesDrawing = (try? await webView.evaluateJavaScript(
+                "typeof window.cadOpenDwg === 'function'")) as? Bool ?? false
+            if handlesDrawing {
+                let base64 = data.base64EncodedString()
+                // A file name may hold a quote, which would end the JavaScript string.
+                let escaped = fileName.replacingOccurrences(
+                    of: "'", with: "\\'")
+                let script = "window.cadOpenDwg('\(base64)', '\(escaped)', 100)"
+                do {
+                    _ = try await webView.evaluateJavaScript(script)
+                    return
+                } catch {
+                    Self.log.error("reopening on the loaded page failed; reloading")
+                    // Fall through: a reload always works.
+                }
+            } else {
+                Self.log.error("the viewer page has no cadOpenDwg entry point; reloading")
+            }
+            didBecomeReady = false
         }
 
         let handler = ViewerSchemeHandler(root: viewerRoot, drawing: data)
