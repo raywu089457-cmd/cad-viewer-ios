@@ -81,10 +81,16 @@ struct RootView: View {
 
     /// DXF, DWG and PDF only. Offering more types would promise more than the app can show.
     private static let allowedTypes: [UTType] = {
-        var types: [UTType] = [.pdf]
-        if let dxf = UTType(filenameExtension: "dxf") { types.append(dxf) }
-        if let dwg = UTType(filenameExtension: "dwg") { types.append(dwg) }
-        return types
+        // The identifiers Info.plist declares, used by name rather than derived from the file
+        // extension. UTType(filenameExtension:) only answers for a type the system has
+        // registered, and returning nil there would silently drop the type from the picker,
+        // so a drawing would not be selectable with nothing to say why.
+        //
+        // A type that is not declared resolves to an empty UTType rather than nil, so a
+        // missing declaration fails loudly at the first import instead of quietly narrowing
+        // the picker.
+        let identifiers = ["com.autodesk.dxf", "com.autodesk.dwg", "com.adobe.pdf"]
+        return identifiers.map { UTType($0) ?? .data }
     }()
 
     private var welcome: some View {

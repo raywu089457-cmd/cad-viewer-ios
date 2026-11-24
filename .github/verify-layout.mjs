@@ -170,6 +170,30 @@ mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
     else ok(`Info.plist declares ${type}`)
   }
   if (!readme.includes('PDFKit')) fail('the README does not mention PDF support')
+
+  // The picker asks for types by identifier. One that Info.plist does not declare would not
+  // resolve, and the drawing would be unselectable with nothing to say why — so the two lists
+  // have to agree, and a new format added to one without the other is exactly the drift this
+  // catches.
+  {
+    const picker = readFileSync(
+      join(root, 'ios/CADViewer/Sources/CADViewer/RootView.swift'),
+      'utf8'
+    )
+    const match = picker.match(/let identifiers = \[([^\]]+)\]/)
+    if (!match) {
+      fail('RootView does not list the types its file picker accepts')
+    } else {
+      const requested = [...match[1].matchAll(/"([^"]+)"/g)].map(m => m[1])
+      for (const type of requested) {
+        if (!plist.includes(type)) {
+          fail(`the file picker asks for ${type}, which Info.plist does not declare`)
+        } else {
+          ok(`the picker's ${type} is declared`)
+        }
+      }
+    }
+  }
 }
 
 // A shell script that the docs tell people to run has to be executable in the index, or a
