@@ -1,16 +1,25 @@
 name: checks
 
-# What runs where, and why:
+# What runs here, and one thing that cannot.
 #
-# - `app` builds the actual app for the simulator on macOS. This is the only real proof that
-#   the SwiftUI, WebKit and PDFKit layer type-checks: `swiftc -parse` catches syntax but not
-#   types, and three genuine compile errors were found by reading that layer against the
-#   SDKs because nothing had ever compiled it. macOS runners are free for public
-#   repositories, which is what makes this possible.
-# - `geometry` runs the package tests. It has to be macOS too: SwiftDXF decodes code pages
-#   through CoreFoundation's CFStringEncoding behind `canImport(CoreFoundation)`, which is
-#   true on Linux where those symbols do not exist.
-# - `web-viewer` builds the DWG bundle on Linux. It is the one half that needs no Apple SDK.
+# This account has no macOS runner capacity: billing shows Linux minutes only, and every
+# macOS job so far was cancelled within a second without a runner being assigned. So the one
+# check that needs an Apple SDK — building the app — cannot run in CI at all, and pretending
+# otherwise with a job that is always cancelled would be worse than saying so.
+#
+# What is left is everything that genuinely runs:
+#
+# - `layout` verifies the tree against its manifests, which is what catches a target with no
+#   directory, an orphan directory SwiftPM would refuse, a product a package does not
+#   export, and the generated resource folder going missing.
+# - `web-viewer` builds the DWG bundle, the half of the project with no Apple dependency,
+#   and checks the four files the app fetches at runtime are in the output.
+#
+# The Swift checks run where a Swift toolchain that can build SwiftDXF exists:
+#
+#     cd ios/DXFGeometry && swift test                 # 4 suites
+#     cd verification/dxf-geometry-harness && ./run.sh verify   # 134 checks
+#     cd ios && xcodegen generate && xcodebuild ...    # the app layer, macOS only
 on:
   push:
     branches: [main]
@@ -18,50 +27,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  app:
-    name: App builds and packages test
-    runs-on: macos-14
+  layout:
+    name: Repository layout
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      # The DWG bundle is generated, not committed: 17 MB of build output. SwiftPM needs the
-      # resource folder to exist before it builds the package.
-      - name: Build the DWG viewer bundle
-        working-directory: ios/web
-        run: |
-          npm ci --no-audit --no-fund
-          npm run build
-          DEST=../CADViewer/Sources/CADViewer/Resources/dwgviewer
-          rm -rf "$DEST"
-          mkdir -p "$DEST"
-          cp -R dist/. "$DEST"
-
-      - name: Test DXFGeometry
-        working-directory: ios/DXFGeometry
-        run: swift test
-
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate the project
-        working-directory: ios
-        run: xcodegen generate
-
-      # The one step that proves the SwiftUI/WebKit/PDFKit layer compiles.
-      - name: Build for the simulator
-        working-directory: ios
-        run: |
-          xcodebuild \
-            -project CADViewer.xcodeproj \
-            -scheme CADViewer \
-            -destination 'generic/platform=iOS Simulator' \
-            -configuration Debug \
-            CODE_SIGNING_ALLOWED=NO \
-            build
+      - name: Verify the tree matches its manifests
+        run: node .github/verify-layout.mjs
 
   web-viewer:
     name: DWG bundle builds
@@ -94,12 +67,3 @@ jobs:
             fi
           done
           echo "bundle complete"
-
-  layout:
-    name: Repository layout
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify the tree matches its manifests
-        run: node .github/verify-layout.mjs

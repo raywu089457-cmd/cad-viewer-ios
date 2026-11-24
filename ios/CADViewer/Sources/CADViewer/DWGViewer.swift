@@ -152,24 +152,23 @@ final class DWGViewerModel {
 
     /// Applies an event posted by the page.
     fileprivate func handle(message: [String: Any]) {
-        switch message["event"] as? String ?? "" {
-        case "ready":
-            didBecomeReady = true
-            statusText = "Opening the drawing…"
-            if let pending = readyContinuation {
-                readyContinuation = nil
-                pending.resume()
-            }
-        case "loading":
-            statusText = "Opening the drawing…"
-        case "activated", "rendered":
-            statusText = nil
-        case "error":
-            let detail = message["message"] as? String ?? "unknown error"
-            Self.log.error("viewer error: \(detail, privacy: .public)")
-            fail(detail)
-        default:
-            break
+        apply(ViewerEvent(message: message))
+    }
+
+    /// Applies an already-decoded event.
+    ///
+    /// The decoding and the state rules live in `ViewerEvent`, which is unit-tested; this
+    /// only performs the effects.
+    fileprivate func apply(_ event: ViewerEvent) {
+        if let text = event.statusText { statusText = text }
+        if event.engineIsWarm { didBecomeReady = true }
+        if let message = event.errorMessage {
+            Self.log.error("viewer error: \(message, privacy: .public)")
+            fail(message)
+        }
+        if event == .ready, let pending = readyContinuation {
+            readyContinuation = nil
+            pending.resume()
         }
     }
 }

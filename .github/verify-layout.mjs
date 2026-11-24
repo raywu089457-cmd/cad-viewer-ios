@@ -119,6 +119,8 @@ mustExist('verification/dxf-geometry-harness/run.sh')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/ViewTransform.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/FileRouting.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/BundleServing.swift')
+mustExist('ios/DXFGeometry/Sources/DXFGeometry/ViewerEvent.swift')
+mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/ViewerEventTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/FileRoutingTests.swift')
 mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
 

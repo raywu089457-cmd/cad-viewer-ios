@@ -587,6 +587,61 @@ do {
           "the policy the wasm worker needs", headers["Cross-Origin-Embedder-Policy"] ?? "missing")
 }
 
+// MARK: - Viewer events
+
+section("Viewer events: decoding")
+do {
+    check(ViewerEvent(message: ["event": "ready"]) == .ready, "ready")
+    check(ViewerEvent(message: ["event": "loading"]) == .loading, "loading")
+    check(ViewerEvent(message: ["event": "activated"]) == .activated, "activated")
+    check(ViewerEvent(message: ["event": "rendered", "ms": 120]) == .rendered(milliseconds: 120),
+          "rendered with a timing")
+    check(ViewerEvent(message: ["event": "rendered"]) == .rendered(milliseconds: nil),
+          "rendered without a timing")
+    check(ViewerEvent(message: ["event": "error", "message": "wasm missing"]) == .failed("wasm missing"),
+          "error carries its message")
+
+    // The page may grow events the app does not act on; they must not break a drawing.
+    check(ViewerEvent(message: ["event": "somethingNew"]) == .ignored, "unknown is ignored")
+    check(ViewerEvent(message: [:]) == .ignored, "no event is ignored")
+
+    // An error with no message is still an error worth showing.
+    if case .failed(let text) = ViewerEvent(message: ["event": "error"]) {
+        check(!text.isEmpty, "an error without a message still says something")
+    } else {
+        check(false, "a bare error decodes as a failure")
+    }
+    if case .failed(let text) = ViewerEvent(message: ["event": "error", "message": ""]) {
+        check(!text.isEmpty, "an empty message still says something")
+    } else {
+        check(false, "an empty message decodes as a failure")
+    }
+}
+
+section("Viewer events: what the UI does")
+do {
+    // The two that must show progress, and the four that must not: a spinner left on top of
+    // an open drawing is the bug this rule prevents.
+    check(ViewerEvent.ready.statusText != nil, "ready shows progress")
+    check(ViewerEvent.loading.statusText != nil, "loading shows progress")
+    check(ViewerEvent.activated.statusText == nil, "activated clears the overlay")
+    check(ViewerEvent.rendered(milliseconds: 1).statusText == nil, "rendered clears the overlay")
+    check(ViewerEvent.failed("x").statusText == nil, "a failure clears the overlay")
+    check(ViewerEvent.ignored.statusText == nil, "an ignored event changes nothing")
+
+    // The engine is warm once it has reported ready or drawn something, which is what lets
+    // the next drawing reuse the page instead of paying for a reload.
+    check(ViewerEvent.ready.engineIsWarm, "ready warms the engine")
+    check(ViewerEvent.activated.engineIsWarm, "activated means the engine works")
+    check(ViewerEvent.rendered(milliseconds: nil).engineIsWarm, "rendered means it works")
+    check(!ViewerEvent.loading.engineIsWarm, "loading alone does not")
+    check(!ViewerEvent.failed("x").engineIsWarm, "a failure does not")
+
+    check(ViewerEvent.failed("boom").errorMessage == "boom", "an error surfaces")
+    check(ViewerEvent.ready.errorMessage == nil, "ready is not an error")
+    check(ViewerEvent.activated.errorMessage == nil, "activated is not an error")
+}
+
 // MARK: - Result
 
 print("")
