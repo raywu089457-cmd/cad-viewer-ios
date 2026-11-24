@@ -325,3 +325,77 @@ struct ACIColourTests {
         #expect(Set(colors.map { "\($0.r),\($0.g),\($0.b)" }).count == 9)
     }
 }
+
+/// The cached extents the renderer culls with. Getting them wrong means a primitive that is
+/// on screen gets skipped, or one that is not gets drawn every frame.
+@Suite("Primitive bounds")
+struct PrimitiveBoundsTests {
+    @Test("A polyline's cached bounds cover its points")
+    func polylineBounds() throws {
+        let scene = try SceneBuilderTests.build("""
+        0
+        LINE
+        10
+        -5
+        20
+        -7
+        11
+        15
+        21
+        23
+        """)
+        let line = try #require(scene.polylines.first)
+        #expect(line.bounds.minX == -5)
+        #expect(line.bounds.minY == -7)
+        #expect(line.bounds.maxX == 15)
+        #expect(line.bounds.maxY == 23)
+    }
+
+    @Test("A circle's cached bounds are its box, not its points")
+    func circleBounds() throws {
+        let scene = try SceneBuilderTests.build("""
+        0
+        CIRCLE
+        10
+        100
+        20
+        50
+        40
+        25
+        """)
+        let circle = try #require(scene.polylines.first)
+        #expect(circle.bounds.minX >= 75 - 1e-9)
+        #expect(circle.bounds.maxX <= 125 + 1e-9)
+        #expect(circle.bounds.minY >= 25 - 1e-9)
+        #expect(circle.bounds.maxY <= 75 + 1e-9)
+    }
+
+    @Test("A hatch fill's cached bounds cover its outer loop")
+    func fillBounds() throws {
+        let scene = try SceneBuilderTests.build("""
+        0
+        SOLID
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        0
+        12
+        0
+        22
+        10
+        13
+        10
+        23
+        10
+        """)
+        let fill = try #require(scene.fills.first)
+        #expect(fill.bounds.minX == 0)
+        #expect(fill.bounds.minY == 0)
+        #expect(fill.bounds.maxX == 10)
+        #expect(fill.bounds.maxY == 10)
+    }
+}

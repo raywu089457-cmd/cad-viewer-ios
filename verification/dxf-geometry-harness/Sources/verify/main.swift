@@ -342,8 +342,9 @@ do {
 section("Viewport")
 do {
     // Two points is too few for a percentile, so the extents are used as-is.
-    if let plain = Viewport.fit(points: [Point(0, 0), Point(1000, 1000)], fallback: square) {
-        check(plain.bounds == square, "frames the extents when there is nothing to judge")
+    let unitSquare = Bounds(minX: 0, minY: 0, maxX: 1000, maxY: 1000)
+    if let plain = Viewport.fit(points: [Point(0, 0), Point(1000, 1000)], fallback: unitSquare) {
+        check(plain.bounds == unitSquare, "frames the extents when there is nothing to judge")
         check(!plain.hasGeometryOutside, "nothing outside")
     } else {
         check(false, "viewport from two points")
@@ -378,6 +379,8 @@ do {
 
 section("View transform")
 let portrait = ScreenSize(width: 390, height: 844)
+// A 1000-unit square, the reference drawing the transform tests fit.
+let square = Bounds(minX: 0, minY: 0, maxX: 1000, maxY: 1000)
 
 let fitted = ViewTransform.fitting(square, in: portrait)
 check(fitted.scale.isFinite && fitted.scale > 0, "fit scale is sane", "\(fitted.scale)")
@@ -645,6 +648,72 @@ do {
     check(ViewerEvent.failed("boom").errorMessage == "boom", "an error surfaces")
     check(ViewerEvent.ready.errorMessage == nil, "ready is not an error")
     check(ViewerEvent.activated.errorMessage == nil, "activated is not an error")
+}
+
+section("Primitive bounds (the renderer's culling)")
+do {
+    if let scene = build("""
+        0
+        LINE
+        10
+        -5
+        20
+        -7
+        11
+        15
+        21
+        23
+        """), let line = scene.polylines.first {
+        check(line.bounds.minX == -5 && line.bounds.maxX == 15, "polyline bounds x")
+        check(line.bounds.minY == -7 && line.bounds.maxY == 23, "polyline bounds y")
+    } else {
+        check(false, "line bounds fixture")
+    }
+
+    // A circle's points are on the circumference; its bounds must be its box.
+    if let scene = build("""
+        0
+        CIRCLE
+        10
+        100
+        20
+        50
+        40
+        25
+        """), let circle = scene.polylines.first {
+        check(circle.bounds.minX >= 75 - 1e-9 && circle.bounds.minX <= 75 + 1e-9,
+              "circle bounds left", "(circle.bounds.minX)")
+        check(circle.bounds.maxX <= 125 + 1e-9 && circle.bounds.maxX >= 125 - 1e-9,
+              "circle bounds right", "(circle.bounds.maxX)")
+    } else {
+        check(false, "circle bounds fixture")
+    }
+
+    if let scene = build("""
+        0
+        SOLID
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        0
+        12
+        0
+        22
+        10
+        13
+        10
+        23
+        10
+        """), let fill = scene.fills.first {
+        check(fill.bounds.minX == 0 && fill.bounds.maxX == 10, "fill bounds x")
+        check(fill.bounds.minY == 0 && fill.bounds.maxY == 10, "fill bounds y")
+    } else {
+        check(false, "fill bounds fixture")
+    }
 }
 
 // MARK: - Result

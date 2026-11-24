@@ -30,6 +30,12 @@ public struct DrawScene: Sendable {
 public struct Polyline: Sendable {
     public var points: [Point]
     public var isClosed: Bool
+    /// Extents of the points, computed once when the scene is built.
+    ///
+    /// The renderer asks whether each primitive is on screen on every frame; walking a
+    /// polyline's points to answer that, for every polyline, is wasted work on a drawing
+    /// with thousands of them.
+    public var bounds: Bounds
     /// The ACI index as written in the file; `ACI.byLayer` when inherited.
     public var colorIndex: Int
     /// Resolved colour, already accounting for layer and background.
@@ -41,6 +47,8 @@ public struct Polyline: Sendable {
 public struct Fill: Sendable {
     public var outer: [Point]
     public var holes: [[Point]]
+    /// Extents of the outer loop, computed once when the scene is built.
+    public var bounds: Bounds
     public var color: RGB
     public var layer: String
 }
@@ -122,6 +130,7 @@ public struct SceneBuilder {
                 Polyline(
                     points: points,
                     isClosed: closed,
+                    bounds: extents(of: points),
                     colorIndex: index,
                     color: resolvedColor(for: index, layer: layer),
                     layer: layer
@@ -205,6 +214,7 @@ public struct SceneBuilder {
                 scene.fills.append(
                     Fill(
                         outer: points, holes: [],
+                        bounds: extents(of: points),
                         color: resolvedColor(for: solid.color, layer: solid.layer),
                         layer: solid.layer))
                 add(points, closed: true, index: solid.color, layer: solid.layer)
@@ -440,6 +450,7 @@ public struct SceneBuilder {
             Fill(
                 outer: primary,
                 holes: inners + Array(outers.dropFirst()),
+                bounds: extents(of: primary),
                 color: color,
                 layer: hatch.layer
             )
@@ -600,6 +611,13 @@ public struct SceneBuilder {
         let w = pw[degree]
         guard w != 0 else { return Point(px[degree], py[degree]) }
         return Point(px[degree] / w, py[degree] / w)
+    }
+
+    /// Extents of a point list, for the renderer's per-frame culling.
+    private func extents(of points: [Point]) -> Bounds {
+        var accumulator = Bounds.Accumulator()
+        accumulator.add(points)
+        return accumulator.bounds ?? Bounds(minX: 0, minY: 0, maxX: 0, maxY: 0)
     }
 
     // MARK: - Bounds

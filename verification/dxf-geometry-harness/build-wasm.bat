@@ -21,8 +21,25 @@ set FLAGS=-target wasm32-unknown-wasip1 -sdk %SDK%\WASI.sdk -resource-dir %SDK%\
 cd /d "%~dp0"
 where node >nul 2>nul || (echo node is required & exit /b 1)
 node mkfiles.js || exit /b 1
+if exist scenecheck.wasm del scenecheck.wasm
+if exist verify.wasm del verify.wasm
+
 swiftc.exe %FLAGS% -O -o scenecheck.wasm @files-exe.txt > buildlog-tool.txt 2>&1
-echo TOOL_RC=%ERRORLEVEL% >> buildlog-tool.txt
+set TOOL_RC=%ERRORLEVEL%
+echo TOOL_RC=%TOOL_RC% >> buildlog-tool.txt
+
 swiftc.exe %FLAGS% -O -o verify.wasm @files-verify.txt > buildlog-verify.txt 2>&1
-echo VERIFY_RC=%ERRORLEVEL% >> buildlog-verify.txt
+set VERIFY_RC=%ERRORLEVEL%
+echo VERIFY_RC=%VERIFY_RC% >> buildlog-verify.txt
+
+REM A stale wasm from an earlier build looks exactly like a fresh one, so a failure here
+REM must stop the script rather than leave something runnable behind.
+if not "%TOOL_RC%"=="0" (
+  echo scenecheck failed to compile, see buildlog-tool.txt
+  exit /b 1
+)
+if not "%VERIFY_RC%"=="0" (
+  echo verify failed to compile, see buildlog-verify.txt
+  exit /b 1
+)
 echo built scenecheck.wasm and verify.wasm

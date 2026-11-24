@@ -27,7 +27,7 @@ struct DrawingCanvas: View {
     private func drawShapes(in context: inout GraphicsContext) {
         for fill in scene.fills {
             guard fill.outer.count >= 3 else { continue }
-            guard transform.isVisible(bounds(of: fill.outer)) else { continue }
+            guard transform.isVisible(fill.bounds) else { continue }
             var path = polygonPath(fill.outer)
             // Even-odd so inner loops cut holes, as a hatch island should.
             for hole in fill.holes where hole.count >= 3 {
@@ -42,7 +42,7 @@ struct DrawingCanvas: View {
 
         for line in scene.polylines {
             guard line.points.count >= 2 else { continue }
-            guard transform.isVisible(bounds(of: line.points)) else { continue }
+            guard transform.isVisible(line.bounds) else { continue }
             var path = polylinePath(line.points)
             if line.isClosed { path.closeSubpath() }
             context.stroke(
@@ -101,14 +101,6 @@ struct DrawingCanvas: View {
         var path = polylinePath(points)
         if !points.isEmpty { path.closeSubpath() }
         return path
-    }
-
-    /// Extents of a primitive, for the culling test.
-    private func bounds(of points: [Point]) -> Bounds {
-        var accumulator = Bounds.Accumulator()
-        accumulator.add(points)
-        // A culled rectangle of zero size would be visible at every zoom level.
-        return accumulator.bounds ?? Bounds(minX: 0, minY: 0, maxX: 0, maxY: 0)
     }
 }
 
