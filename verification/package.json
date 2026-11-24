@@ -1,17 +1,17 @@
 {
-  "name": "dwg-test",
+  "name": "cad-viewer-verification",
   "version": "1.0.0",
-  "description": "",
+  "description": "Browser regression scripts for the DWG viewer and the three candidates it was chosen from",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test:reopen": "node test-dwg-reopen.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@mlightcad/cad-simple-viewer": "^1.7.8",
     "playwright": "^1.65.1"
-  }
+  },
+  "private": true
 }

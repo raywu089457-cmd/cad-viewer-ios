@@ -67,3 +67,35 @@ jobs:
             fi
           done
           echo "bundle complete"
+
+  dwg-reopen:
+    name: DWG reopens on a loaded page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The test drives a real browser through both loads. It exists because the reopen path
+      # silently did nothing for a while: the page never defined the entry point, and the
+      # only symptom was that a second DWG did not appear.
+      - name: Install Playwright
+        working-directory: verification
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      - name: Build the viewer
+        working-directory: ios/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Reopen a second drawing
+        run: |
+          node verification/test-dwg-reopen.mjs \
+            "$PWD/ios/web/dist" \
+            "$PWD/samples/example_2018.dwg" \
+            "$PWD/samples/example_2013.dwg"

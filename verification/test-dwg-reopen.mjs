@@ -54,7 +54,8 @@ function serve() {
 }
 
 const harness = serve()
-await new Promise(resolve => harness.server.listen(8093, resolve))
+await new Promise(resolve => harness.server.listen(0, '127.0.0.1', resolve))
+const port = harness.server.address().port
 
 const browser = await chromium.launch()
 const page = await browser.newPage({ viewport: { width: 900, height: 700 } })
@@ -71,10 +72,26 @@ await page.addInitScript(() => {
 })
 page.on('pageerror', e => events.push({ event: 'pageerror', message: String(e) }))
 
-await page.goto('http://127.0.0.1:8093/index.html?name=first.dwg', {
+/** Resolves once any of the given events has been reported, or after a timeout. */
+function waitFor(predicate, timeoutMs = 25000) {
+  const started = Date.now()
+  return new Promise(resolve => {
+    const tick = () => {
+      if (predicate(events)) return resolve(true)
+      if (Date.now() - started > timeoutMs) return resolve(false)
+      setTimeout(tick, 200)
+    }
+    tick()
+  })
+}
+
+await page.goto(`http://127.0.0.1:${port}/index.html?name=first.dwg`, {
   waitUntil: 'networkidle'
 })
-await page.waitForTimeout(20000)
+// The page reports rendered when the first frame is drawn; error means it gave up.
+await waitFor(list =>
+  list.some(e => e.event === 'rendered' || e.event === 'error' || e.event === 'pageerror')
+)
 
 const names = list => list.map(e => e.event).filter(n =>
   ['ready', 'loading', 'activated', 'rendered', 'error', 'pageerror'].includes(n))
@@ -98,7 +115,9 @@ try {
   // A missing entry point must fail this test, not throw out of it.
   console.log('reopen     : threw,', String(error).split(String.fromCharCode(10))[0])
 }
-await page.waitForTimeout(20000)
+await waitFor(list =>
+  list.slice(before).some(e => e.event === 'rendered' || e.event === 'error' || e.event === 'pageerror')
+)
 const reopen = names(events.slice(before))
 console.log('reopen     :', reopen.join(' -> '))
 
