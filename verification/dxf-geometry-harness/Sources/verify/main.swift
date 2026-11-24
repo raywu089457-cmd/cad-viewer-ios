@@ -9,6 +9,19 @@ import DXFGeometry
 var failures = 0
 var checks = 0
 
+// A DXF holding both solid and patterned hatches, passed on the command line. A HATCH needs
+// the full boundary-path encoding, so the fixture is a real converted drawing rather than a
+// hand-written one.
+let hatchSamplePath = CommandLine.arguments.dropFirst().first(where: { $0.hasSuffix(".dxf") }) ?? ""
+
+/// Reads the hatch sample from stdin, as the other harnesses do: WASI Foundation has no
+/// way to read a file by path.
+func hatchSampleText() -> String? {
+    let data = FileHandle.standardInput.readDataToEndOfFile()
+    guard !data.isEmpty else { return nil }
+    return String(decoding: data, as: Unicode.ASCII.self)
+}
+
 func check(_ condition: Bool, _ label: String, _ detail: @autoclosure () -> String = "") {
     checks += 1
     if !condition {
@@ -826,6 +839,56 @@ do {
     check(
         DrawingHandoff(byteCount: 40 * 1024 * 1024, pageCanAcceptDirectly: true) == .viaReload,
         "a large drawing reloads")
+}
+
+section("Hatch solidity")
+do {
+    // A hatch is either a solid fill or a pattern (ANSI31 on a section view). The reader
+    // models the boundary but not the pattern lines, so a patterned hatch has to be outlined:
+    // drawing it as a solid block of colour says the section is filled, which is wrong.
+    //
+    // The fixture is passed on the command line, because a hand-written HATCH needs the full
+    // boundary-path encoding and is easy to get subtly wrong. Without one, nothing is
+    // claimed — a silent pass here would be worse than no check.
+    if hatchSamplePath.isEmpty {
+        check(true, "no hatch sample supplied, so solidity was not checked")
+    } else if let text = hatchSampleText(), let drawing = try? DXF.read(text: text) {
+        let fills = SceneBuilder().build(drawing).fills
+        check(!fills.isEmpty, "the sample has hatches", "\(fills.count)")
+        check(fills.contains { $0.isSolid }, "at least one is a solid fill")
+        check(fills.contains { !$0.isSolid }, "at least one is a pattern")
+        // Every fill must carry a boundary, solid or not, or it cannot be outlined either.
+        let boundaryless = fills.filter { $0.outer.count < 3 }
+        check(boundaryless.isEmpty, "every fill has a boundary", "\(boundaryless.count) without")
+    } else {
+        check(false, "the hatch sample is readable at \(hatchSamplePath)")
+    }
+
+    // A SOLID entity is always a fill.
+    if let scene = build("""
+        0
+        SOLID
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        0
+        12
+        0
+        22
+        10
+        13
+        10
+        23
+        10
+        """), let fill = scene.fills.first {
+        check(fill.isSolid, "a SOLID entity is solid")
+    } else {
+        check(false, "solid entity fixture")
+    }
 }
 
 // MARK: - Result

@@ -49,6 +49,13 @@ public struct Fill: Sendable {
     public var holes: [[Point]]
     /// Extents of the outer loop, computed once when the scene is built.
     public var bounds: Bounds
+    /// Whether to fill the region or only outline it.
+    ///
+    /// A HATCH is either a solid fill or a pattern — ANSI31 hatching on a section view is
+    /// the common case — and the reader models the pattern's boundary but not its lines. A
+    /// patterned hatch drawn as a solid block of colour is plainly wrong, so it is outlined
+    /// instead: the region still reads as hatched rather than as a filled area.
+    public var isSolid: Bool
     public var color: RGB
     public var layer: String
 }
@@ -213,6 +220,7 @@ public struct SceneBuilder {
                     Fill(
                         outer: points, holes: [],
                         bounds: extents(of: points),
+                        isSolid: true,
                         color: resolvedColor(for: solid.color, layer: solid.layer),
                         layer: solid.layer))
                 add(points, closed: true, index: solid.color, layer: solid.layer)
@@ -472,6 +480,7 @@ public struct SceneBuilder {
                 outer: primary,
                 holes: inners + Array(outers.dropFirst()),
                 bounds: extents(of: primary),
+                isSolid: hatch.isSolid,
                 color: color,
                 layer: hatch.layer
             )

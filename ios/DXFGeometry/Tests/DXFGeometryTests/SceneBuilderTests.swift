@@ -478,3 +478,61 @@ struct CurveToleranceTests {
         #expect(huge <= 60)
     }
 }
+
+/// Whether a hatch is filled or outlined. The reader models a hatch's boundary but not its
+/// pattern lines, so a patterned hatch (ANSI31 on a section view) drawn as a solid block of
+/// colour says the section is filled, which is wrong.
+@Suite("Hatch solidity")
+struct HatchSolidityTests {
+    @Test("A SOLID entity is always a fill")
+    func solidEntity() throws {
+        let scene = try SceneBuilderTests.build("""
+        0
+        SOLID
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        0
+        12
+        0
+        22
+        10
+        13
+        10
+        23
+        10
+        """)
+        let fill = try #require(scene.fills.first)
+        #expect(fill.isSolid)
+    }
+
+    @Test("Every fill carries a boundary, so an outline can be drawn")
+    func boundary() throws {
+        let scene = try SceneBuilderTests.build("""
+        0
+        SOLID
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        0
+        12
+        0
+        22
+        10
+        13
+        10
+        23
+        10
+        """)
+        let fill = try #require(scene.fills.first)
+        #expect(fill.outer.count >= 3)
+    }
+}

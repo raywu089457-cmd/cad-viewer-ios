@@ -104,6 +104,7 @@ if wantJSON {
     let fills: [[String: Any]] = scene.fills.map { fill in
         [
             "layer": fill.layer,
+            "isSolid": fill.isSolid,
             "outer": fill.outer.map(pointObject),
             "holes": fill.holes.map { $0.map(pointObject) },
             "rgb": [fill.color.r, fill.color.g, fill.color.b]
@@ -159,9 +160,13 @@ for fill in scene.fills {
     }
     var d = path(fill.outer)
     for hole in fill.holes { d += " " + path(hole) }
+    // A patterned hatch is outlined, not filled: this tool must show what the app shows, or
+    // comparing the two is meaningless.
+    let paint = fill.isSolid
+        ? "fill=\"\(rgb(fill.color))\" fill-opacity=\"0.85\" fill-rule=\"evenodd\" "
+        : "fill=\"none\" "
     body.append(
-        "<path d=\"\(d)\" fill=\"\(rgb(fill.color))\" fill-opacity=\"0.85\" "
-            + "fill-rule=\"evenodd\" stroke=\"\(rgb(fill.color))\" "
+        "<path d=\"\(d)\" \(paint)stroke=\"\(rgb(fill.color))\" "
             + "stroke-width=\"1\" vector-effect=\"non-scaling-stroke\"/>")
 }
 

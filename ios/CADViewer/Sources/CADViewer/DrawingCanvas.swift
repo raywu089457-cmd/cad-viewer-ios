@@ -33,11 +33,23 @@ struct DrawingCanvas: View {
             for hole in fill.holes where hole.count >= 3 {
                 path.addPath(polygonPath(hole))
             }
-            context.fill(
-                path,
-                with: .color(fill.color.swiftUIColor),
-                style: .init(eoFill: true)
-            )
+            if fill.isSolid {
+                context.fill(
+                    path,
+                    with: .color(fill.color.swiftUIColor),
+                    style: .init(eoFill: true)
+                )
+            } else {
+                // A patterned hatch has no line geometry here, so outlining the region is the
+                // honest rendering: a solid block of colour would say the section is filled
+                // when the pattern means it is hatched.
+                context.stroke(
+                    path,
+                    with: .color(fill.color.swiftUIColor),
+                    style: StrokeStyle(
+                        lineWidth: lineWidth, lineCap: .round, lineJoin: .round)
+                )
+            }
         }
 
         for line in scene.polylines {
