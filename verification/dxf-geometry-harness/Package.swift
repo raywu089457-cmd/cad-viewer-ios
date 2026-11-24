@@ -9,7 +9,6 @@ import PackageDescription
 // an app does, so `swift run` exercises the real module boundary.
 let package = Package(
     name: "Harness",
-    platforms: [.macOS(.v13)],
     dependencies: [
         .package(path: "../../ios/DXFGeometry"),
         // Pulled in transitively, but named here because the harnesses read DXF directly.

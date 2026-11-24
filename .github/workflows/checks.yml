@@ -1,8 +1,13 @@
 name: checks
 
-# The geometry and the routing are the parts that can be verified without a Mac, so they run
-# on every push. The SwiftUI/WebKit/PDF layer gets type-checked by compiling the app for the
-# simulator, which is the only real proof that it builds.
+# What can be checked where, stated plainly so a red X always means something:
+#
+# - DXFGeometry is Foundation and plain Swift only. It builds and tests on Linux, so it runs
+#   on every push.
+# - CADViewer needs SwiftUI, WebKit and PDFKit. There is no honest way to check it without
+#   an Apple SDK, so it is not pretended at here; the `app` job does it on a macOS runner.
+# - macOS runners cost 10x minutes on a free account and are often unavailable, so that job
+#   is dispatch-only and does not block pushes.
 on:
   push:
     branches: [main]
@@ -10,9 +15,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  packages:
-    name: Geometry, view maths and routing
-    runs-on: macos-14
+  geometry:
+    name: Geometry and view maths
+    runs-on: ubuntu-latest
+    container: swift:5.10-jammy
     steps:
       - uses: actions/checkout@v4
 
@@ -23,13 +29,26 @@ jobs:
         working-directory: ios/DXFGeometry
         run: swift test
 
-      - name: Test CADViewer
-        working-directory: ios/CADViewer
-        run: swift test
+  harness:
+    name: Harness (the 60 checks)
+    runs-on: ubuntu-latest
+    container: swift:5.10-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run the harness
+        working-directory: verification/dxf-geometry-harness
+        # The same checks without XCTest or Swift Testing: this is what proves the
+        # flattening and the pan/zoom arithmetic on a machine nobody has touched.
+        run: swift run -c release verify
 
   app:
-    name: App builds for the simulator
+    name: App builds (needs a macOS runner)
+    # Dispatch-only: the only honest way to check the SwiftUI/WebKit/PDFKit layer, and the
+    # only job here that cannot run on a free account's spare capacity.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-14
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -37,8 +56,8 @@ jobs:
         with:
           node-version: "20"
 
-      # The DWG viewer bundle is generated, not committed: it is 17 MB of build output.
-      # SwiftPM's resources rule needs the folder to exist before it builds the package.
+      # The DWG viewer bundle is generated, not committed: 17 MB of build output. SwiftPM
+      # needs the resource folder to exist, so build it before the package resolves.
       - name: Build the DWG viewer bundle
         working-directory: ios/web
         run: |
@@ -48,6 +67,10 @@ jobs:
           rm -rf "$DEST"
           mkdir -p "$DEST"
           cp -R dist/. "$DEST"
+
+      - name: Test CADViewer
+        working-directory: ios/CADViewer
+        run: swift test
 
       - name: Install XcodeGen
         run: brew install xcodegen
