@@ -100,6 +100,19 @@ jobs:
             "$PWD/samples/example_2018.dwg" \
             "$PWD/samples/example_2013.dwg"
 
+  api-usage:
+    name: App calls match the geometry API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The app layer cannot be type-checked without an Apple SDK, but most of what it calls
+      # is DXFGeometry, which compiles here. This checks the argument labels of those calls
+      # against the declarations: the mistake `swiftc -parse` misses and that would
+      # otherwise only surface on a Mac.
+      - name: Check argument labels
+        run: node verification/check-api-usage.mjs
+
   syntax:
     name: App layer parses
     runs-on: ubuntu-latest

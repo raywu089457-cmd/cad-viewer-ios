@@ -118,6 +118,9 @@ mustExist('verification/parse-check.sh')
 mustExist('verification/test-dwg-reopen.mjs')
 // The independent coordinate check: its own DXF reader, sharing no code with the Swift side.
 mustExist('verification/verify-coordinates.mjs')
+// Checks the app layer's calls into the geometry against the real declarations, which is
+// the part of that layer that can be verified without an Apple SDK.
+mustExist('verification/check-api-usage.mjs')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')
