@@ -340,36 +340,41 @@ do {
 // MARK: - Viewport
 
 section("Viewport")
-let square = Bounds(minX: 0, minY: 0, maxX: 1000, maxY: 1000)
-if let plain = Viewport.fit(points: [Point(0, 0), Point(1000, 1000)], fallback: square) {
-    check(plain.bounds == square, "frames the extents by default")
-    check(!plain.hasGeometryOutside, "nothing outside")
-} else {
-    check(false, "viewport from two points")
-}
-
-// One point far away must not shrink the frame when trimming is off (the default), but
-// must when trimming is asked for.
 do {
-    var points: [Point] = []
-    for i in 0..<100 { points.append(Point(Double(i), Double(i % 10))) }
-    points.append(Point(1_000_000, 1_000_000))
-
-    if let untrimmed = Viewport.fit(points: points, fallback: nil) {
-        check(untrimmed.bounds.maxX >= 1_000_000, "default keeps the outlier in frame")
+    // Two points is too few for a percentile, so the extents are used as-is.
+    if let plain = Viewport.fit(points: [Point(0, 0), Point(1000, 1000)], fallback: square) {
+        check(plain.bounds == square, "frames the extents when there is nothing to judge")
+        check(!plain.hasGeometryOutside, "nothing outside")
     } else {
-        check(false, "untrimmed viewport")
+        check(false, "viewport from two points")
     }
-    if let trimmed = Viewport.fit(points: points, trim: 0.01, fallback: nil) {
-        check(trimmed.bounds.maxX < 1000, "trim drops the outlier", "\(trimmed.bounds.maxX)")
-        check(trimmed.hasGeometryOutside, "and reports that something is outside")
-        check(trimmed.expansionFactor > 1, "expansion factor > 1")
+
+    // A drawing whose header swears the extents are a hundred times bigger than the
+    // geometry: the header must not be trusted, or the drawing shows as a dot.
+    var crowded: [Point] = []
+    for i in 0..<200 { crowded.append(Point(Double(i) * 10, Double(i % 20) * 10)) }
+    crowded.append(Point(1_000_000, 1_000_000))
+    if let fitted = Viewport.fit(points: crowded, fallback: nil) {
+        check(fitted.bounds.maxX < 100_000, "a far outlier is not framed",
+              "maxX=(fitted.bounds.maxX)")
+        check(fitted.hasGeometryOutside, "and the reader is told something is outside")
+        check(fitted.expansionFactor > 1, "expansion factor > 1")
+        // The content itself must still be inside the frame.
+        check(fitted.bounds.minX <= 0 && fitted.bounds.maxX >= 1990,
+              "but the content is inside it")
     } else {
-        check(false, "trimmed viewport")
+        check(false, "viewport with an outlier")
+    }
+
+    // A drawing with no outliers is shown in full: cropping a real edge is worse.
+    var tidy: [Point] = []
+    for i in 0..<100 { tidy.append(Point(Double(i), Double(i % 10))) }
+    if let fitted = Viewport.fit(points: tidy, fallback: nil) {
+        check(!fitted.hasGeometryOutside, "a tidy drawing is not cropped")
+    } else {
+        check(false, "viewport for a tidy drawing")
     }
 }
-
-// MARK: - View transform
 
 section("View transform")
 let portrait = ScreenSize(width: 390, height: 844)
