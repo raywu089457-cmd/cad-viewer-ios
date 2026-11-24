@@ -71,7 +71,7 @@ MIME type 必須正確（`application/wasm`、`text/javascript`），否則 WebK
 
 在沒有 Xcode 的機器上（Windows + Swift 6.4.3 wasm 工具鏈）驗證過的：
 
-- `DXFGeometry` 全部邏輯：**110 項檢查**，涵蓋圖元攤平、色票、取景、縮放/平移算式、
+- `DXFGeometry` 全部邏輯：**187 項檢查**，涵蓋圖元攤平、色票、取景、縮放/平移算式、
   副檔名路由、錯誤訊息、bundle 路徑逃逸與 MIME type
 - 真實樣本（LibreDWG 的 `example_2018.dwg` 轉出的 DXF）：158 個實體全部轉成
   幾何，零 NaN，文字內容與層名正確

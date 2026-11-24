@@ -241,7 +241,7 @@ public struct SceneBuilder {
                     closed: false, index: leader.color, layer: leader.layer)
 
             case let .dimension(dimension):
-                for (points, closed) in dimensionGeometry(dimension) {
+                for (points, closed) in dimensionGeometry(dimension, reference: reference) {
                     add(points, closed: closed, index: dimension.color,
                         layer: dimension.layer)
                 }
@@ -317,7 +317,9 @@ public struct SceneBuilder {
     ///
     /// Reconstructs the extension lines and the dimension line, so a dimension reads as a
     /// dimension rather than as nothing.
-    private func dimensionGeometry(_ d: DXF.Dimension) -> [([Point], Bool)] {
+    private func dimensionGeometry(
+        _ d: DXF.Dimension, reference: Double
+    ) -> [([Point], Bool)] {
         func point(_ p: DXF.Point) -> Point { Point(p.x, p.y) }
         var out: [([Point], Bool)] = []
 
@@ -334,7 +336,23 @@ public struct SceneBuilder {
             let bOn = Point(b.x + normal.x * offset, b.y + normal.y * offset)
             out.append(([a, aOn], false))
             out.append(([b, bOn], false))
-            out.append(([aOn, bOn], false))
+            // The dimension line is broken where the text sits, as CAD does, or the line
+            // runs straight through the number and both become hard to read. The gap is a
+            // guess at the text width: no glyph metrics are available here, and a dimension
+            // label is at most a few characters.
+            let label = Self.dimensionLabel(d) ?? ""
+            let gapHalf = max(Double(label.count) * max(reference / 200, 1e-9) * 0.35, 0)
+            if gapHalf > 0, distance(aOn, bOn) > gapHalf * 3 {
+                let textOn = project(point(d.textPosition), onto: aOn, bOn)
+                let gapStart = min(max(textOn - gapHalf, 0), distance(aOn, bOn))
+                let gapEnd = min(max(textOn + gapHalf, 0), distance(aOn, bOn))
+                if gapStart > 0 { out.append(([aOn, along(aOn, bOn, gapStart)], false)) }
+                if gapEnd < distance(aOn, bOn) {
+                    out.append(([along(aOn, bOn, gapEnd), bOn], false))
+                }
+            } else {
+                out.append(([aOn, bOn], false))
+            }
 
         case .angular, .angular3Point:
             guard let p2 = d.defPoint2, let p3 = d.defPoint3 else { break }
@@ -713,5 +731,28 @@ public struct SceneBuilder {
 
         guard sawGeometry else { return fallback }
         return accumulator.bounds ?? fallback
+    }
+}
+
+// MARK: - Dimension line helpers
+
+extension SceneBuilder {
+    /// Distance between two points.
+    func distance(_ a: Point, _ b: Point) -> Double {
+        hypot(b.x - a.x, b.y - a.y)
+    }
+
+    /// How far along a->b the closest point to p lies.
+    func project(_ p: Point, onto a: Point, _ b: Point) -> Double {
+        let length = distance(a, b)
+        guard length > 0 else { return 0 }
+        return ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / length
+    }
+
+    /// The point t along a->b.
+    func along(_ a: Point, _ b: Point, _ t: Double) -> Point {
+        let length = distance(a, b)
+        guard length > 0 else { return a }
+        return Point(a.x + (b.x - a.x) * t / length, a.y + (b.y - a.y) * t / length)
     }
 }

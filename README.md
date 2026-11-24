@@ -55,7 +55,7 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 
 實測通過（不需要 Mac）：
 
-- 幾何核心與檔案路由 **110 項檢查**：圖元攤平、ACI 色票、取景、縮放與平移算式、
+- 幾何核心與檔案路由 **187 項檢查**：圖元攤平、ACI 色票、取景、縮放與平移算式、
   副檔名路由、錯誤訊息、bundle 路徑逃逸（4 種）、MIME type
 - `example_2018.dwg` → DXF：158 個實體全部轉成幾何，零 NaN，層名與文字正確
 - DWG 網頁端在 WebKit（Safari 引擎）iPhone 尺寸下開圖成功，零 console 錯誤
@@ -68,7 +68,7 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 
 **為什麼不是 Linux CI 全包**：SwiftDXF 在 Linux 上編譯不過 —— 它的 `CodePage` 用
 CoreFoundation 的 `CFStringEncoding` 解碼，guard 寫的是 `canImport(CoreFoundation)`，
-在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以那 110 項檢查只能在
+在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以那 187 項檢查只能在
 Mac 上跑；CI 只做不需要 Swift 的部分（佈局檢查、DWG 網頁端建置）。
 
 ## 授權
