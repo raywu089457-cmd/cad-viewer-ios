@@ -55,3 +55,4 @@ shots/native*.html
 # macOS / Windows
 .DS_Store
 Thumbs.db
+pe.txt

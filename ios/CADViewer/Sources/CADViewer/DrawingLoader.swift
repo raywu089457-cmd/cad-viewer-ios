@@ -2,32 +2,9 @@ import Foundation
 import SwiftDXF
 import DXFGeometry
 
-/// Which engine renders a given file.
-///
-/// DXF is parsed and drawn natively, because SwiftDXF is pure Swift and its geometry
-/// becomes a SwiftUI canvas directly. DWG has no open native parser, so it goes to the
-/// bundled web viewer running the LibreDWG wasm build inside a `WKWebView`. PDF needs no
-/// third party at all: the system's `PDFKit` already reads and renders it.
-enum DrawingKind: Equatable {
-    case dxf
-    case dwg
-    case pdf
-    case unsupported(extension: String)
-
-    init(fileName: String) {
-        switch (fileName as NSString).pathExtension.lowercased() {
-        case "dxf": self = .dxf
-        case "dwg": self = .dwg
-        case "pdf": self = .pdf
-        case let ext: self = .unsupported(extension: ext)
-        }
-    }
-
-    var canRender: Bool {
-        if case .unsupported = self { return false }
-        return true
-    }
-}
+// DrawingKind and LoadFailure come from DXFGeometry: the routing decision and the failure
+// messages are plain data with no Apple types in them, so they are unit-tested on machines
+// this app cannot be built on.
 
 /// A drawing that has been flattened, ready to draw.
 struct LoadedDrawing {
@@ -39,60 +16,27 @@ struct LoadedDrawing {
     var skipped: [String: Int]
 }
 
-/// Why a drawing could not be shown.
-struct LoadFailure: Error, Identifiable {
-    enum Reason {
-        case unsupportedType(String)
-        case unreadable(String)
-        case empty
-        /// A DXF that is really a binary DXF, which SwiftDXF does not read.
-        case binaryDXF
-        /// The file is fine but has no model-space geometry to show.
-        case noGeometry
-    }
-
-    let id = UUID()
-    var fileName: String
-    var reason: Reason
-
-    var message: String {
-        switch reason {
-        case .unsupportedType(let ext):
-            return ext.isEmpty
-                ? "This file has no extension, so its type is unknown."
-                : ".\(ext) files cannot be shown here."
-        case .unreadable(let detail):
-            return detail
-        case .empty:
-            return "The file is empty."
-        case .binaryDXF:
-            return "This is a binary DXF. Save it as ASCII DXF to open it here."
-        case .noGeometry:
-            return "The file parsed, but it holds no model-space geometry."
-        }
-    }
-}
-
 /// Reads a drawing off the main thread.
 ///
-/// Parsing a large DXF takes long enough to drop frames, so it runs detached and reports
-/// back on the main actor.
+/// Parsing a large DXF takes long enough to drop frames, so the caller awaits this from a
+/// `Task` and SwiftUI updates when it reports back.
 enum DrawingLoader {
-    /// Reads and flattens a drawing.
+    /// Reads and flattens a DXF.
     ///
     /// - Parameters:
     ///   - url: A file the app has access to; security-scoped URLs are opened here.
     ///   - onDarkBackground: Whether ACI 7 should render white.
-    static func load(url: URL, onDarkBackground: Bool = true) async -> Result<LoadedDrawing, LoadFailure> {
+    static func load(
+        url: URL,
+        onDarkBackground: Bool = true
+    ) async -> Result<LoadedDrawing, LoadFailure> {
         let name = url.lastPathComponent
         let kind = DrawingKind(fileName: name)
-
         guard kind.canRender else {
-            if case let .unsupported(ext) = kind {
-                return .failure(
-                    LoadFailure(fileName: name, reason: .unsupportedType(ext)))
-            }
-            return .failure(LoadFailure(fileName: name, reason: .unsupportedType("")))
+            return .failure(
+                LoadFailure(
+                    fileName: name,
+                    reason: .unsupportedType(kind.fileExtension)))
         }
 
         // A file from the document picker lives outside the sandbox until this is called.
@@ -112,33 +56,33 @@ enum DrawingLoader {
             return .failure(LoadFailure(fileName: name, reason: .empty))
         }
 
-        // SwiftDXF reads ASCII DXF only; a binary DXF needs a clear message, not a parse error.
+        // SwiftDXF reads ASCII DXF only; a binary DXF needs a clear message, not a parse
+        // error from deep inside the reader.
         if DXF.isBinary(data) {
             return .failure(LoadFailure(fileName: name, reason: .binaryDXF))
         }
 
         let started = Date()
-        // Paper space is skipped: a phone screen showing a title block scaled to a whole
-        // sheet is not what "open this drawing" means.
+        // Paper space is skipped: a phone screen showing a title block scaled down to a
+        // whole sheet is not what "open this drawing" means.
         var options = DXF.ReadOptions()
         options.expandBlocks = true
         options.skipPaperSpace = true
 
         let drawing: DXF.Drawing
         do {
-            // `read(data:)` handles the code-page decode and the binary-DXF check itself.
             drawing = try DXF.read(data: data, options: options)
         } catch {
-            let detail = errorMessage(for: error)
             return .failure(
-                LoadFailure(fileName: name, reason: .unreadable(detail)))
+                LoadFailure(
+                    fileName: name, reason: .unreadable(errorMessage(for: error))))
         }
 
-        let scene = SceneBuilder().build(
-            drawing, onDarkBackground: onDarkBackground)
+        let scene = SceneBuilder().build(drawing, onDarkBackground: onDarkBackground)
 
-        guard let viewport = Viewport.fit(
-            points: scene.samplePoints, fallback: scene.bounds)
+        guard
+            let viewport = Viewport.fit(
+                points: scene.samplePoints, fallback: scene.bounds)
         else {
             return .failure(LoadFailure(fileName: name, reason: .noGeometry))
         }
@@ -154,7 +98,7 @@ enum DrawingLoader {
         )
     }
 
-    /// Turns a parse error into something a user can act on.
+    /// Turns a parse error into something a reader can act on.
     private static func errorMessage(for error: Error) -> String {
         guard let dxfError = error as? DXF.Error else {
             return error.localizedDescription

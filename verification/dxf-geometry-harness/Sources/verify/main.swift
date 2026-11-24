@@ -468,6 +468,125 @@ do {
     check(zero.scale.isFinite && zero.scale > 0, "zero-size view does not divide by zero")
 }
 
+// MARK: - File routing
+
+section("DrawingKind")
+check(DrawingKind(fileName: "plan.dxf") == .dxf, "dxf")
+check(DrawingKind(fileName: "PLAN.DXF") == .dxf, "dxf upper")
+check(DrawingKind(fileName: "site.dwg") == .dwg, "dwg")
+check(DrawingKind(fileName: "Site.DWG") == .dwg, "dwg mixed")
+check(DrawingKind(fileName: "sheet.pdf") == .pdf, "pdf")
+check(DrawingKind(fileName: "floor.plan.v2.dxf") == .dxf, "dotted name uses the last part")
+check(DrawingKind(fileName: "report.final.pdf") == .pdf, "dotted pdf")
+check(DrawingKind(fileName: "notes.txt") == .unsupported(extension: "txt"), "txt rejected")
+check(DrawingKind(fileName: "README") == .unsupported(extension: ""), "no extension")
+check(!DrawingKind(fileName: "notes.txt").canRender, "txt cannot be rendered")
+check(!DrawingKind(fileName: "README").canRender, "no extension cannot be rendered")
+check(DrawingKind(fileName: "a.dxf").canRender, "dxf can be rendered")
+check(DrawingKind(fileName: "a.dwg").canRender, "dwg can be rendered")
+check(DrawingKind(fileName: "a.pdf").canRender, "pdf can be rendered")
+check(DrawingKind(fileName: "a.dxf").fileExtension == "dxf", "dxf extension")
+// Foundation treats a leading dot as the start of the name, not of an extension, so
+// ".dxf" has no extension. The app therefore refuses it rather than guessing.
+check(DrawingKind(fileName: ".dxf") == .unsupported(extension: ""), "a dotfile has no extension")
+check(DrawingKind(fileName: "trailing.") == .unsupported(extension: ""), "trailing dot")
+
+section("LoadFailure messages")
+do {
+    let unsupported = LoadFailure(fileName: "a.step", reason: .unsupportedType("step"))
+    check(unsupported.message == ".step files cannot be shown here.", "names the extension", unsupported.message)
+    check(unsupported.title == "Could not open a.step", "title names the file", unsupported.title)
+
+    let noExtension = LoadFailure(fileName: "README", reason: .unsupportedType(""))
+    check(noExtension.message.contains("no extension"), "explains a missing extension", noExtension.message)
+
+    let empty = LoadFailure(fileName: "a.dxf", reason: .empty)
+    check(empty.message == "The file is empty.", "empty message")
+
+    let binary = LoadFailure(fileName: "a.dxf", reason: .binaryDXF)
+    check(binary.message.contains("binary DXF"), "binary message says what to do", binary.message)
+
+    let nothing = LoadFailure(fileName: "a.dxf", reason: .noGeometry)
+    check(nothing.message.contains("no model-space geometry"), "no-geometry message", nothing.message)
+
+    let detail = LoadFailure(fileName: "a.dxf", reason: .unreadable("bad group code"))
+    check(detail.message == "bad group code", "an unreadable message passes the detail through", detail.message)
+
+    let anonymous = LoadFailure(fileName: "", reason: .empty)
+    check(anonymous.title == "Could not open the file", "title without a name", anonymous.title)
+
+    // Two failures are distinct objects even when they describe the same thing, so a
+    // repeated error still re-presents its alert.
+    let a = LoadFailure(fileName: "a.dxf", reason: .empty)
+    let b = LoadFailure(fileName: "a.dxf", reason: .empty)
+    check(a.id != b.id, "each failure has its own identity")
+    check(a.reason == b.reason, "the reason itself compares equal")
+}
+
+// MARK: - Bundle serving
+
+section("Bundle serving: the drawing endpoint")
+check(BundleServing.isDrawingRequest(path: "/__dwg__"), "exact path")
+check(BundleServing.isDrawingRequest(path: "/anything/__dwg__"), "suffix path")
+check(!BundleServing.isDrawingRequest(path: "/index.html"), "a file is not the drawing")
+check(!BundleServing.isDrawingRequest(path: "/__dwg__/x"), "a suffix is not enough")
+
+section("Bundle serving: path escape")
+do {
+    let root = URL(fileURLWithPath: "/app/dwgviewer")
+
+    let index = BundleServing.relativeFile(for: "/index.html", root: root)
+    check(index?.lastPathComponent == "index.html", "a normal file resolves")
+    check(index?.path.hasPrefix("/app/dwgviewer/") == true, "and stays inside the bundle")
+
+    // An empty path means the site root.
+    check(BundleServing.relativeFile(for: "/", root: root)?.lastPathComponent == "index.html",
+          "root maps to index.html")
+    check(BundleServing.relativeFile(for: "", root: root)?.lastPathComponent == "index.html",
+          "empty maps to index.html")
+
+    // The one that matters: nothing may leave the bundle.
+    check(BundleServing.relativeFile(for: "/../secrets.txt", root: root) == nil,
+          "a relative escape is refused")
+    check(BundleServing.relativeFile(for: "/../../etc/passwd", root: root) == nil,
+          "a deeper escape is refused")
+    check(BundleServing.relativeFile(for: "/assets/../../secrets", root: root) == nil,
+          "an escape hidden mid-path is refused")
+
+    // A sibling directory that merely shares a string prefix is not inside the bundle.
+    let siblingRoot = URL(fileURLWithPath: "/app/dwg")
+    check(BundleServing.relativeFile(for: "/../dwgviewer/index.html", root: siblingRoot) == nil,
+          "a prefix-sharing sibling is refused")
+
+    check(BundleServing.relativeFile(for: "/assets/app.js", root: root)?.path.hasSuffix("assets/app.js") == true,
+          "a nested file resolves")
+}
+
+section("Bundle serving: MIME types")
+do {
+    check(BundleServing.mimeType(forExtension: "wasm") == "application/wasm",
+          "wasm must be application/wasm for streaming instantiation",
+          BundleServing.mimeType(forExtension: "wasm"))
+    check(BundleServing.mimeType(forExtension: "JS").hasPrefix("text/javascript"),
+          "js is javascript, case-insensitively",
+          BundleServing.mimeType(forExtension: "JS"))
+    check(BundleServing.mimeType(forExtension: "mjs").hasPrefix("text/javascript"), "mjs too")
+    check(BundleServing.mimeType(forExtension: "html").hasPrefix("text/html"), "html")
+    check(BundleServing.mimeType(forExtension: "css").hasPrefix("text/css"), "css")
+    check(BundleServing.mimeType(forExtension: "somethingelse") == "application/octet-stream",
+          "unknown types are octets")
+}
+
+section("Bundle serving: headers")
+do {
+    let headers = BundleServing.headers(mime: "application/wasm", byteCount: 1234)
+    check(headers["Content-Type"] == "application/wasm", "content type")
+    check(headers["Content-Length"] == "1234", "content length is the byte count")
+    check(headers["Cache-Control"] == "no-store", "never cached")
+    check(headers["Cross-Origin-Embedder-Policy"] == "require-corp",
+          "the policy the wasm worker needs", headers["Cross-Origin-Embedder-Policy"] ?? "missing")
+}
+
 // MARK: - Result
 
 print("")

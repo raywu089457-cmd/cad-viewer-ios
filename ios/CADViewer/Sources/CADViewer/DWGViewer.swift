@@ -97,8 +97,7 @@ final class DWGViewerModel {
             return
         }
 
-        let handler = ViewerSchemeHandler(
-            root: viewerRoot, drawing: data, drawingName: fileName)
+        let handler = ViewerSchemeHandler(root: viewerRoot, drawing: data)
         schemeHandler = handler
 
         let configuration = WKWebViewConfiguration()

@@ -6,9 +6,13 @@ struct DXFViewer: View {
     var drawing: LoadedDrawing
 
     @State private var transform: ViewTransform
-    /// The transform when the current gesture began. Gesture deltas apply to this base
-    /// rather than to the previous frame, which is what stops a pinch from drifting.
-    @State private var gestureBase: ViewTransform?
+    /// The transform when the current pan began. Gesture deltas apply to this base rather
+    /// than to the previous frame, which is what stops a drag from drifting.
+    @State private var panBase: ViewTransform?
+    /// The transform when the current pinch began, kept separately from `panBase`: both
+    /// gestures are live at once, and sharing one base makes the second one start from a
+    /// stale transform the moment the first one ends.
+    @State private var zoomBase: ViewTransform?
     @State private var showsDetails = false
 
     private static let background = Color(
@@ -33,8 +37,8 @@ struct DXFViewer: View {
             .contentShape(Rectangle())
             .gesture(panGesture)
             .simultaneousGesture(zoomGesture)
-            .onTapGesture(count: 2) { fit() }
-            .onAppear { fit() }
+            .onTapGesture(count: 2) { fit(to: proxy.size) }
+            .onAppear { fit(to: proxy.size) }
             .onChange(of: proxy.size) { _, newSize in
                 transform.resize(to: newSize.screenSize)
             }
@@ -61,21 +65,21 @@ struct DXFViewer: View {
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                let base = gestureBase ?? transform
-                if gestureBase == nil { gestureBase = base }
+                let base = panBase ?? transform
+                if panBase == nil { panBase = base }
                 var next = base
                 next.pan(by: value.translation.screenPoint)
                 transform = next
             }
-            .onEnded { _ in gestureBase = nil }
+            .onEnded { _ in panBase = nil }
     }
 
     /// Pinch to zoom around the fingers.
     private var zoomGesture: some Gesture {
         MagnifyGesture(minimumScaleDelta: 0.01)
             .onChanged { value in
-                let base = gestureBase ?? transform
-                if gestureBase == nil { gestureBase = base }
+                let base = zoomBase ?? transform
+                if zoomBase == nil { zoomBase = base }
                 var next = base
                 // `startAnchor` is normalised, so scale it back to screen points.
                 let anchor = ScreenPoint(
@@ -85,14 +89,17 @@ struct DXFViewer: View {
                 next.zoom(by: value.magnification, around: anchor)
                 transform = next
             }
-            .onEnded { _ in gestureBase = nil }
+            .onEnded { _ in zoomBase = nil }
     }
 
     /// Frames the whole drawing again.
-    private func fit() {
+    ///
+    /// Takes the size rather than reading `transform.viewSize`, because on first appearance
+    /// that still holds the placeholder: `onAppear` can run before the geometry is measured.
+    private func fit(to size: CGSize) {
+        let target = size.screenSize
         withAnimation(.easeOut(duration: 0.22)) {
-            transform = ViewTransform.fitting(
-                drawing.viewport.bounds, in: transform.viewSize)
+            transform = ViewTransform.fitting(drawing.viewport.bounds, in: target)
         }
     }
 
@@ -111,7 +118,8 @@ struct DXFViewer: View {
 
     private var controls: some View {
         VStack(spacing: 0) {
-            Button(action: fit) {
+            // By the time anyone taps this, `viewSize` holds the measured size.
+            Button { fit(to: transform.cgSize) } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
                     .frame(width: 44, height: 44)
             }
@@ -169,12 +177,11 @@ struct DXFViewer: View {
                 }
                 Section("Read in") {
                     LabeledContent("Time", value: Self.format(drawing.duration) + " s")
-                    if !drawing.skipped.isEmpty {
-                        ForEach(
-                            drawing.skipped.sorted(by: { $0.key < $1.key }), id: \.key
-                        ) { entry in
-                            LabeledContent(entry.key, value: String(entry.value))
-                        }
+                    // `ForEach` needs an identity, and a dictionary's sorted entries are
+                    // tuples, which Swift cannot key-path into. A tiny named row type is both
+                    // compilable and clearer than `id: \.key` would have been.
+                    ForEach(Self.rows(from: drawing.skipped), id: \.entity) { row in
+                        LabeledContent(row.entity, value: String(row.count))
                     }
                 }
             }
@@ -191,5 +198,19 @@ struct DXFViewer: View {
 
     private static func format(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...2)))
+    }
+
+    /// One row of the "skipped entities" list.
+    private struct SkippedRow: Identifiable {
+        var entity: String
+        var count: Int
+        var id: String { entity }
+    }
+
+    /// Skipped entity types, alphabetically, as rows.
+    private static func rows(from skipped: [String: Int]) -> [SkippedRow] {
+        skipped
+            .map { SkippedRow(entity: $0.key, count: $0.value) }
+            .sorted { $0.entity < $1.entity }
     }
 }

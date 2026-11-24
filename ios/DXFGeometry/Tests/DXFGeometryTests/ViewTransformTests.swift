@@ -1,6 +1,5 @@
 import Testing
-import CADViewer
-import DXFGeometry
+@testable import DXFGeometry
 
 /// The pan/zoom arithmetic, which is the part of a drawing viewer that cannot be eyeballed
 /// from a screenshot.

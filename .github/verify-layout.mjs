@@ -117,12 +117,16 @@ mustExist('ios/web/vite.config.js')
 mustExist('verification/parse-check.sh')
 mustExist('verification/dxf-geometry-harness/run.sh')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/ViewTransform.swift')
+mustExist('ios/DXFGeometry/Sources/DXFGeometry/FileRouting.swift')
+mustExist('ios/DXFGeometry/Sources/DXFGeometry/BundleServing.swift')
+mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/FileRoutingTests.swift')
 mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
 
 // Each of the three formats must be routed and shown, which is the whole point of the app.
 {
+  // The routing decision lives with the geometry now, so it can be tested without Xcode.
   const loader = readFileSync(
-    join(root, 'ios/CADViewer/Sources/CADViewer/DrawingLoader.swift'),
+    join(root, 'ios/DXFGeometry/Sources/DXFGeometry/FileRouting.swift'),
     'utf8'
   )
   for (const format of ['dxf', 'dwg', 'pdf']) {

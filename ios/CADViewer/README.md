@@ -45,5 +45,18 @@ by SwiftPM. It is not edited by hand.
 
 ## Tests
 
-`Tests/CADViewerTests` covers the routing. Everything else here needs a simulator, which is
-why the arithmetic lives in `DXFGeometry` where it can be tested without one.
+There is no test target here, deliberately. Every file in this package is SwiftUI, WebKit
+or PDFKit, which needs a simulator to exercise at all; a test target could only reach the
+boring parts and would imply coverage the layer does not have.
+
+Everything that could be tested was moved to `DXFGeometry`:
+
+| Moved | Now tested by |
+|---|---|
+| `DrawingKind` (the routing decision) | `FileRoutingTests` |
+| `LoadFailure` (the messages a reader sees) | `FileRoutingTests` |
+| `ViewTransform` (pan, zoom, fit) | `ViewTransformTests` |
+| the flattening | `SceneBuilderTests` |
+
+Run them with `swift test` in `../DXFGeometry`, or `./run.sh verify` in
+`../../verification/dxf-geometry-harness` on a machine without an Apple SDK.

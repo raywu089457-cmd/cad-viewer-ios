@@ -16,23 +16,12 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
     private let root: URL
     /// The DWG the page should open, set before the page loads.
     private var drawing: Data?
-    private var drawingName: String
     private let lock = NSLock()
 
-    init(root: URL, drawing: Data?, drawingName: String) {
+    init(root: URL, drawing: Data?) {
         self.root = root
         self.drawing = drawing
-        self.drawingName = drawingName
         super.init()
-    }
-
-    /// Swaps the drawing without reloading the page, so opening a second DWG keeps the
-    /// parsed engine warm.
-    func setDrawing(_ data: Data, name: String) {
-        lock.lock()
-        drawing = data
-        drawingName = name
-        lock.unlock()
     }
 
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
@@ -42,7 +31,7 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
         }
 
         // The viewer fetches this to get the bytes it is meant to draw.
-        if url.path.hasSuffix("/__dwg__") {
+        if BundleServing.isDrawingRequest(path: url.path) {
             lock.lock()
             let payload = drawing
             lock.unlock()
@@ -54,12 +43,8 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
             return
         }
 
-        var path = url.path
-        if path.isEmpty || path == "/" { path = "/index.html" }
-        // Refuse anything that escapes the bundle, since the path comes from the page.
-        let relative = path.hasPrefix("/") ? String(path.dropFirst()) : path
-        let file = root.appendingPathComponent(relative).standardizedFileURL
-        guard file.path.hasPrefix(root.standardizedFileURL.path) else {
+        // Refuse anything that escapes the bundle: the path comes from the page.
+        guard let file = BundleServing.relativeFile(for: url.path, root: root) else {
             respond(task, status: 403, mime: "text/plain", body: Data("forbidden".utf8))
             return
         }
@@ -67,7 +52,7 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
             respond(task, status: 404, mime: "text/plain", body: Data("not found".utf8))
             return
         }
-        respond(task, status: 200, mime: Self.mimeType(for: file.pathExtension), body: body)
+        respond(task, status: 200, mime: BundleServing.mimeType(forExtension: file.pathExtension), body: body)
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {
@@ -78,14 +63,7 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
         _ task: WKURLSchemeTask, status: Int, mime: String, body: Data
     ) {
         guard let url = task.request.url else { return }
-        let headers = [
-            "Content-Type": mime,
-            "Content-Length": String(body.count),
-            "Cache-Control": "no-store",
-            // The wasm build of LibreDWG needs these to run at full speed.
-            "Cross-Origin-Opener-Policy": "same-origin",
-            "Cross-Origin-Embedder-Policy": "require-corp"
-        ]
+        let headers = BundleServing.headers(mime: mime, byteCount: body.count)
         guard
             let response = HTTPURLResponse(
                 url: url, statusCode: status, httpVersion: "HTTP/1.1",
@@ -99,20 +77,4 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
         task.didFinish()
     }
 
-    /// WebKit needs the MIME type right: `application/wasm` for streaming instantiation,
-    /// and a JavaScript type or the worker is refused.
-    private static func mimeType(for ext: String) -> String {
-        switch ext.lowercased() {
-        case "html": return "text/html; charset=utf-8"
-        case "js", "mjs": return "text/javascript; charset=utf-8"
-        case "css": return "text/css; charset=utf-8"
-        case "wasm": return "application/wasm"
-        case "json": return "application/json"
-        case "svg": return "image/svg+xml"
-        case "png": return "image/png"
-        case "woff2": return "font/woff2"
-        case "ttf": return "font/ttf"
-        default: return "application/octet-stream"
-        }
-    }
 }

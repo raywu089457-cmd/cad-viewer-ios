@@ -5,7 +5,12 @@ import DXFGeometry
 /// The app's only screen: pick a file, then route it to the engine that can draw it.
 struct RootView: View {
     /// State of the file currently on screen, if any.
-    private enum Opened: Equatable {
+    ///
+    /// Not `Equatable`: the DXF case carries a `LoadedDrawing`, which holds a whole
+    /// flattened scene. Comparing those to decide whether the view changed would walk
+    /// thousands of points on every SwiftUI update, for no benefit — the `switch` below
+    /// only needs destructuring.
+    private enum Opened {
         case dxf(LoadedDrawing)
         case dwg(url: URL, name: String)
         case pdf(url: URL, name: String)
@@ -60,15 +65,17 @@ struct RootView: View {
         }
         // Opening a file from Files, Mail or another app.
         .onOpenURL { open($0) }
-        .alert(item: $failure) { failure in
-            Alert(
-                title: Text(
-                    failure.fileName.isEmpty
-                        ? "Could not open the file"
-                        : "Could not open \(failure.fileName)"),
-                message: Text(failure.message),
-                dismissButton: .default(Text("OK"))
-            )
+        .alert(
+            failure?.title ?? "",
+            isPresented: Binding(
+                get: { failure != nil },
+                set: { if !$0 { failure = nil } }
+            ),
+            presenting: failure
+        ) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { failure in
+            Text(failure.message)
         }
     }
 
