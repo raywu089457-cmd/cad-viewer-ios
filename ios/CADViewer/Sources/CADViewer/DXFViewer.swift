@@ -42,6 +42,13 @@ struct DXFViewer: View {
             .onChange(of: proxy.size) { _, newSize in
                 transform.resize(to: newSize.screenSize)
             }
+            // Belt and braces for the same problem: `RootView` already identifies this view by
+            // file name so a new drawing gets a new viewer, but if a caller ever passes a
+            // different drawing to the same instance, the framing has to follow it rather
+            // than keep the old drawing's centre and scale.
+            .onChange(of: drawing.name) { _, _ in
+                fit(to: proxy.size)
+            }
             .overlay(alignment: .bottomTrailing) { controls }
             .overlay(alignment: .top) { outsideHint }
         }

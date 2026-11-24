@@ -41,7 +41,12 @@ struct RootView: View {
             Group {
                 switch opened {
                 case .dxf(let drawing):
+                    // Identifying the viewer by file forces SwiftUI to build a new one when a
+                    // different drawing is opened. Without it the same view persists and its
+                    // `@State` transform keeps the previous drawing's centre and scale: the
+                    // second file would open showing the first file's view of the world.
                     DXFViewer(drawing: drawing)
+                        .id(drawing.name)
                 case .dwg(let url, let name):
                     DWGViewer(url: url, fileName: name)
                 case .pdf(let url, let name):

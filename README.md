@@ -40,7 +40,7 @@ xcodegen generate
 open CADViewer.xcodeproj
 ```
 
-## 三個容易踩的坑
+## 四個容易踩的坑
 
 **DWG 不能用 `file://`。** `fetch`、Web Worker、`WebAssembly.instantiateStreaming` 在上面
 全被限制，wasm 載不起來。做法是用 `WKURLSchemeHandler` 開一個 `cadviewer://`，
@@ -51,11 +51,16 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 **PDF 不要自己畫。** `PDFKit` 已經是系統的 PDF 引擎，重寫只會更慢、更差，
 而且會漏掉選取、連結、搜尋這些使用者預期的行為。
 
+**`@State` 的初始值只生效一次。** 開完一張圖再開第二張，view 裡 `@State` 的 transform 會保留舊值——
+新的圖會用上一張的縮放位置。修法是用 `.id(drawing.name)` 強制重建，再加一層
+`onChange` 保險。同一個坑也出現在載入競態：慢的解析完成時會覆蓋後來選的檔案，
+所以載入帶著世代編號。
+
 ## 已驗證 / 未驗證
 
 實測通過（不需要 Mac）：
 
-- 幾何核心與檔案路由 **187 項檢查**：圖元攤平、ACI 色票、取景、縮放與平移算式、
+- 幾何核心與檔案路由 **222 項檢查**：圖元攤平、ACI 色票、取景、縮放與平移算式、
   副檔名路由、錯誤訊息、bundle 路徑逃逸（4 種）、MIME type
 - `example_2018.dwg` → DXF：158 個實體全部轉成幾何，零 NaN，層名與文字正確
 - DWG 網頁端在 WebKit（Safari 引擎）iPhone 尺寸下開圖成功，零 console 錯誤
@@ -68,7 +73,7 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 
 **為什麼不是 Linux CI 全包**：SwiftDXF 在 Linux 上編譯不過 —— 它的 `CodePage` 用
 CoreFoundation 的 `CFStringEncoding` 解碼，guard 寫的是 `canImport(CoreFoundation)`，
-在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以那 187 項檢查只能在
+在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以那 222 項檢查只能在
 Mac 上跑；CI 只做不需要 Swift 的部分（佈局檢查、DWG 網頁端建置）。
 
 ## 授權
