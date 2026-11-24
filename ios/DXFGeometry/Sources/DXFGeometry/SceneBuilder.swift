@@ -342,13 +342,13 @@ public struct SceneBuilder {
             // label is at most a few characters.
             let label = Self.dimensionLabel(d) ?? ""
             let gapHalf = max(Double(label.count) * max(reference / 200, 1e-9) * 0.35, 0)
-            if gapHalf > 0, distance(aOn, bOn) > gapHalf * 3 {
-                let textOn = project(point(d.textPosition), onto: aOn, bOn)
-                let gapStart = min(max(textOn - gapHalf, 0), distance(aOn, bOn))
-                let gapEnd = min(max(textOn + gapHalf, 0), distance(aOn, bOn))
-                if gapStart > 0 { out.append(([aOn, along(aOn, bOn, gapStart)], false)) }
-                if gapEnd < distance(aOn, bOn) {
-                    out.append(([along(aOn, bOn, gapEnd), bOn], false))
+            if gapHalf > 0, aOn.distance(to: bOn) > gapHalf * 3 {
+                let textOn = point(d.textPosition).projection(onto: aOn, bOn)
+                let gapStart = min(max(textOn - gapHalf, 0), aOn.distance(to: bOn))
+                let gapEnd = min(max(textOn + gapHalf, 0), aOn.distance(to: bOn))
+                if gapStart > 0 { out.append(([aOn, Point.along(aOn, bOn, gapStart)], false)) }
+                if gapEnd < aOn.distance(to: bOn) {
+                    out.append(([Point.along(aOn, bOn, gapEnd), bOn], false))
                 }
             } else {
                 out.append(([aOn, bOn], false))
@@ -731,28 +731,5 @@ public struct SceneBuilder {
 
         guard sawGeometry else { return fallback }
         return accumulator.bounds ?? fallback
-    }
-}
-
-// MARK: - Dimension line helpers
-
-extension SceneBuilder {
-    /// Distance between two points.
-    func distance(_ a: Point, _ b: Point) -> Double {
-        hypot(b.x - a.x, b.y - a.y)
-    }
-
-    /// How far along a->b the closest point to p lies.
-    func project(_ p: Point, onto a: Point, _ b: Point) -> Double {
-        let length = distance(a, b)
-        guard length > 0 else { return 0 }
-        return ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / length
-    }
-
-    /// The point t along a->b.
-    func along(_ a: Point, _ b: Point, _ t: Double) -> Point {
-        let length = distance(a, b)
-        guard length > 0 else { return a }
-        return Point(a.x + (b.x - a.x) * t / length, a.y + (b.y - a.y) * t / length)
     }
 }

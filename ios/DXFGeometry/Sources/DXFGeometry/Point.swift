@@ -65,3 +65,29 @@ public struct Bounds: Equatable, Sendable {
         }
     }
 }
+
+/// The geometry a dimension line needs, on the type it is about.
+///
+/// These were methods on `SceneBuilder` while only the dimension code used them. They are
+/// plain point arithmetic, and the harness — a separate package — needs them to test the gap
+/// in a dimension line, so they belong here and are public.
+extension Point {
+
+    /// How far along the segment from `start` to `end` the closest point to this one lies.
+    ///
+    /// Signed: a point behind the start gives a negative value.
+    public func projection(onto start: Point, _ end: Point) -> Double {
+        let length = start.distance(to: end)
+        guard length > 0 else { return 0 }
+        return ((x - start.x) * (end.x - start.x) + (y - start.y) * (end.y - start.y)) / length
+    }
+
+    /// The point `t` along the segment from `start` to `end`.
+    public static func along(_ start: Point, _ end: Point, _ t: Double) -> Point {
+        let length = start.distance(to: end)
+        guard length > 0 else { return start }
+        return Point(
+            start.x + (end.x - start.x) * t / length,
+            start.y + (end.y - start.y) * t / length)
+    }
+}

@@ -976,20 +976,19 @@ do {
     // The dimension line is broken where the text sits, as CAD does. A line through the
     // number makes both hard to read, which is what the fixtures looked like before.
     // The helpers are the testable part: a gap is a projection along the line.
-    let builder = SceneBuilder()
     let a = Point(0, 0)
     let b = Point(100, 0)
-    check(builder.distance(a, b) == 100, "distance")
-    check(builder.project(Point(40, 10), onto: a, b) == 40, "projection ignores the offset")
-    check(builder.project(Point(-10, 0), onto: a, b) < 0, "a point behind the start is negative")
-    let mid = builder.along(a, b, 50)
+    check(a.distance(to: b) == 100, "distance")
+    check(Point(40, 10).projection(onto: a, b) == 40, "projection ignores the offset")
+    check(Point(-10, 0).projection(onto: a, b) < 0, "a point behind the start is negative")
+    let mid = Point.along(a, b, 50)
     check(mid == Point(50, 0), "halfway along", "(mid)")
-    check(builder.along(a, b, 0) == a, "the start")
-    check(builder.along(a, b, 100) == b, "the end")
+    check(Point.along(a, b, 0) == a, "the start")
+    check(Point.along(a, b, 100) == b, "the end")
     // A degenerate line must not divide by zero.
-    check(builder.distance(a, a) == 0, "a zero-length line")
-    check(builder.along(a, a, 5) == a, "and stays put")
-    check(builder.project(Point(1, 1), onto: a, a) == 0, "or projects to its start")
+    check(a.distance(to: a) == 0, "a zero-length line")
+    check(Point.along(a, a, 5) == a, "and stays put")
+    check(Point(1, 1).projection(onto: a, a) == 0, "or projects to its start")
 }
 section("Block attributes")
 do {
