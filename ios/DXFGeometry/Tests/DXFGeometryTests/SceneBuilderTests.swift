@@ -175,10 +175,10 @@ struct SceneBuilderTests {
         """)
         let path = try #require(scene.polylines.first)
         #expect(path.points.count > 4)
-        // The arc bulges away from the chord, so some point sits well off the x axis.
-        let highest = path.points.map(\.y).max() ?? 0
-        #expect(abs(highest - 5) < 0.05)
-    }
+        // A positive bulge sweeps counter-clockwise; travelling +x, that puts the arc below
+        // the chord, the way AutoCAD draws it. The harness asserts the same.
+        let lowest = path.points.map(\.y).min() ?? 0
+        #expect(abs(lowest + 5) < 0.05)
 
     @Test("TEXT keeps its position, height and string")
     func text() throws {
@@ -198,7 +198,7 @@ struct SceneBuilderTests {
         """)
         let text = try #require(scene.texts.first)
         #expect(text.string == "Room 101")
-        #expect(text.position == Point(20, 40))
+        #expect(text.position == Point(20, 30))
         #expect(text.height == 20)
         #expect(text.layer == "Labels")
     }

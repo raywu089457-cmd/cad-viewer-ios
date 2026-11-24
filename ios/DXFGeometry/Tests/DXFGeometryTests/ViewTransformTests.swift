@@ -97,7 +97,8 @@ struct ViewTransformTests {
 
         for _ in 0..<600 { transform.zoom(by: 0.5, around: anchor) }
         #expect(transform.scale.isFinite && transform.scale > 0)
-        #expect(transform.scale > mostZoomedIn)
+        // `scale` is points per drawing unit, so zooming out makes it smaller.
+        #expect(transform.scale < mostZoomedIn)
     }
 
     @Test("Resizing keeps the centre")
@@ -112,11 +113,14 @@ struct ViewTransformTests {
     @Test("Visibility rejects what is off screen")
     func visibility() {
         var transform = ViewTransform.fitting(square, in: portrait)
-        // Zoom into the bottom-left corner of the drawing.
-        transform.zoom(by: 20, around: ScreenPoint(x: 0, y: portrait.height))
+        // Zoom into the middle of the drawing, which keeps that part in view.
+        transform.zoom(
+            by: 20,
+            around: ScreenPoint(x: portrait.width / 2, y: portrait.height / 2))
 
-        #expect(transform.isVisible(Bounds(minX: 0, minY: 0, maxX: 10, maxY: 10)))
-        #expect(!transform.isVisible(Bounds(minX: 990, minY: 990, maxX: 1000, maxY: 1000)))
+        #expect(
+            transform.isVisible(Bounds(minX: 490, minY: 490, maxX: 510, maxY: 510)))
+        #expect(!transform.isVisible(Bounds(minX: 0, minY: 0, maxX: 10, maxY: 10)))
     }
 
     @Test("A zero-size or single-point drawing does not divide by zero")

@@ -14,8 +14,12 @@ struct BlockAttributeTests {
     /// The fixture, which lives in the SwiftDXF checkout beside this package.
     private var fixtureURL: URL {
         get throws {
+            // .copy("Fixtures") puts the directory inside the bundle, so the file is looked
+            // up under it rather than at the root. Asking at the root returns nil, and the
+            // test then fails for a reason that has nothing to do with attributes.
             try #require(
-                Bundle.module.url(forResource: "attributes", withExtension: "dxf"))
+                Bundle.module.url(
+                    forResource: "attributes", withExtension: "dxf", subdirectory: "Fixtures"))
         }
     }
 

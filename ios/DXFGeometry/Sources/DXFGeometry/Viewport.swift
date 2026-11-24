@@ -51,10 +51,16 @@ public struct Viewport: Equatable, Sendable {
             return Viewport(bounds: fallback, fullBounds: fallback, expansionFactor: 1)
         }
 
+        // A drawing of one point, or of a single straight line, has zero extent on one axis
+        // — and for a lone point on both. Framing that literally gives a zero-size viewport,
+        // and the viewer then divides by it: the drawing appears as nothing at all. A small
+        // box around the point is what the reader needs to see anything.
+        let usable = Self.paddedIfDegenerate(everything)
+
         // Too few points for a percentile to mean anything: show everything.
         guard points.count >= 20 else {
             return Viewport(
-                bounds: everything, fullBounds: everything, expansionFactor: 1)
+                bounds: usable, fullBounds: everything, expansionFactor: 1)
         }
 
         let xs = points.map(\.x).sorted()
@@ -101,5 +107,30 @@ public struct Viewport: Equatable, Sendable {
         guard !sorted.isEmpty else { return 0 }
         let index = Int((Double(sorted.count - 1) * q).rounded())
         return sorted[max(0, min(sorted.count - 1, index))]
+    }
+
+    /// A bounds with a non-zero extent on both axes.
+    ///
+    /// A single point, or a horizontal line, has zero height. Framing that literally produces
+    /// a viewport the viewer cannot fit into, so a degenerate axis is given a small span around
+    /// the centre — proportional to the other axis when there is one, so a very wide line still
+    /// looks like a line rather than a dot.
+    static func paddedIfDegenerate(_ bounds: Bounds) -> Bounds {
+        let width = bounds.width
+        let height = bounds.height
+        guard width <= 0 || height <= 0 else { return bounds }
+
+        let centreX = (bounds.minX + bounds.maxX) / 2
+        let centreY = (bounds.minY + bounds.maxY) / 2
+        // A twentieth of whichever axis has extent, or one unit when neither does.
+        let span = max(max(width, height) / 20, 1)
+        let halfWidth = max(width, span) / 2
+        let halfHeight = max(height, span) / 2
+        return Bounds(
+            minX: centreX - halfWidth,
+            minY: centreY - halfHeight,
+            maxX: centreX + halfWidth,
+            maxY: centreY + halfHeight
+        )
     }
 }
