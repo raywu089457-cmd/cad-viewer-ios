@@ -165,7 +165,8 @@ jobs:
   swift-tests:
     name: Geometry tests and harness
     runs-on: ubuntu-latest
-    container: swift:5.10-jammy
+    # Swift 6: the suites use Swift Testing, which the 5.10 image does not carry.
+    container: swift:6.4-bookworm
     steps:
       - uses: actions/checkout@v4
 
