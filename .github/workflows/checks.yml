@@ -185,6 +185,14 @@ jobs:
         working-directory: ios/DXFGeometry
         run: swift test
 
+      - name: Resolve the harness
+        working-directory: verification/dxf-geometry-harness
+        run: swift package resolve
+
+      # The harness has its own checkout of the same dependency, resolved at a different time.
+      - name: Patch the harness dependency too
+        run: ./verification/patch-swiftdxf-for-linux.sh
+
       - name: Build the harness
         working-directory: verification/dxf-geometry-harness
         run: swift build -c release
