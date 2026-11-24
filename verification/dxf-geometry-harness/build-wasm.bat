@@ -1,9 +1,13 @@
 @echo off
-REM Builds the harnesses for wasm32-wasip1, for machines without an Apple SDK.
+REM Builds the harnesses for wasm32-wasip1, for a machine without an Apple SDK.
 REM
-REM Needs the Swift 6.4.3 Windows toolchain plus the wasm SDK unpacked at
-REM %TEMP%\wasmsdk\... (see the Swift "Swift SDK for WebAssembly" download). On a Mac,
-REM `run.sh` is the simpler path.
+REM Needs the Swift 6.4.3 Windows toolchain and the "Swift SDK for WebAssembly" unpacked,
+REM plus a local checkout of SwiftDXF (the SPM dependency cannot be fetched for wasm here,
+REM so its sources are compiled in directly).
+REM
+REM   git clone https://github.com/SecondMouseAU/SwiftDXF.git ..\..\SwiftDXF
+REM
+REM On a Mac, run.sh is the simpler path.
 setlocal
 set SW=C:\Users\ray\AppData\Local\Programs\Swift
 set PATH=%SW%\Toolchains\6.4.3+Asserts\usr\bin;%SW%\Runtimes\6.4.3\usr\bin;%PATH%
@@ -15,6 +19,7 @@ if not exist "%SDK%" (
 set FLAGS=-target wasm32-unknown-wasip1 -sdk %SDK%\WASI.sdk -resource-dir %SDK%\swift.xctoolchain\usr\lib\swift_static -static
 
 cd /d "%~dp0"
+where node >nul 2>nul || (echo node is required & exit /b 1)
 node mkfiles.js || exit /b 1
 swiftc.exe %FLAGS% -O -o scenecheck.wasm @files-exe.txt > buildlog-tool.txt 2>&1
 echo TOOL_RC=%ERRORLEVEL% >> buildlog-tool.txt

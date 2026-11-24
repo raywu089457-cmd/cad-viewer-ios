@@ -1,12 +1,19 @@
 # Geometry harnesses
 
-Two command-line tools for checking the parts that do not need Xcode, kept out of
-`ios/DXFGeometry` so SwiftPM does not try to build them as library targets.
+Two command-line tools that check the parts which do not need Xcode. They are a separate
+package, not targets inside `ios/DXFGeometry`, for two reasons:
+
+- They are executables with top-level code in `main.swift`. SwiftPM would build them for
+  every consumer of the library, and they would clash with the library's entry points.
+- Living outside means they import `DXFGeometry` the way an app does. That is not academic:
+  it is how a self-import and a missing `import Foundation` were caught.
 
 | Tool | Purpose |
 |---|---|
-| `verify` | the 60 checks: tessellation, ACI palette, viewport framing, pan/zoom maths |
+| `verify` | 60 checks: tessellation, the ACI palette, viewport framing, pan/zoom maths |
 | `scenecheck` | flattens a real DXF; `--svg` renders it, `--json` dumps the geometry |
+
+## Running
 
 ```bash
 ./run.sh verify
@@ -14,17 +21,30 @@ Two command-line tools for checking the parts that do not need Xcode, kept out o
 ./run.sh scenecheck --json < ../../out/example_2018.dxf | jq .counts
 ```
 
-`run.sh` stages the geometry sources and the harness into one module, strips the
-`import DXFGeometry` lines that would be circular, and compiles with the local toolchain.
-Nothing is left behind.
+The first run fetches SwiftDXF from GitHub.
 
-## Why these were built
+### Without an Apple SDK
 
-The app layer needs Xcode for SwiftUI, WebKit and PDFKit. The geometry does not, so the
-geometry is where the arithmetic lives — and this is how it was checked: 60 passing checks,
-plus a real drawing (`example_2018.dwg` converted to DXF) flattening to 262 polylines,
-2 fills and 12 text items with no non-finite coordinates.
+`build-wasm.bat` compiles the same harnesses for `wasm32-wasip1`, which is how they were
+developed on Windows. It needs the Swift 6.4.3 toolchain, the WebAssembly SDK, Node, and a
+local `SwiftDXF` checkout at the repository root, then:
 
-The canonical suites are `ios/DXFGeometry/Tests` (Swift Testing) and
-`ios/CADViewer/Tests`; these harnesses mirror the first one for machines that cannot run
-them.
+```bash
+./build-wasm.bat
+node --experimental-wasi-unstable-preview1 runwasm.mjs verify.wasm
+```
+
+One caveat it papers over: SwiftDXF's `CodePage` guards its CoreFoundation path with
+`canImport(CoreFoundation)`, which is true on wasm but lacks `CFStringEncoding`. `mkfiles.js`
+narrows that guard to `!os(WASI)` in the staged copy only. Apple platforms are untouched,
+which is why the patch lives here rather than in the package.
+
+## What the checks cover
+
+The 60 checks are the arithmetic a screenshot cannot prove: that a fit centres the drawing,
+that a pinch keeps the point under the fingers fixed, that zooming in and back out returns
+to the same view, that panning follows the finger in both axes, that the zoom limits hold
+under a hundred gestures, and that a zero-size drawing does not divide by zero.
+
+The canonical suites are `ios/DXFGeometry/Tests` and `ios/CADViewer/Tests` (Swift Testing).
+These harnesses mirror the first for machines that cannot run those.
