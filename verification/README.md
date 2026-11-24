@@ -17,6 +17,7 @@ claims in the top-level README are only worth anything if they can be re-run.
 | `shot-html.mjs` | render an SVG to PNG, for comparing native output |
 | `dbg.mjs` | inspect the SVG geometry a viewer produced |
 | `parse-check.sh` | syntax-check the SwiftUI/WebKit/PDF files without Xcode |
+| `verify-coordinates.mjs` | cross-check flattened geometry against the DXF, with its own reader |
 | `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses (187 checks) |
 
 ## Running one

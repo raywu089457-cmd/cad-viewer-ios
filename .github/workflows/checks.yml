@@ -122,3 +122,18 @@ jobs:
             exit 0
           fi
           exit "$status"
+
+  coordinates:
+    name: Geometry matches the file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every other check compares the pipeline against itself. This one has its own small
+      # DXF reader, shares no code with the Swift side, and asserts that the LINE endpoints
+      # and the CIRCLE radii in the file are what came out the other end.
+      - name: Cross-check a drawing with circles and lines
+        run: |
+          node $GITHUB_WORKSPACE/verification/verify-coordinates.mjs \
+            $GITHUB_WORKSPACE/verification/fixtures/circles.dxf \
+            $GITHUB_WORKSPACE/verification/fixtures/circles.json
