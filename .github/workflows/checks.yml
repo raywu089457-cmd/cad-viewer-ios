@@ -99,3 +99,26 @@ jobs:
             "$PWD/ios/web/dist" \
             "$PWD/samples/example_2018.dwg" \
             "$PWD/samples/example_2013.dwg"
+
+  syntax:
+    name: App layer parses
+    runs-on: ubuntu-latest
+    container: swift:5.10-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      # Syntax only, and only for the parts that do not need an Apple SDK to parse. This is
+      # a weak check: it catches a stray brace or a broken multi-line string, not a type
+      # error. It exists because those were real failures in this repository's app layer and
+      # nothing else here would find them on Linux.
+      - name: Parse the Swift sources
+        run: |
+          set +e
+          ./verification/parse-check.sh
+          status=$?
+          # 77 means no toolchain was available: nothing was checked, which is not a pass.
+          if [ "$status" -eq 77 ]; then
+            echo "::warning::no Swift toolchain; syntax was not checked"
+            exit 0
+          fi
+          exit "$status"
