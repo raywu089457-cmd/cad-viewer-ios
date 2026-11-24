@@ -168,5 +168,24 @@ async function openFromNative() {
 
 window.cadReload = openFromNative
 
+/**
+ * Opens a drawing the native side passes in directly.
+ *
+ * The first open uses `cadReload`, which fetches from the scheme handler. This is for a
+ * second drawing on a page that is already loaded: the wasm engine stays warm, so a reopen
+ * is much faster than a reload. Native calls it with base64 because a `WKWebView` has no
+ * other way to hand over bytes.
+ *
+ * @param {string} base64 - the drawing bytes
+ * @param {string} name - file name, shown in the status text
+ * @param {number} circleSides - curve tessellation
+ */
+window.cadOpenDwg = (base64, name, circleSides) =>
+  openDwg(
+    base64ToArrayBuffer(base64),
+    name || 'drawing.dwg',
+    circleSides || 100
+  )
+
 post('ready')
 await openFromNative()

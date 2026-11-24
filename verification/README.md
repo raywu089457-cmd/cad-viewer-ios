@@ -13,6 +13,7 @@ claims in the top-level README are only worth anything if they can be re-run.
 | `test-ff.mjs` | the same for flyfish file-viewer |
 | `test-webkit.mjs` | both of the above in WebKit at iPhone size |
 | `test-ios-web.mjs` | the app's own DWG bundle in WebKit |
+| `test-dwg-reopen.mjs` | the reopen path: a second DWG on an already-loaded page |
 | `shot-html.mjs` | render an SVG to PNG, for comparing native output |
 | `dbg.mjs` | inspect the SVG geometry a viewer produced |
 | `parse-check.sh` | syntax-check the SwiftUI/WebKit/PDF files without Xcode |
