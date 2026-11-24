@@ -399,3 +399,82 @@ struct PrimitiveBoundsTests {
         #expect(fill.bounds.maxY == 10)
     }
 }
+
+/// The curve tolerance, which decides how smooth every arc looks.
+@Suite("Curve tolerance")
+struct CurveToleranceTests {
+    /// Segments in a lone circle, optionally with header extents supplied.
+    private func circleSegments(radius: Double, withHeader: Bool) -> Int {
+        var header = ""
+        if withHeader {
+            header = """
+            9
+            $EXTMIN
+            10
+            \(-radius)
+            20
+            \(-radius)
+            9
+            $EXTMAX
+            10
+            \(radius)
+            20
+            \(radius)
+            """
+        }
+        let source = """
+        0
+        SECTION
+        2
+        HEADER
+        9
+        $ACADVER
+        1
+        AC1015
+        \(header)
+        0
+        ENDSEC
+        0
+        SECTION
+        2
+        ENTITIES
+        0
+        CIRCLE
+        10
+        0
+        20
+        0
+        40
+        \(radius)
+        0
+        ENDSEC
+        0
+        """
+        guard let drawing = try? DXF.read(text: source) else { return -1 }
+        return SceneBuilder().build(drawing).polylines.first?.points.count ?? -1
+    }
+
+    @Test("A missing header gives the same tessellation as a present one")
+    func headerIndependence() {
+        // R12 files usually have no $EXTMIN, so the tolerance has to be measured, not read.
+        let without = circleSegments(radius: 1_000_000, withHeader: false)
+        let with = circleSegments(radius: 1_000_000, withHeader: true)
+        #expect(without == with)
+        #expect(without > 16)
+    }
+
+    @Test("The same circle tessellates the same at any scale")
+    func scaleInvariance() {
+        // The tolerance is a fraction of the drawing size, so a circle looks equally smooth
+        // in a millimetre drawing and a metre one.
+        let tiny = circleSegments(radius: 0.5, withHeader: false)
+        let huge = circleSegments(radius: 1_000_000, withHeader: false)
+        #expect(abs(tiny - huge) <= 2)
+    }
+
+    @Test("A full circle stays within the segment cap")
+    func bounded() {
+        let huge = circleSegments(radius: 1_000_000, withHeader: false)
+        #expect(huge <= 60)
+    }
+}

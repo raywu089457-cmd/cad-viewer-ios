@@ -670,7 +670,9 @@ do {
         check(false, "line bounds fixture")
     }
 
-    // A circle's points are on the circumference; its bounds must be its box.
+    // A circle is tessellated into an inscribed polygon, so its extreme point is very close
+    // to the box but not exactly on it. What matters is that the cached box contains every
+    // point, or an on-screen circle would be culled.
     if let scene = build("""
         0
         CIRCLE
@@ -681,10 +683,20 @@ do {
         40
         25
         """), let circle = scene.polylines.first {
-        check(circle.bounds.minX >= 75 - 1e-9 && circle.bounds.minX <= 75 + 1e-9,
-              "circle bounds left", "(circle.bounds.minX)")
-        check(circle.bounds.maxX <= 125 + 1e-9 && circle.bounds.maxX >= 125 - 1e-9,
-              "circle bounds right", "(circle.bounds.maxX)")
+        let box = circle.bounds
+        let inside = circle.points.allSatisfy {
+            $0.x >= box.minX - 1e-9 && $0.x <= box.maxX + 1e-9 &&
+            $0.y >= box.minY - 1e-9 && $0.y <= box.maxY + 1e-9
+        }
+        check(inside, "every circle point is inside the cached box")
+        check(box.minX >= 75 - 1e-9 && box.minX < 76,
+              "the box hugs the left of the circle", "\(box.minX)")
+        check(box.maxX <= 125 + 1e-9 && box.maxX > 124,
+              "the box hugs the right of the circle", "\(box.maxX)")
+        check(box.minY >= 25 - 1e-9 && box.minY < 26,
+              "the box hugs the bottom", "\(box.minY)")
+        check(box.maxY <= 75 + 1e-9 && box.maxY > 74,
+              "the box hugs the top", "\(box.maxY)")
     } else {
         check(false, "circle bounds fixture")
     }
@@ -714,6 +726,84 @@ do {
     } else {
         check(false, "fill bounds fixture")
     }
+}
+
+section("Curve tolerance follows the geometry, not the header")
+do {
+    /// Segments in a lone circle, optionally with header extents supplied.
+    func circleSegments(radius: Double, withHeader: Bool) -> Int {
+        var header = ""
+        if withHeader {
+            header = """
+            9
+            $EXTMIN
+            10
+            \(-radius)
+            20
+            \(-radius)
+            9
+            $EXTMAX
+            10
+            \(radius)
+            20
+            \(radius)
+            """
+        }
+        let source = """
+        0
+        SECTION
+        2
+        HEADER
+        9
+        $ACADVER
+        1
+        AC1015
+        \(header)
+        0
+        ENDSEC
+        0
+        SECTION
+        2
+        ENTITIES
+        0
+        CIRCLE
+        10
+        0
+        20
+        0
+        40
+        \(radius)
+        0
+        ENDSEC
+        0
+        """
+        guard let drawing = try? DXF.read(text: source) else { return -1 }
+        return SceneBuilder().build(drawing).polylines.first?.points.count ?? -1
+    }
+
+    // A header that is missing must give the same result as one that is present, because the
+    // tolerance is measured from the geometry. R12 files usually have no `$EXTMIN` at all.
+    let withoutHeader = circleSegments(radius: 1_000_000, withHeader: false)
+    let withHeader = circleSegments(radius: 1_000_000, withHeader: true)
+    check(
+        withoutHeader == withHeader,
+        "a missing header gives the same tessellation",
+        "\(withoutHeader) vs \(withHeader)")
+    check(withoutHeader > 16, "a full circle is smooth", "\(withoutHeader)")
+
+    // Tessellation is deliberately scale-invariant: the tolerance is a fraction of the drawing
+    // size, so the same circle looks equally smooth whether the file is in millimetres or
+    // metres. This is the property that makes one tolerance work for every drawing.
+    let tiny = circleSegments(radius: 0.5, withHeader: false)
+    let huge = circleSegments(radius: 1_000_000, withHeader: false)
+    check(
+        abs(tiny - huge) <= 2,
+        "the same circle tessellates the same at any scale",
+        "tiny \(tiny) vs huge \(huge)")
+
+    // And the smoothness is bounded rather than unbounded: a circle never explodes into
+    // thousands of segments.
+    check(huge <= 60, "a full circle stays within the cap", "\(huge)")
 }
 
 // MARK: - Result

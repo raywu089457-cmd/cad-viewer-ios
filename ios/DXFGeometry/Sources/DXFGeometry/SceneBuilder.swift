@@ -102,14 +102,12 @@ public struct SceneBuilder {
 
         // The chord error is relative to the drawing size, so a millimetre drawing and a
         // metre drawing get the same visual smoothness.
-        let headerExtents: Bounds? = {
-            guard let lo = drawing.extMin, let hi = drawing.extMax else { return nil }
-            return Bounds(minX: lo.x, minY: lo.y, maxX: hi.x, maxY: hi.y)
-        }()
-        let reference = max(
-            headerExtents.map { hypot($0.width, $0.height) } ?? 0,
-            1
-        )
+        //
+        // The geometry is measured, not taken from the header. Headers are often missing
+        // entirely (R12 files usually have no `$EXTMIN`) and are sometimes badly wrong: one
+        // drawing here declares `$EXTMAX` a hundred times larger than anything it contains.
+        // Either way the tolerance would be wrong for every curve in the file.
+        let reference = max(Self.diagonal(of: drawing), 1)
         let tolerance = max(reference * curveTolerance, .ulpOfOne)
 
         func resolvedColor(for index: Int, layer: String) -> RGB {
@@ -277,9 +275,32 @@ public struct SceneBuilder {
             scene.texts[i].height = fallbackHeight
         }
 
-        scene.bounds = sceneBounds(scene, fallback: headerExtents)
+        // The scene's own extents are what the renderer frames; the header is only a last
+        // resort when no primitive contributed a point.
+        let headerFallback: Bounds? = {
+            guard let lo = drawing.extMin, let hi = drawing.extMax else { return nil }
+            let box = Bounds(minX: lo.x, minY: lo.y, maxX: hi.x, maxY: hi.y)
+            return box.isEmpty ? nil : box
+        }()
+        scene.bounds = sceneBounds(scene, fallback: headerFallback)
         scene.samplePoints = gatherPoints(scene)
         return scene
+    }
+
+    /// The diagonal of the geometry actually present, falling back to the header extents.
+    ///
+    /// Measured because a header can be absent or wrong, and the curve tolerance is a
+    /// fraction of this number.
+    private static func diagonal(of drawing: DXF.Drawing) -> Double {
+        if let measured = drawing.bounds {
+            let width = measured.max.x - measured.min.x
+            let height = measured.max.y - measured.min.y
+            let diagonal = hypot(width, height)
+            if diagonal.isFinite, diagonal > 0 { return diagonal }
+        }
+        guard let lo = drawing.extMin, let hi = drawing.extMax else { return 0 }
+        let diagonal = hypot(hi.x - lo.x, hi.y - lo.y)
+        return diagonal.isFinite ? diagonal : 0
     }
 
     // MARK: - Dimensions
