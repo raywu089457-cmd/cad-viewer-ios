@@ -1,8 +1,6 @@
 import Foundation
 import WebKit
 import os
-import WebKit
-import os
 
 /// Serves the bundled web viewer over a private scheme.
 ///
@@ -12,6 +10,9 @@ import os
 /// comes out of the app bundle.
 final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
     static let scheme = "cadviewer"
+
+    private static let log = Logger(
+        subsystem: "CADViewer", category: "ViewerSchemeHandler")
 
     private let root: URL
     /// The DWG the page should open, set before the page loads.
@@ -61,6 +62,10 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
             return
         }
         guard let body = try? Data(contentsOf: file) else {
+            // 404 either way, but logged: a file that exists and cannot be read is a different
+            // problem from one that is not there, and the browser only sees "not found".
+            Self.log.error(
+                "cannot read \(file.lastPathComponent, privacy: .public) from the bundle")
             respond(task, status: 404, mime: "text/plain", body: Data("not found".utf8))
             return
         }

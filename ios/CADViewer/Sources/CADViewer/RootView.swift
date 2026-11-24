@@ -59,6 +59,9 @@ struct RootView: View {
             case .success(let urls):
                 if let url = urls.first { open(url) }
             case .failure(let error):
+                // Dismissing the picker arrives here as a failure. Reporting it as one would
+                // show an error for an action that did nothing wrong.
+                if FilePickOutcome.isCancellation(error) { return }
                 failure = LoadFailure(
                     fileName: "", reason: .unreadable(error.localizedDescription))
             }

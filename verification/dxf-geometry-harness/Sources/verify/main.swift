@@ -1106,6 +1106,32 @@ do {
     check(bigger.maximum > measured.maximum, "a larger page zooms further in")
     check(bigger.minimum > measured.minimum, "and its floor rises too")
 }
+section("File picker cancellation")
+do {
+    // Dismissing the picker arrives as a failure with NSUserCancelledError. Reporting it as
+    // one shows an error for an action that did nothing wrong, and trains people to dismiss
+    // alerts without reading them.
+    let cancelled = NSError(domain: NSCocoaErrorDomain, code: 3072)
+    check(FilePickOutcome.isCancellation(cancelled), "a cancellation is recognised")
+
+    // Any other failure is a real one and must still be reported.
+    let notFound = NSError(domain: NSCocoaErrorDomain, code: 4)
+    check(!FilePickOutcome.isCancellation(notFound), "a file-not-found is not a cancel")
+    let otherDomain = NSError(domain: "SomeOtherDomain", code: 3072)
+    check(!FilePickOutcome.isCancellation(otherDomain), "the code alone is not enough")
+
+    // A wrapped cancellation still counts.
+    let wrapped = NSError(
+        domain: "Wrapper", code: 1,
+        userInfo: [NSUnderlyingErrorKey: cancelled])
+    check(FilePickOutcome.isCancellation(wrapped), "a wrapped cancellation is recognised")
+
+    // A wrapped real error does not become a cancellation.
+    let wrappedReal = NSError(
+        domain: "Wrapper", code: 1,
+        userInfo: [NSUnderlyingErrorKey: notFound])
+    check(!FilePickOutcome.isCancellation(wrappedReal), "a wrapped failure is not a cancel")
+}
 // MARK: - Result
 
 print("")

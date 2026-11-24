@@ -269,7 +269,14 @@ extension DWGViewerModel: WKScriptMessageHandler {
     func userContentController(
         _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
     ) {
-        guard let body = message.body as? [String: Any] else { return }
+        guard let body = message.body as? [String: Any] else {
+            // A message the page sent in a shape this does not understand. Dropping it in
+            // silence is how a broken page comes to look like a working one: the app would
+            // sit on its spinner with nothing in the log to say why.
+            Self.log.error(
+                "ignoring a message that is not a dictionary: \(String(describing: type(of: message.body)), privacy: .public)")
+            return
+        }
         handle(message: body)
     }
 }

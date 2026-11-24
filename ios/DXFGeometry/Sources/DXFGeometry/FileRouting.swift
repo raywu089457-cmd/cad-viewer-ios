@@ -98,3 +98,26 @@ public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
             : "Could not open \(fileName)"
     }
 }
+
+/// Whether a file-picker failure is just the reader changing their mind.
+///
+/// `fileImporter` reports cancellation as a failure, with `NSUserCancelledError`. Showing
+/// "Could not open the file" when someone taps Cancel is a false error: nothing went wrong,
+/// and an unexpected alert trains people to dismiss alerts without reading them.
+public enum FilePickOutcome {
+    /// The Cocoa error code for a cancelled user action.
+    public static let cancelledCode = 3072
+
+    /// Whether an error means the picker was dismissed.
+    public static func isCancellation(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSCocoaErrorDomain, nsError.code == cancelledCode {
+            return true
+        }
+        // URLSession and other layers wrap it; check the underlying chain too.
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return underlying.domain == NSCocoaErrorDomain && underlying.code == cancelledCode
+        }
+        return false
+    }
+}
