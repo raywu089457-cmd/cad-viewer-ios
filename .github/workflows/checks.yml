@@ -13,7 +13,7 @@ name: checks
 # leaves the Swift checks to a machine that can run them:
 #
 #   ./verification/parse-check.sh                  # syntax, no Apple SDK needed
-#   cd verification/dxf-geometry-harness && ./run.sh verify   # the 60 checks, on macOS
+#   cd verification/dxf-geometry-harness && ./run.sh verify   # the 110 checks, on macOS
 #   cd ios/DXFGeometry && swift test                          # on macOS
 on:
   push:
