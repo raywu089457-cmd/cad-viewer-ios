@@ -109,6 +109,9 @@ mustExist(
 
 // Everything the docs and the app reference.
 mustExist('LICENSE')
+// The app redistributes a GPL-3.0 WebAssembly build. A licence that does not travel with the
+// code is not honoured, so the notices are part of the deliverable.
+mustExist('THIRD-PARTY-NOTICES.md')
 mustExist('README.md')
 mustExist('ios/project.yml')
 mustExist('ios/CADViewer/Info.plist')

@@ -60,7 +60,9 @@ jobs:
           for file in index.html \
                       assets/libredwg-parser-worker.js \
                       assets/libredwg-web.wasm \
-                      assets/mtext-renderer-worker.js; do
+                      assets/mtext-renderer-worker.js \
+                      assets/LICENSE-LibreDWG.txt \
+                      assets/LICENSE-cad-simple-viewer.txt; do
             if [ ! -f "dist/$file" ]; then
               echo "missing from the bundle: $file"
               exit 1

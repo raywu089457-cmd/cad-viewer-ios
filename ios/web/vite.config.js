@@ -18,7 +18,19 @@ const WORKER_ASSETS = [
   `${LIBREDWG_DIST}/libredwg-web.wasm`
 ]
 
-/** Copies the runtime worker bytes after Vite has written the bundle. */
+/**
+ * Licences that have to travel with the bytes.
+ *
+ * The LibreDWG wasm is GPL-3.0. Shipping it in an app bundle without its licence is a
+ * licence violation rather than a formality, and the licence file sits beside the package
+ * rather than inside `dist` unless something copies it there.
+ */
+const LICENCE_ASSETS = [
+  { source: `${LIBREDWG_DIST}/../LICENSE`, name: 'LICENSE-LibreDWG.txt' },
+  { source: `${VIEWER_DIST}/../LICENSE`, name: 'LICENSE-cad-simple-viewer.txt' }
+]
+
+/** Copies the runtime worker bytes and their licences after Vite writes the bundle. */
 const workerAssetsPlugin = {
   name: 'cad-worker-assets',
   apply: 'build',
@@ -28,6 +40,12 @@ const workerAssetsPlugin = {
     for (const file of WORKER_ASSETS) {
       if (!existsSync(file)) throw new Error(`missing worker asset: ${file}`)
       copyFileSync(file, resolve(outDir, basename(file)))
+    }
+    for (const licence of LICENCE_ASSETS) {
+      if (!existsSync(licence.source)) {
+        throw new Error(`missing licence: ${licence.source}`)
+      }
+      copyFileSync(licence.source, resolve(outDir, licence.name))
     }
   }
 }

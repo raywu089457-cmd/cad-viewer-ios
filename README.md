@@ -78,7 +78,8 @@ Mac 上跑；CI 只做不需要 Swift 的部分（佈局檢查、DWG 網頁端�
 
 ## 授權
 
-本 repo 是 MIT（見 [LICENSE](LICENSE)）。相依元件各自獨立：
+本 repo 是 MIT（見 [LICENSE](LICENSE)）。相依元件各自獨立，完整的授權與版本見
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)：
 
 | 元件 | 授權 | 能不能商用 |
 |---|---|---|
