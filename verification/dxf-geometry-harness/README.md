@@ -10,7 +10,7 @@ package, not targets inside `ios/DXFGeometry`, for two reasons:
 
 | Tool | Purpose |
 |---|---|
-| `verify` | 60 checks: tessellation, the ACI palette, viewport framing, pan/zoom maths |
+| `verify` | 110 checks: tessellation, the ACI palette, viewport framing, pan/zoom maths, file routing, failure messages, bundle path escapes, MIME types |
 | `scenecheck` | flattens a real DXF; `--svg` renders it, `--json` dumps the geometry |
 
 ## Running
@@ -41,7 +41,7 @@ which is why the patch lives here rather than in the package.
 
 ## What the checks cover
 
-The 60 checks are the arithmetic a screenshot cannot prove: that a fit centres the drawing,
+The checks cover what a screenshot cannot prove: that a fit centres the drawing,
 that a pinch keeps the point under the fingers fixed, that zooming in and back out returns
 to the same view, that panning follows the finger in both axes, that the zoom limits hold
 under a hundred gestures, and that a zero-size drawing does not divide by zero.

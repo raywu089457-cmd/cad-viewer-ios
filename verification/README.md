@@ -16,7 +16,7 @@ claims in the top-level README are only worth anything if they can be re-run.
 | `shot-html.mjs` | render an SVG to PNG, for comparing native output |
 | `dbg.mjs` | inspect the SVG geometry a viewer produced |
 | `parse-check.sh` | syntax-check the SwiftUI/WebKit/PDF files without Xcode |
-| `dxf-geometry-harness/` | the geometry and arithmetic harnesses (60 checks) |
+| `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses (110 checks) |
 
 ## Running one
 
@@ -35,7 +35,7 @@ node test-ml2.mjs
 - SwiftDXF parses DXF correctly but does not read DWG at all.
 - Both web viewers behave the same in WebKit (Safari's engine) at iPhone size.
 
-The geometry core has its own harness in `dxf-geometry-harness/`, with 60 checks and no
+The geometry core has its own harness in `dxf-geometry-harness/`, with 110 checks and no
 browser needed. Run it with `./run.sh verify` there, or `build-wasm.bat` if the machine has
 no Apple SDK.
 
