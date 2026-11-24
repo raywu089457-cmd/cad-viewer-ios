@@ -84,3 +84,32 @@ public enum ViewerEvent: Equatable, Sendable {
         return nil
     }
 }
+
+/// How a drawing should be handed to an already-loaded page.
+///
+/// The page can take one either way: as base64 inside a JavaScript call, or by fetching it
+/// from the scheme handler after a reload. The first keeps the wasm engine warm and is much
+/// faster; the second always works and is the only sane choice for a large file, because a
+/// real DWG is routinely tens of megabytes and base64 adds a third on top of that.
+public enum DrawingHandoff: Equatable, Sendable {
+    /// Hand the bytes over directly; the page stays loaded.
+    case directly
+    /// Reload the page and let it fetch the drawing.
+    case viaReload
+
+    /// The largest file worth passing as a base64 string.
+    ///
+    /// 8 MB of file becomes about 11 MB of base64, which is already a slow JavaScript call.
+    public static let directLimit = 8 * 1024 * 1024
+
+    /// Decides how to hand a drawing over.
+    ///
+    /// - Parameters:
+    ///   - byteCount: size of the drawing.
+    ///   - pageCanAcceptDirectly: whether the page exposes the direct entry point.
+    public init(byteCount: Int, pageCanAcceptDirectly: Bool) {
+        self = pageCanAcceptDirectly && byteCount <= Self.directLimit
+            ? .directly
+            : .viaReload
+    }
+}

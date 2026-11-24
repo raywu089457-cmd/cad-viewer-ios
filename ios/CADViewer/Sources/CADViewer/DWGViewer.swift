@@ -97,7 +97,14 @@ final class DWGViewerModel {
             // fallback.
             let handlesDrawing = (try? await webView.evaluateJavaScript(
                 "typeof window.cadOpenDwg === 'function'")) as? Bool ?? false
-            if handlesDrawing {
+            // A drawing is handed over as base64 inside a JavaScript string, which is both
+            // memory and a WebKit call limit. Real DWG files are routinely tens of megabytes,
+            // which becomes roughly 4/3 of that as base64 in one string. Past a sensible
+            // size, reloading and letting the page fetch from the scheme handler is both
+            // faster and the only version that reliably works.
+            let handoff = DrawingHandoff(
+                byteCount: data.count, pageCanAcceptDirectly: handlesDrawing)
+            if handoff == .directly {
                 let base64 = data.base64EncodedString()
                 // A file name may hold a quote, which would end the JavaScript string.
                 let escaped = fileName.replacingOccurrences(
@@ -110,6 +117,9 @@ final class DWGViewerModel {
                     Self.log.error("reopening on the loaded page failed; reloading")
                     // Fall through: a reload always works.
                 }
+            } else if handlesDrawing {
+                Self.log.info(
+                    "drawing is \(data.count) bytes; reloading to hand it over via the scheme handler")
             } else {
                 Self.log.error("the viewer page has no cadOpenDwg entry point; reloading")
             }

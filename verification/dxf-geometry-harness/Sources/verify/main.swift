@@ -806,6 +806,28 @@ do {
     check(huge <= 60, "a full circle stays within the cap", "\(huge)")
 }
 
+section("Drawing handoff")
+do {
+    // Direct hands the bytes over as base64 and keeps the wasm engine warm; reload always
+    // works. The choice is size and whether the page offers the entry point.
+    check(DrawingHandoff(byteCount: 1000, pageCanAcceptDirectly: true) == .directly,
+          "a small drawing goes directly")
+    check(
+        DrawingHandoff(byteCount: DrawingHandoff.directLimit, pageCanAcceptDirectly: true)
+            == .directly,
+        "exactly at the limit still goes directly")
+    check(
+        DrawingHandoff(byteCount: DrawingHandoff.directLimit + 1, pageCanAcceptDirectly: true)
+            == .viaReload,
+        "one byte over the limit reloads")
+    check(DrawingHandoff(byteCount: 1, pageCanAcceptDirectly: false) == .viaReload,
+          "a page without the entry point means a reload")
+    // A real DWG is routinely tens of megabytes; base64 would add a third on top.
+    check(
+        DrawingHandoff(byteCount: 40 * 1024 * 1024, pageCanAcceptDirectly: true) == .viaReload,
+        "a large drawing reloads")
+}
+
 // MARK: - Result
 
 print("")
