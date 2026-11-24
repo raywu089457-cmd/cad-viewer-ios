@@ -129,6 +129,8 @@ mustExist('verification/check-main-thread-io.mjs')
 // A committed snapshot that stops matching the pipeline turns the independent coordinate
 // check into decoration.
 mustExist('verification/check-fixture-fresh.mjs')
+// A content controller holds its handler strongly; registering the view leaks the page.
+mustExist('verification/check-retain-cycles.mjs')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')

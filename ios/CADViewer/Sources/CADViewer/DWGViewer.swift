@@ -45,6 +45,12 @@ struct DWGViewer: View {
                 loadError = message
             }
         }
+        .onDisappear {
+            // Closing the drawing has to free the page: it holds the wasm engine, which is
+            // tens of megabytes, and a viewer that leaks one per open is a viewer that runs
+            // out of memory after a few files.
+            model.tearDown()
+        }
     }
 }
 
@@ -57,6 +63,9 @@ final class DWGViewerModel {
     var webView: WKWebView?
 
     @ObservationIgnored private var schemeHandler: ViewerSchemeHandler?
+    /// The weak proxy registered with the page, held so it is not collected while the page
+    /// still refers to it. The proxy holds the model weakly, which is what breaks the cycle.
+    @ObservationIgnored private var messageHandlerProxy: WeakScriptMessageHandler?
     @ObservationIgnored private var readyContinuation: CheckedContinuation<Void, Never>?
     @ObservationIgnored private var didBecomeReady = false
     /// Tracks which load is live, so a timeout from an earlier one cannot touch a later
@@ -156,7 +165,13 @@ final class DWGViewerModel {
             configuration.setURLSchemeHandler(
                 handler, forURLScheme: ViewerSchemeHandler.scheme)
             configuration.defaultWebpagePreferences.allowsContentJavaScript = true
-            configuration.userContentController.add(self, name: "cadEvents")
+            // A weak proxy rather than `self`. A user content controller holds its handlers
+            // strongly, and the model holds the web view, so registering the model directly
+            // makes the two keep each other alive: dismissing the viewer would leak the page
+            // and its wasm engine, tens of megabytes per drawing opened.
+            let proxy = WeakScriptMessageHandler(target: self)
+            messageHandlerProxy = proxy
+            configuration.userContentController.add(proxy, name: "cadEvents")
             webView = WKWebView(frame: .zero, configuration: configuration)
         }
         webView.isOpaque = false
@@ -221,6 +236,27 @@ final class DWGViewerModel {
     private func fail(_ message: String) {
         statusText = nil
         errorHandler?(message)
+    }
+
+    /// Releases the page and the engine it loaded.
+    ///
+    /// Called when the viewer goes away. The proxy already breaks the retain cycle, so this
+    /// is not what makes it free; it is what makes it free promptly, rather than when the
+    /// page happens to be collected after downloading tens of megabytes of wasm.
+    func tearDown() {
+        webView?.configuration.userContentController
+            .removeScriptMessageHandler(forName: "cadEvents")
+        webView?.stopLoading()
+        webView?.navigationDelegate = nil
+        webView?.uiDelegate = nil
+        webView = nil
+        messageHandlerProxy = nil
+        schemeHandler = nil
+        // A wait that will never be signalled by a page that is gone.
+        if let pending = readyContinuation {
+            readyContinuation = nil
+            pending.resume()
+        }
     }
 
     /// Applies an event posted by the page.
@@ -315,5 +351,28 @@ private struct WebViewHost: UIViewRepresentable {
             webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             container.addSubview(webView)
         }
+    }
+}
+
+/// Forwards script messages without keeping the target alive.
+///
+/// `WKUserContentController` holds its handlers strongly. Registering the model itself would
+/// make the model and the web view keep each other alive — the model holds the view, the
+/// view's configuration holds the model — and dismissing the viewer would leak the page and
+/// the wasm engine it had loaded, tens of megabytes for every drawing opened.
+final class WeakScriptMessageHandler: NSObject, WKScriptMessageHandler {
+    private weak var target: WKScriptMessageHandler?
+
+    init(target: WKScriptMessageHandler) {
+        self.target = target
+        super.init()
+    }
+
+    func userContentController(
+        _ userContentController: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        // The target is gone: nothing to forward to, and the controller can drop this proxy.
+        target?.userContentController(userContentController, didReceive: message)
     }
 }

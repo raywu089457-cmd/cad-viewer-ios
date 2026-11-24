@@ -118,6 +118,9 @@ jobs:
       - name: Check the UI does not read files on the main thread
         run: node verification/check-main-thread-io.mjs
 
+      - name: Check for retain cycles that would leak a web view
+        run: node verification/check-retain-cycles.mjs
+
   syntax:
     name: App layer parses
     runs-on: ubuntu-latest
