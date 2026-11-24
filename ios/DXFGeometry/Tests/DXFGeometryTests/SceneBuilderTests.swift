@@ -571,7 +571,7 @@ struct DimensionTextTests {
 
     @Test("Suffixes and line breaks survive")
     func formatting() {
-        #expect(label("<>\P(max)", width: 67) == "67\n(max)")
+        #expect(label("<>\\P(max)", width: 67) == "67\n(max)")
     }
 
     @Test("Text with no placeholder is left alone")
