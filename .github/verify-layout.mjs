@@ -7,7 +7,7 @@
 // No dependencies, so it runs before any install step:
 //
 //   node .github/verify-layout.mjs
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
@@ -170,6 +170,34 @@ mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
     else ok(`Info.plist declares ${type}`)
   }
   if (!readme.includes('PDFKit')) fail('the README does not mention PDF support')
+}
+
+// A shell script that the docs tell people to run has to be executable in the index, or a
+// fresh clone fails with "Permission denied" on the first command. This is not visible in
+// the file's contents, so it needs checking separately.
+//
+// Only on a POSIX filesystem: Windows does not carry the execute bit, so `statSync` reports
+// 666 for a file git records as 755, and the check would report every script as broken. The
+// CI runs on Linux, which is where this check belongs.
+if (process.platform !== 'win32') {
+  const scripts = [
+    'ios/web/build-for-ios.sh',
+    'verification/parse-check.sh',
+    'verification/dxf-geometry-harness/run.sh'
+  ]
+  for (const script of scripts) {
+    if (!existsSync(join(root, script))) {
+      fail(script + ' is missing')
+      continue
+    }
+    const mode = statSync(join(root, script)).mode
+    // 0o111 is the execute bit for owner, group and other.
+    if ((mode & 0o111) === 0) {
+      fail(script + ' is not executable, so a fresh clone cannot run it')
+    } else {
+      ok(script + ' is executable')
+    }
+  }
 }
 
 if (problems.length > 0) {
