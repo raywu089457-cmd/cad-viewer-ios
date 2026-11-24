@@ -127,6 +127,8 @@ mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/DrawingHandoffTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/LoadGenerationTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/ResourceLocationTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/BlockAttributeTests.swift')
+mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/SkippedEntitiesTests.swift')
+mustExist('ios/DXFGeometry/Sources/DXFGeometry/SkippedEntities.swift')
 // The attribute test reads this fixture from the test bundle, so its absence silently
 // turns the test into a no-op.
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/Fixtures/attributes.dxf')

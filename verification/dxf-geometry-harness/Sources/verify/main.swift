@@ -1027,6 +1027,37 @@ do {
         check(true, "attribute fixture not reachable here, so skipped")
     }
 }
+section("Skipped entities")
+do {
+    // The reader does not model every DXF entity type, and a drawing that is quietly missing
+    // them looks complete. The summary is what tells the reader, so its wording matters.
+    check(SkippedEntities.summary([:]) == "", "nothing skipped says nothing")
+
+    let one = SkippedEntities.summary(["LIGHT": 1])
+    check(one == "1 item not shown: LIGHT.", "one is singular", "\(one)")
+
+    let two = SkippedEntities.summary(["RAY": 2])
+    check(two == "2 items not shown: RAY.", "several is plural", "\(two)")
+
+    // Names are sorted, so the message does not depend on dictionary order.
+    let mixed = SkippedEntities.summary(["XLINE": 1, "ATTDEF": 2])
+    check(mixed == "3 items not shown: ATTDEF, XLINE.", "sorted", "\(mixed)")
+
+    // Past the limit, the rest is counted rather than listed.
+    let many = SkippedEntities.summary([
+        "A": 1, "B": 1, "C": 1, "D": 1, "E": 1
+    ])
+    check(many.contains(" and 2 more"), "abbreviates the tail", "\(many)")
+    check(many.hasPrefix("5 items not shown: A, B, C"), "and lists three", "\(many)")
+
+    // Exactly at the limit there is no tail to abbreviate.
+    let exact = SkippedEntities.summary(["A": 1, "B": 1, "C": 1])
+    check(!exact.contains("more"), "no tail at the limit", "\(exact)")
+
+    // A limit of zero must still show something rather than an empty list.
+    let zero = SkippedEntities.summary(["X": 1], shownNames: 0)
+    check(zero.contains("X"), "a zero limit still names one", "\(zero)")
+}
 // MARK: - Result
 
 print("")

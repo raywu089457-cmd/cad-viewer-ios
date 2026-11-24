@@ -71,6 +71,13 @@ log("entities=\(counts.total) LINE=\(counts.line) CIRCLE=\(counts.circle) ARC=\(
 log("  ELLIPSE=\(counts.ellipse) POLYLINE=\(counts.polyline) TEXT=\(counts.text) DIM=\(counts.dimension)")
 log("  HATCH=\(counts.hatch) SPLINE=\(counts.spline) SOLID=\(counts.solid) LEADER=\(counts.leader)")
 log("parse_ms=\(parseMS) build_ms=\(buildMS) skipped=\(drawing.skipped.count)")
+if verbose || !drawing.skipped.isEmpty {
+    // Which entity types were dropped, not just how many: an unread type is silent data loss
+    // and the count alone does not say whether any of it mattered.
+    for (type, count) in drawing.skipped.sorted(by: { $0.key < $1.key }) {
+        log("  skipped: \(type) x\(count)")
+    }
+}
 log("scene: polylines=\(scene.polylines.count) fills=\(scene.fills.count) texts=\(scene.texts.count)")
 if let b = scene.bounds {
     log(

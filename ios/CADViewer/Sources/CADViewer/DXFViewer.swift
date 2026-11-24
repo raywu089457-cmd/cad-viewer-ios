@@ -151,15 +151,24 @@ struct DXFViewer: View {
     /// seemingly empty area make sense.
     @ViewBuilder
     private var outsideHint: some View {
-        if drawing.viewport.hasGeometryOutside {
-            Text("Some geometry is outside the initial view.")
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.ultraThinMaterial, in: Capsule())
-                .padding(.top, 8)
+        VStack(spacing: 6) {
+            if drawing.viewport.hasGeometryOutside {
+                Text("Some geometry is outside the initial view.")
+            }
+            // The reader does not model every DXF entity type. Saying so on screen matters:
+            // a drawing that is quietly missing its tables and 3D solids looks complete, and
+            // the reader has no way to tell that something is absent.
+            if !drawing.skipped.isEmpty {
+                Text(SkippedEntities.summary(drawing.skipped))
+            }
         }
+        .font(.caption)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: Capsule())
+        .padding(.top, 8)
     }
+
 
     private var detailsSheet: some View {
         NavigationStack {
