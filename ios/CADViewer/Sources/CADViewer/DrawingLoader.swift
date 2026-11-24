@@ -1,4 +1,4 @@
-import SwiftUI
+import Foundation
 import SwiftDXF
 import DXFGeometry
 
@@ -6,16 +6,19 @@ import DXFGeometry
 ///
 /// DXF is parsed and drawn natively, because SwiftDXF is pure Swift and its geometry
 /// becomes a SwiftUI canvas directly. DWG has no open native parser, so it goes to the
-/// bundled web viewer running the LibreDWG wasm build inside a `WKWebView`.
+/// bundled web viewer running the LibreDWG wasm build inside a `WKWebView`. PDF needs no
+/// third party at all: the system's `PDFKit` already reads and renders it.
 enum DrawingKind: Equatable {
     case dxf
     case dwg
+    case pdf
     case unsupported(extension: String)
 
     init(fileName: String) {
         switch (fileName as NSString).pathExtension.lowercased() {
         case "dxf": self = .dxf
         case "dwg": self = .dwg
+        case "pdf": self = .pdf
         case let ext: self = .unsupported(extension: ext)
         }
     }

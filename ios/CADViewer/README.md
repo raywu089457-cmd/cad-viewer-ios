@@ -1,6 +1,6 @@
 # CADViewer
 
-The SwiftUI layer: routes a file to the engine that can draw it, and provides gestures,
+The SwiftUI layer: routes a file to the engine that can show it, and provides gestures,
 zoom controls and error reporting.
 
 ```swift
@@ -9,9 +9,15 @@ RootView()   // the whole app
 
 ## Routing
 
-`DrawingKind(fileName:)` decides. `.dxf` goes to `DrawingLoader` →
-`DXFViewer`; `.dwg` goes to `DWGViewer`. Anything else is refused with the extension named,
-rather than opening a blank canvas.
+`DrawingKind(fileName:)` decides:
+
+| Kind | Goes to | Why |
+|---|---|---|
+| `.dxf` | `DrawingLoader` → `DXFViewer` | SwiftDXF is pure Swift, so the geometry becomes a canvas |
+| `.dwg` | `DWGViewer` | no open native parser exists; the bundled wasm engine draws it |
+| `.pdf` | `PDFViewer` | `PDFKit` already does scrolling, zoom, selection and links |
+
+Anything else is refused with the extension named, rather than opening a blank canvas.
 
 ## Files this layer owns
 
@@ -21,6 +27,7 @@ rather than opening a blank canvas.
 | `DrawingLoader` | reads and flattens a DXF off the main thread |
 | `DXFViewer` | the native reading surface: gestures, controls, details sheet |
 | `DrawingCanvas` | draws the scene with `Canvas`, culling off-screen primitives |
+| `PDFViewer` | wraps `PDFView`; fits the page or the width |
 | `DWGViewer` | hosts the bundled web viewer and relays its progress |
 | `ViewerSchemeHandler` | serves the bundle over `cadviewer://` so wasm and workers load |
 

@@ -1,5 +1,4 @@
 import Foundation
-import DXFGeometry
 
 /// A size in screen points.
 ///

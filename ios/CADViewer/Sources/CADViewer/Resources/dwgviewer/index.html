@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DWG viewer not built</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #12161c;
+        color: #cfd8e3;
+        font: 400 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+      code {
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      p {
+        max-width: 30em;
+        padding: 0 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <!--
+      Placeholder. `ios/web/build-for-ios.sh` replaces this folder with the real viewer.
+
+      It exists so the repository can be cloned and built without committing 17 MB of
+      generated JavaScript. SwiftPM needs the resource folder to be present, and a DWG
+      opened before the bundle is built should say why it cannot be shown rather than
+      displaying a blank canvas.
+    -->
+    <p>
+      The DWG viewer has not been built.<br />
+      Run <code>ios/web/build-for-ios.sh</code>, then rebuild the app.
+    </p>
+    <script>
+      // Tell the app immediately, so it shows its own error instead of a spinner.
+      try {
+        window.webkit.messageHandlers.cadEvents.postMessage({
+          type: "cad",
+          event: "error",
+          message: "The DWG viewer bundle is missing. Run ios/web/build-for-ios.sh.",
+        })
+      } catch (error) {
+        // Opened in a plain browser; the message above is enough.
+      }
+    </script>
+  </body>
+</html>

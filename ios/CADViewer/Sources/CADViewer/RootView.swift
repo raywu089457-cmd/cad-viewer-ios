@@ -2,29 +2,43 @@ import SwiftUI
 import UniformTypeIdentifiers
 import DXFGeometry
 
-/// The app's only screen: pick a drawing, then route it to the engine that can draw it.
+/// The app's only screen: pick a file, then route it to the engine that can draw it.
 struct RootView: View {
-    @State private var loaded: LoadedDrawing?
-    @State private var dwg: (url: URL, name: String)?
+    /// State of the file currently on screen, if any.
+    private enum Opened: Equatable {
+        case dxf(LoadedDrawing)
+        case dwg(url: URL, name: String)
+        case pdf(url: URL, name: String)
+
+        var name: String {
+            switch self {
+            case .dxf(let drawing): return drawing.name
+            case .dwg(_, let name), .pdf(_, let name): return name
+            }
+        }
+    }
+
+    @State private var opened: Opened?
     @State private var failure: LoadFailure?
     @State private var isLoading = false
     @State private var isPickingFile = false
-    /// Shown when the app is launched by opening a file in Files or another app.
-    @State private var pendingImport: URL?
 
     var body: some View {
         NavigationStack {
             Group {
-                if let loaded {
-                    DXFViewer(drawing: loaded)
-                } else if let dwg {
-                    DWGViewer(url: dwg.url, fileName: dwg.name)
-                } else {
+                switch opened {
+                case .dxf(let drawing):
+                    DXFViewer(drawing: drawing)
+                case .dwg(let url, let name):
+                    DWGViewer(url: url, fileName: name)
+                case .pdf(let url, let name):
+                    PDFViewer(url: url, fileName: name)
+                case nil:
                     welcome
                 }
             }
             .toolbar {
-                if loaded != nil || dwg != nil {
+                if opened != nil {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Close", systemImage: "xmark") { reset() }
                     }
@@ -44,25 +58,26 @@ struct RootView: View {
                     fileName: "", reason: .unreadable(error.localizedDescription))
             }
         }
+        // Opening a file from Files, Mail or another app.
         .onOpenURL { open($0) }
         .alert(item: $failure) { failure in
             Alert(
-                title: Text(failure.fileName.isEmpty
-                    ? "Could not open the drawing"
-                    : "Could not open \(failure.fileName)"),
+                title: Text(
+                    failure.fileName.isEmpty
+                        ? "Could not open the file"
+                        : "Could not open \(failure.fileName)"),
                 message: Text(failure.message),
                 dismissButton: .default(Text("OK"))
             )
         }
     }
 
-    /// DXF and DWG only. The two are different engines, and offering more types would
-    /// promise more than the app can draw.
+    /// DXF, DWG and PDF only. Offering more types would promise more than the app can show.
     private static let allowedTypes: [UTType] = {
-        var types: [UTType] = []
+        var types: [UTType] = [.pdf]
         if let dxf = UTType(filenameExtension: "dxf") { types.append(dxf) }
         if let dwg = UTType(filenameExtension: "dwg") { types.append(dwg) }
-        return types.isEmpty ? [.data] : types
+        return types
     }()
 
     private var welcome: some View {
@@ -77,7 +92,7 @@ struct RootView: View {
                 Text("CAD Viewer")
                     .font(.title2.weight(.semibold))
 
-                Text("Open a DXF or DWG drawing.")
+                Text("Open a DXF, DWG or PDF file.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -85,14 +100,17 @@ struct RootView: View {
                     Label {
                         Text("**DXF** is drawn natively, with pinch, pan and fit.")
                     } icon: {
-                        Image(systemName: "bolt.horizontal")
-                            .foregroundStyle(.tint)
+                        Image(systemName: "bolt.horizontal").foregroundStyle(.tint)
                     }
                     Label {
                         Text("**DWG** uses a bundled engine, so it takes a moment to start.")
                     } icon: {
-                        Image(systemName: "network")
-                            .foregroundStyle(.tint)
+                        Image(systemName: "network").foregroundStyle(.tint)
+                    }
+                    Label {
+                        Text("**PDF** opens in the system reader.")
+                    } icon: {
+                        Image(systemName: "doc.richtext").foregroundStyle(.tint)
                     }
                 }
                 .font(.footnote)
@@ -107,7 +125,7 @@ struct RootView: View {
             Button {
                 isPickingFile = true
             } label: {
-                Label("Open a drawing", systemImage: "folder")
+                Label("Open a file", systemImage: "folder")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -125,21 +143,22 @@ struct RootView: View {
         }
     }
 
-    /// Routes a file to the native reader or the web viewer.
+    /// Routes a file to the engine that can show it.
     private func open(_ url: URL) {
         reset()
-        let kind = DrawingKind(fileName: url.lastPathComponent)
+        let name = url.lastPathComponent
 
-        switch kind {
+        switch DrawingKind(fileName: name) {
         case .dxf:
             Task {
                 isLoading = true
-                // The parse runs off the main thread; the loader hops back when it is done.
+                // The parse runs off the main thread; the loader reports back on the main
+                // actor when it finishes.
                 let result = await DrawingLoader.load(url: url)
                 isLoading = false
                 switch result {
                 case .success(let drawing):
-                    loaded = drawing
+                    opened = .dxf(drawing)
                 case .failure(let error):
                     failure = error
                 }
@@ -147,17 +166,20 @@ struct RootView: View {
 
         case .dwg:
             // The web view reads the bytes itself, so the URL is handed over as-is.
-            dwg = (url, url.lastPathComponent)
+            opened = .dwg(url: url, name: name)
+
+        case .pdf:
+            // PDFKit also reads the URL itself, and copes with security-scoped access.
+            opened = .pdf(url: url, name: name)
 
         case .unsupported(let ext):
             failure = LoadFailure(
-                fileName: url.lastPathComponent, reason: .unsupportedType(ext))
+                fileName: name, reason: .unsupportedType(ext))
         }
     }
 
     private func reset() {
-        loaded = nil
-        dwg = nil
+        opened = nil
         failure = nil
     }
 }

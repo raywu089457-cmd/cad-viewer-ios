@@ -1,8 +1,10 @@
-// Builds one flat file list for the WASI toolchain.
+// Builds one flat file list for a single-module compile.
 //
-// SwiftPM would compile three modules; the fallback harness here compiles everything into a
-// single module, so the `import SwiftDXF` / `import DXFGeometry` lines have to go: inside one
-// module they would name nothing.
+// SwiftPM compiles three modules; the harnesses compile everything into one, so the
+// `import SwiftDXF` / `import DXFGeometry` lines have to go: inside one module they would
+// name nothing.
+//
+// Used by the WASI fallback (build-wasm.bat); on Apple platforms run.sh does the same job.
 const fs = require('fs'), path = require('path')
 const root = path.resolve('..', '..')
 const libRoot = path.join(root, 'SwiftDXF-wasm', 'Sources', 'SwiftDXF')
@@ -29,9 +31,7 @@ function stage(files, target) {
       .join('\n')
     // The entry point must keep the name `main.swift`, or Swift forbids top-level code.
     const base = path.basename(file)
-    const name = base === 'main.swift'
-      ? base
-      : `${String(index).padStart(3, '0')}_${base}`
+    const name = base === 'main.swift' ? base : `${String(index).padStart(3, '0')}_${base}`
     const out = path.join(dir, name)
     fs.writeFileSync(out, body)
     return out
@@ -39,9 +39,9 @@ function stage(files, target) {
 }
 
 const lib = walk(libRoot, [])
-const geom = walk(path.resolve('Sources', 'DXFGeometry'), [])
-const tool = walk(path.resolve('Sources', 'scenecheck'), [])
-const verify = walk(path.resolve('Sources', 'verify'), [])
+const geom = walk(path.resolve(root, 'ios/DXFGeometry/Sources/DXFGeometry'), [])
+const tool = walk(path.resolve('scenecheck'), [])
+const verify = walk(path.resolve('verify'), [])
 const q = list => list.map(f => '"' + f + '"').join('\r\n')
 
 fs.writeFileSync('files-exe.txt', q(stage(lib.concat(geom, tool), 'exe')))

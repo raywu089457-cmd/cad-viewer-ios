@@ -1,4 +1,6 @@
-import SwiftUI
+import Foundation
+import WebKit
+import os
 import WebKit
 import os
 

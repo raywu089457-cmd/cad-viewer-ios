@@ -49,6 +49,7 @@ flip happens. `scale` is screen points per drawing unit, so zooming in multiplie
 swift test
 ```
 
-`Sources/verify` is a dependency-free harness with the same assertions, for machines
-without XCTest/Swift Testing; it exists because the geometry was developed and checked on
-Linux and Windows before ever reaching Xcode.
+The `verify` and `scenecheck` harnesses live in `../../verification/dxf-geometry-harness`,
+because SwiftPM would otherwise try to build them as library targets. They carry the same
+assertions without XCTest, which is how this package was checked on Windows before ever
+reaching Xcode.

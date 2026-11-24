@@ -1,11 +1,12 @@
 # CAD Viewer（iOS）
 
-一個 App，兩個引擎，按檔案類型自動分工：
+一個 App，三條路徑，按檔案類型自動分工：
 
 | 副檔名 | 引擎 | 理由 |
 |---|---|---|
 | `.dxf` | **SwiftDXF + SwiftUI Canvas**（原生） | 純 Swift、MIT、零依賴，手勢與縮放全部原生 |
 | `.dwg` | **WKWebView + LibreDWG wasm**（內嵌網頁） | DWG 沒有可用的開源原生解析器，這是實測唯一能正確開圖的路 |
+| `.pdf` | **PDFKit**（系統框架） | 系統已經是完整的 PDF 引擎，自己畫只會更差 |
 
 ## 目錄
 
@@ -19,8 +20,8 @@ ios/
 
 `SwiftDXF` 是 SPM 依賴（`from: "0.6.0"`），沒有把上游原始碼放進這個 repo。
 
-三層刻意分開，因為只有前兩層需要被測試，而 SwiftUI 與 WebKit 只能在真機或
-模擬器上驗證。
+`DXFGeometry` 刻意不依賴 UIKit / CoreGraphics / SwiftUI，因為只有它能被完整測試；
+SwiftUI、WebKit 與 PDFKit 那幾層只能在真機或模擬器上驗證。
 
 ## 建置
 

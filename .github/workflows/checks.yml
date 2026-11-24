@@ -1,0 +1,68 @@
+name: checks
+
+# The geometry and the routing are the parts that can be verified without a Mac, so they run
+# on every push. The SwiftUI/WebKit/PDF layer gets type-checked by compiling the app for the
+# simulator, which is the only real proof that it builds.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  packages:
+    name: Geometry, view maths and routing
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show the toolchain
+        run: swift --version
+
+      - name: Test DXFGeometry
+        working-directory: ios/DXFGeometry
+        run: swift test
+
+      - name: Test CADViewer
+        working-directory: ios/CADViewer
+        run: swift test
+
+  app:
+    name: App builds for the simulator
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The DWG viewer bundle is generated, not committed: it is 17 MB of build output.
+      # SwiftPM's resources rule needs the folder to exist before it builds the package.
+      - name: Build the DWG viewer bundle
+        working-directory: ios/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          DEST=../CADViewer/Sources/CADViewer/Resources/dwgviewer
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          cp -R dist/. "$DEST"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project CADViewer.xcodeproj \
+            -scheme CADViewer \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build

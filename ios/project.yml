@@ -32,46 +32,9 @@ targets:
     dependencies:
       - package: CADViewer
         product: CADViewer
-    info:
-      path: CADViewer/Info.plist
-      properties:
-        CFBundleDisplayName: CAD Viewer
-        CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "1"
-        UILaunchScreen:
-          UIColorName: ""
-        UISupportedInterfaceOrientations:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        # Opening a drawing from Files, Mail or another app.
-        CFBundleDocumentTypes:
-          - CFBundleTypeName: CAD Drawing
-            CFBundleTypeRole: Viewer
-            LSHandlerRank: Alternate
-            LSItemContentTypes:
-              - com.autodesk.dxf
-              - com.autodesk.dwg
-              - public.data
-        # Declaring the two extensions lets Files offer the app for them.
-        UTImportedTypeDeclarations:
-          - UTTypeIdentifier: com.autodesk.dxf
-            UTTypeDescription: AutoCAD DXF Drawing
-            UTTypeConformsTo:
-              - public.data
-            UTTypeTagSpecification:
-              public.filename-extension:
-                - dxf
-          - UTTypeIdentifier: com.autodesk.dwg
-            UTTypeDescription: AutoCAD Drawing
-            UTTypeConformsTo:
-              - public.data
-            UTTypeTagSpecification:
-              public.filename-extension:
-                - dwg
-        # The private scheme the DWG viewer is served over.
-        LSApplicationQueriesSchemes:
-          - cadviewer
+    # The Info.plist is hand-written and is the single source of truth for the
+    # document types, so XcodeGen must not generate one. Setting INFOPLIST_FILE
+    # below points the target at it; generating here would overwrite it.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.cadviewer
@@ -79,3 +42,4 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         # SwiftUI previews and the app both come from the package.
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: CADViewer/Info.plist
