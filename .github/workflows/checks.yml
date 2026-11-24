@@ -1,20 +1,16 @@
 name: checks
 
-# This workflow is deliberately narrow, because saying more would be a lie.
+# What runs where, and why:
 #
-# SwiftDXF — the DXF parser everything here depends on — does not build on Linux: its
-# CodePage decodes through CoreFoundation's CFStringEncoding, guarded by
-# `canImport(CoreFoundation)`, which is true on Linux where those symbols do not exist.
-# Upstream only tests on macOS, and CI here confirmed the same failure.
-#
-# So the geometry cannot be tested on a Linux runner, and a macOS runner is 10x the minutes
-# on a free account and often unavailable. Rather than publish a permanently red or
-# permanently skipped badge, this workflow checks the parts that need no Swift at all, and
-# leaves the Swift checks to a machine that can run them:
-#
-#   ./verification/parse-check.sh                  # syntax, no Apple SDK needed
-#   cd verification/dxf-geometry-harness && ./run.sh verify   # the 110 checks, on macOS
-#   cd ios/DXFGeometry && swift test                          # on macOS
+# - `app` builds the actual app for the simulator on macOS. This is the only real proof that
+#   the SwiftUI, WebKit and PDFKit layer type-checks: `swiftc -parse` catches syntax but not
+#   types, and three genuine compile errors were found by reading that layer against the
+#   SDKs because nothing had ever compiled it. macOS runners are free for public
+#   repositories, which is what makes this possible.
+# - `geometry` runs the package tests. It has to be macOS too: SwiftDXF decodes code pages
+#   through CoreFoundation's CFStringEncoding behind `canImport(CoreFoundation)`, which is
+#   true on Linux where those symbols do not exist.
+# - `web-viewer` builds the DWG bundle on Linux. It is the one half that needs no Apple SDK.
 on:
   push:
     branches: [main]
@@ -22,19 +18,53 @@ on:
   workflow_dispatch:
 
 jobs:
-  layout:
-    name: Repository layout
-    runs-on: ubuntu-latest
+  app:
+    name: App builds and packages test
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      # Every path the packages and docs promise has to exist, or a fresh clone breaks in a
-      # way nobody notices until they try to build it.
-      - name: Verify the tree matches its manifests
-        run: node .github/verify-layout.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # The DWG bundle is generated, not committed: 17 MB of build output. SwiftPM needs the
+      # resource folder to exist before it builds the package.
+      - name: Build the DWG viewer bundle
+        working-directory: ios/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          DEST=../CADViewer/Sources/CADViewer/Resources/dwgviewer
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+          cp -R dist/. "$DEST"
+
+      - name: Test DXFGeometry
+        working-directory: ios/DXFGeometry
+        run: swift test
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the project
+        working-directory: ios
+        run: xcodegen generate
+
+      # The one step that proves the SwiftUI/WebKit/PDFKit layer compiles.
+      - name: Build for the simulator
+        working-directory: ios
+        run: |
+          xcodebuild \
+            -project CADViewer.xcodeproj \
+            -scheme CADViewer \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
   web-viewer:
-    name: DWG viewer bundle builds
+    name: DWG bundle builds
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,14 +73,14 @@ jobs:
         with:
           node-version: "20"
 
-      # This is the one half of the project that builds without an Apple SDK, and it is
-      # worth guarding: the app ships its output, and a broken bundle means a blank DWG tab.
       - name: Build
         working-directory: ios/web
         run: |
           npm ci --no-audit --no-fund
           npm run build
 
+      # The app fetches these four by URL at runtime, so a bundle missing one produces a
+      # blank DWG tab rather than a build error.
       - name: Check the bundle has what the app fetches
         working-directory: ios/web
         run: |
@@ -64,3 +94,12 @@ jobs:
             fi
           done
           echo "bundle complete"
+
+  layout:
+    name: Repository layout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify the tree matches its manifests
+        run: node .github/verify-layout.mjs
