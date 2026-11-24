@@ -9,18 +9,28 @@ let package = Package(
     ],
     dependencies: [
         // Geometry, viewport and transform maths: plain Swift, testable without Xcode.
-        .package(path: "../DXFGeometry")
+        .package(path: "../DXFGeometry"),
+        // Named again here, because DrawingLoader reads the file with SwiftDXF directly
+        // rather than going through DXFGeometry. Relying on the transitive dependency would
+        // build fine today and break the moment DXFGeometry changed its own imports.
+        .package(url: "https://github.com/SecondMouseAU/SwiftDXF.git", from: "0.6.0")
     ],
     targets: [
         .target(
             name: "CADViewer",
-            dependencies: ["DXFGeometry"],
+            dependencies: [
+                "DXFGeometry",
+                .product(name: "SwiftDXF", package: "SwiftDXF")
+            ],
             resources: [
                 // The built DWG viewer; see ios/web/build-for-ios.sh.
                 .copy("Resources/dwgviewer")
             ]
         ),
         .executableTarget(name: "CADViewerApp", dependencies: ["CADViewer"]),
-        .testTarget(name: "CADViewerTests", dependencies: ["CADViewer", "DXFGeometry"])
+        .testTarget(
+            name: "CADViewerTests",
+            dependencies: ["CADViewer", "DXFGeometry"]
+        )
     ]
 )
