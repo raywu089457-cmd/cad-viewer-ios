@@ -58,3 +58,4 @@ Thumbs.db
 pe.txt
 shots/*.json
 verification/dxf-geometry-harness/e.txt
+shots/*.html
