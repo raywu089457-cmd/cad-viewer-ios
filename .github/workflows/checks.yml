@@ -113,6 +113,9 @@ jobs:
       - name: Check argument labels
         run: node verification/check-api-usage.mjs
 
+      - name: Check the UI does not read files on the main thread
+        run: node verification/check-main-thread-io.mjs
+
   syntax:
     name: App layer parses
     runs-on: ubuntu-latest

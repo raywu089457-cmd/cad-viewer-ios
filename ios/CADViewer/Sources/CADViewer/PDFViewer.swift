@@ -49,7 +49,7 @@ struct PDFViewer: View {
                 }
             }
         }
-        .task { model.open(url: url) }
+        .task { await model.open(url: url) }
     }
 }
 
@@ -61,20 +61,37 @@ final class PDFViewerModel {
     /// `true` fits the whole page, `false` fits the width, which is how drawings are read.
     var autoScales = true
 
-    func open(url: URL) {
+    func open(url: URL) async {
+        // Opening a PDF reads and indexes it. On a large drawing that is long enough to be
+        // felt, and this class is @Observable so it is main-actor bound: doing the work here
+        // would freeze the interface before the view even appears.
+        let outcome = await Self.load(url: url)
+        switch outcome {
+        case .success(let loaded):
+            document = loaded
+        case .failure(let reason):
+            error = reason
+        }
+    }
+
+    /// Opens a PDF away from the main actor.
+    enum OpenOutcome {
+        case success(PDFDocument)
+        case failure(String)
+    }
+
+    nonisolated static func load(url: URL) async -> OpenOutcome {
         // A file from the document picker lives outside the sandbox until this is called.
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
         guard let document = PDFDocument(url: url) else {
-            error = "The file is not a readable PDF."
-            return
+            return .failure("The file is not a readable PDF.")
         }
         guard document.pageCount > 0 else {
-            error = "The PDF has no pages."
-            return
+            return .failure("The PDF has no pages.")
         }
-        self.document = document
+        return .success(document)
     }
 }
 

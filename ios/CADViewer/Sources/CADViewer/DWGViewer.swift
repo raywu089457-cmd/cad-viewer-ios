@@ -89,11 +89,14 @@ final class DWGViewerModel {
 
         // The bytes are read here rather than by the page: the page has no file access, and
         // a security-scoped URL from the picker would not survive the handoff.
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        //
+        // Read off the main actor. This method is @MainActor because it drives the view, but a
+        // real DWG is routinely tens of megabytes and reading one on the main thread freezes
+        // the interface for the whole read — while the spinner that says "loading" is
+        // itself unable to update.
         let data: Data
         do {
-            data = try Data(contentsOf: url)
+            data = try await Self.readBytes(at: url)
         } catch {
             fail(error.localizedDescription)
             return
@@ -203,6 +206,16 @@ final class DWGViewerModel {
                 }
             }
         }
+    }
+
+    /// Reads a file's bytes away from the main actor.
+    ///
+    /// The security-scoped access is opened and closed inside, because the URL is only valid
+    /// for as long as the scope is held and the caller no longer controls that lifetime.
+    nonisolated static func readBytes(at url: URL) async throws -> Data {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        return try Data(contentsOf: url)
     }
 
     private func fail(_ message: String) {

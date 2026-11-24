@@ -26,7 +26,12 @@ enum DrawingLoader {
     /// - Parameters:
     ///   - url: A file the app has access to; security-scoped URLs are opened here.
     ///   - onDarkBackground: Whether ACI 7 should render white.
-    static func load(
+    ///
+    /// `nonisolated` because the work is CPU-bound parsing, not UI. Without it the body
+    /// inherits the caller's actor — which is the main actor, since this is called from a
+    /// SwiftUI view — and flattening a large drawing would freeze the interface it is meant
+    /// to be loading for.
+    nonisolated static func load(
         url: URL,
         onDarkBackground: Bool = true
     ) async -> Result<LoadedDrawing, LoadFailure> {

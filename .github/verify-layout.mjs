@@ -121,6 +121,8 @@ mustExist('verification/verify-coordinates.mjs')
 // Checks the app layer's calls into the geometry against the real declarations, which is
 // the part of that layer that can be verified without an Apple SDK.
 mustExist('verification/check-api-usage.mjs')
+// File reads on the main actor freeze the interface, which no screenshot would show.
+mustExist('verification/check-main-thread-io.mjs')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')

@@ -168,8 +168,9 @@ struct RootView: View {
         case .dxf:
             Task {
                 isLoading = true
-                // The parse runs off the main thread; the loader reports back on the main
-                // actor when it finishes.
+                // `DrawingLoader.load` is nonisolated, so the parse runs on the cooperative
+                // pool rather than the main actor this view is on: a large drawing would
+                // otherwise freeze the interface while it loaded. The await returns here.
                 let result = await DrawingLoader.load(url: url)
                 isLoading = false
                 switch result {
