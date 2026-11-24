@@ -181,3 +181,34 @@ public enum ResourceLocation {
         return nil
     }
 }
+
+/// The zoom limits for a PDF page.
+///
+/// `scaleFactorForSizeToFit` is only meaningful once the view has a size. Asking for it in
+/// `makeUIView` — before layout — yields zero, and limits derived from it would be a floor of
+/// 0.01 and a ceiling of 4, which is a pinch range far narrower than the page needs. The
+/// arithmetic is here so it can be tested, and so the fallback for an unmeasured view is
+/// explicit rather than accidental.
+public enum PDFZoom {
+    /// How far out and in the reader may pinch, relative to fitting the page.
+    public static let minimumRelativeZoom: Double = 0.25
+    public static let maximumRelativeZoom: Double = 12
+
+    /// The pinch limits for a page whose fit scale is `fitScale`.
+    ///
+    /// - Parameter fitScale: `scaleFactorForSizeToFit`, or 0 when the view has no size yet.
+    /// - Returns: the floor and ceiling to assign, and whether they came from a real
+    ///   measurement.
+    public static func limits(fitScale: Double) -> (
+        minimum: Double, maximum: Double, measured: Bool
+    ) {
+        // A view that has not been laid out reports zero, and there is no honest scale to
+        // derive from it.
+        guard fitScale.isFinite, fitScale > 0 else {
+            return (minimum: 0.1, maximum: 10, measured: false)
+        }
+        let minimum = fitScale * minimumRelativeZoom
+        let maximum = fitScale * maximumRelativeZoom
+        return (minimum: minimum, maximum: maximum, measured: true)
+    }
+}

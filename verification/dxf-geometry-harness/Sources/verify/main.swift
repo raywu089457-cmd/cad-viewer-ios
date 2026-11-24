@@ -1081,6 +1081,31 @@ do {
 
     check(DrawBatching.groups(colors: []).isEmpty, "nothing groups to nothing")
 }
+section("PDF zoom limits")
+do {
+    // scaleFactorForSizeToFit is meaningless before layout. Deriving limits from it in
+    // makeUIView gave a floor of 0.01 and a ceiling of 4, a pinch range far narrower than the
+    // page needs, and nothing would have said so.
+    let unmeasured = PDFZoom.limits(fitScale: 0)
+    check(!unmeasured.measured, "a zero fit scale is not measured")
+    check(unmeasured.maximum > unmeasured.minimum, "the fallback range is usable", "\(unmeasured)")
+
+    // A NaN or negative scale is no better than zero.
+    check(!PDFZoom.limits(fitScale: .nan).measured, "NaN is not measured")
+    check(!PDFZoom.limits(fitScale: -1).measured, "a negative scale is not measured")
+
+    // A real fit scale gives a range proportional to it, so the same page zooms the same way
+    // whatever the screen.
+    let measured = PDFZoom.limits(fitScale: 2)
+    check(measured.measured, "a real scale is measured")
+    check(abs(measured.minimum - 0.5) < 1e-9, "a quarter of the fit scale", "\(measured.minimum)")
+    check(abs(measured.maximum - 24) < 1e-9, "twelve times the fit scale", "\(measured.maximum)")
+
+    // Scaling the page must scale the range with it, not clamp to a fixed pair.
+    let bigger = PDFZoom.limits(fitScale: 4)
+    check(bigger.maximum > measured.maximum, "a larger page zooms further in")
+    check(bigger.minimum > measured.minimum, "and its floor rises too")
+}
 // MARK: - Result
 
 print("")

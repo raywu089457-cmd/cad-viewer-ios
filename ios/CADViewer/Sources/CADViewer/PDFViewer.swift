@@ -90,10 +90,13 @@ private struct PDFKitView: UIViewRepresentable {
         view.autoScales = autoScales
         view.backgroundColor = UIColor(
             red: 0.07, green: 0.09, blue: 0.11, alpha: 1)
-        // A drawing is often wider than the screen; allow pinching out far enough to read
-        // small text without the page snapping back.
-        view.minScaleFactor = max(view.scaleFactorForSizeToFit / 4, 0.01)
-        view.maxScaleFactor = max(view.scaleFactorForSizeToFit * 12, 4)
+        // Not measured yet at this point: the view has no size until layout, so the limits
+        // are set from the fit scale in updateUIView once it is real. A drawing is often wider
+        // than the screen, so the range has to allow pinching out far enough to read small
+        // text without the page snapping back.
+        let limits = PDFZoom.limits(fitScale: view.scaleFactorForSizeToFit)
+        view.minScaleFactor = limits.minimum
+        view.maxScaleFactor = limits.maximum
         view.displayMode = .singlePageContinuous
         view.displayDirection = .vertical
         return view
@@ -101,6 +104,14 @@ private struct PDFKitView: UIViewRepresentable {
 
     func updateUIView(_ view: PDFView, context: Context) {
         if view.document !== document { view.document = document }
+
+        // Layout has happened by now, so the fit scale is meaningful and the pinch range can
+        // be derived from it. Doing this only in makeUIView left the range at its fallback.
+        let limits = PDFZoom.limits(fitScale: view.scaleFactorForSizeToFit)
+        if limits.measured {
+            view.minScaleFactor = limits.minimum
+            view.maxScaleFactor = limits.maximum
+        }
         if view.autoScales != autoScales {
             view.autoScales = autoScales
             // Re-frame after switching, or the page keeps the previous zoom.
