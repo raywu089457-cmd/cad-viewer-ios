@@ -24,6 +24,18 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
         super.init()
     }
 
+    /// Replaces the drawing the page will fetch.
+    ///
+    /// This is not an optimisation, it is required: a `WKWebViewConfiguration` is copied
+    /// when the web view is created, so a handler added afterwards never takes effect. When
+    /// a reopen falls back to reloading the page, the handler that is already installed has
+    /// to be told about the new drawing or the page fetches the previous one.
+    func setDrawing(_ data: Data) {
+        lock.lock()
+        drawing = data
+        lock.unlock()
+    }
+
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
         guard let url = task.request.url else {
             task.didFailWithError(URLError(.badURL))

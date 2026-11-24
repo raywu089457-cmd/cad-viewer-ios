@@ -116,15 +116,24 @@ final class DWGViewerModel {
             didBecomeReady = false
         }
 
-        let handler = ViewerSchemeHandler(root: viewerRoot, drawing: data)
-        schemeHandler = handler
+        // A configuration is copied when the web view is made, so these can only be set up
+        // once. A reload reuses them and pushes the new drawing into the existing handler.
+        let webView: WKWebView
 
-        let configuration = WKWebViewConfiguration()
-        configuration.setURLSchemeHandler(handler, forURLScheme: ViewerSchemeHandler.scheme)
-        configuration.defaultWebpagePreferences.allowsContentJavaScript = true
-        configuration.userContentController.add(self, name: "cadEvents")
-
-        let webView = WKWebView(frame: .zero, configuration: configuration)
+        if let existingHandler = schemeHandler, let existingWebView = webView {
+            // Reloading: the handler is already installed and cannot be replaced.
+            existingHandler.setDrawing(data)
+            webView = existingWebView
+        } else {
+            let handler = ViewerSchemeHandler(root: viewerRoot, drawing: data)
+            schemeHandler = handler
+            let configuration = WKWebViewConfiguration()
+            configuration.setURLSchemeHandler(
+                handler, forURLScheme: ViewerSchemeHandler.scheme)
+            configuration.defaultWebpagePreferences.allowsContentJavaScript = true
+            configuration.userContentController.add(self, name: "cadEvents")
+            webView = WKWebView(frame: .zero, configuration: configuration)
+        }
         webView.isOpaque = false
         webView.backgroundColor = .clear
         webView.scrollView.backgroundColor = .clear
