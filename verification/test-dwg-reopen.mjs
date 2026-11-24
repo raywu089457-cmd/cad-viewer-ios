@@ -19,11 +19,23 @@ if (!root || !first || !second) {
   process.exit(2)
 }
 
-const types = {
-  '.html': 'text/html',
-  '.js': 'text/javascript',
-  '.wasm': 'application/wasm',
-  '.css': 'text/css'
+// The MIME table the app uses, read from the source of truth rather than kept in step by
+// hand: WebKit refuses to stream-compile the wasm unless it is served as application/wasm,
+// and a test server that guessed a type would pass while the app failed.
+const mimeSource = fs.readFileSync(
+  new URL('../ios/DXFGeometry/Sources/DXFGeometry/BundleServing.swift', import.meta.url),
+  'utf8'
+)
+const mimeTable = new Map()
+for (const match of mimeSource.matchAll(
+  /case ((?:"[a-z0-9]+"(?:, )?)+): return "([^"]+)"/g
+)) {
+  const extensions = [...match[1].matchAll(/"([a-z0-9]+)"/g)].map(m => m[1])
+  for (const extension of extensions) mimeTable.set('.' + extension, match[2])
+}
+if (mimeTable.size === 0) {
+  console.error('could not read the MIME table from BundleServing.swift')
+  process.exit(1)
 }
 
 /** Serves the built viewer and answers the drawing endpoint the app uses. */
@@ -32,7 +44,9 @@ function serve() {
   const server = http.createServer((req, res) => {
     const url = decodeURIComponent(req.url.split('?')[0])
     if (url.endsWith('/__dwg__')) {
-      res.writeHead(200, { 'Content-Type': 'application/octet-stream' })
+      res.writeHead(200, {
+        'Content-Type': mimeTable.get('.bin') ?? 'application/octet-stream'
+      })
       fs.createReadStream(current).pipe(res)
       return
     }
@@ -45,8 +59,14 @@ function serve() {
       res.end()
       return
     }
+    // The same headers the app's scheme handler sends. A test that omits them is testing a
+    // server the app never runs: the wasm worker depends on the cross-origin policy pair.
     res.writeHead(200, {
-      'Content-Type': types[path.extname(target)] || 'application/octet-stream'
+      'Content-Type':
+        mimeTable.get(path.extname(target)) ?? 'application/octet-stream',
+      'Cache-Control': 'no-store',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
     })
     fs.createReadStream(target).pipe(res)
   })
