@@ -26,6 +26,14 @@ struct RootView: View {
     @State private var opened: Opened?
     @State private var failure: LoadFailure?
     @State private var isLoading = false
+    /// Which load is live.
+    ///
+    /// Opening a second file while the first is still parsing would otherwise let the
+    /// abandoned one land later and replace the file the reader actually chose.
+    @State private var loadGeneration = LoadGeneration()
+    /// Which load is live. Opening a second file while the first is still parsing would
+    /// otherwise let the abandoned one land later and replace the file the reader chose.
+    @State private var loadGeneration = LoadGeneration()
     @State private var isPickingFile = false
 
     var body: some View {
@@ -166,12 +174,16 @@ struct RootView: View {
 
         switch DrawingKind(fileName: name) {
         case .dxf:
+            let generation = loadGeneration.begin()
             Task {
                 isLoading = true
                 // `DrawingLoader.load` is nonisolated, so the parse runs on the cooperative
                 // pool rather than the main actor this view is on: a large drawing would
                 // otherwise freeze the interface while it loaded. The await returns here.
                 let result = await DrawingLoader.load(url: url)
+                // A file picked while this one was parsing has taken over. Its result is the
+                // one the reader asked for; this one is abandoned.
+                guard loadGeneration.isCurrent(generation) else { return }
                 isLoading = false
                 switch result {
                 case .success(let drawing):
@@ -198,6 +210,10 @@ struct RootView: View {
     private func reset() {
         opened = nil
         failure = nil
+        // Any load already in flight belongs to a file the reader has moved on from. Bumping
+        // the generation here means its result is discarded rather than drawn over the next
+        // one, which `open` calls after this.
+        _ = loadGeneration.begin()
     }
 }
 

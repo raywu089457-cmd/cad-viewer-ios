@@ -34,3 +34,31 @@ struct LoadGenerationTests {
         #expect(seen == seen.sorted())
     }
 }
+
+/// The same rule as the DWG viewer, applied to opening files: a slow parse must not land on
+/// top of the file the reader chose afterwards.
+extension LoadGenerationTests {
+    @Test("A load abandoned for a second file does not land")
+    func abandonedLoad() {
+        var generation = LoadGeneration()
+        // open() calls reset(), which invalidates anything in flight, then takes its own.
+        _ = generation.begin()
+        let slow = generation.begin()
+
+        // The reader picks another file before the first finishes.
+        _ = generation.begin()
+        let chosen = generation.begin()
+
+        #expect(!generation.isCurrent(slow))
+        #expect(generation.isCurrent(chosen))
+    }
+
+    @Test("Closing the document discards a pending load")
+    func closing() {
+        var generation = LoadGeneration()
+        let pending = generation.begin()
+        // reset() bumps, so the pending result is dropped.
+        _ = generation.begin()
+        #expect(!generation.isCurrent(pending))
+    }
+}

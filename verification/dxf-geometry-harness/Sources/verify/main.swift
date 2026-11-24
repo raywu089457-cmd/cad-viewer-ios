@@ -1132,6 +1132,34 @@ do {
         userInfo: [NSUnderlyingErrorKey: notFound])
     check(!FilePickOutcome.isCancellation(wrappedReal), "a wrapped failure is not a cancel")
 }
+section("Overlapping loads")
+do {
+    // The reader can pick a second file while the first is still parsing. Both waits share
+    // one view, so the abandoned one must not land afterwards and replace the chosen file.
+    var generation = LoadGeneration()
+
+    // Opening a file: reset() invalidates whatever was in flight, then open() takes a new
+    // generation for itself.
+    _ = generation.begin()          // reset
+    let slow = generation.begin()   // the 50 MB drawing
+
+    // The reader picks a smaller one while that is still parsing.
+    _ = generation.begin()          // reset again
+    let quick = generation.begin()  // the file they actually want
+
+    check(!generation.isCurrent(slow), "the abandoned load is stale")
+    check(generation.isCurrent(quick), "the chosen one is current")
+
+    // And a load that finishes before anything else is still current.
+    var single = LoadGeneration()
+    _ = single.begin()
+    let only = single.begin()
+    check(single.isCurrent(only), "a lone load lands")
+
+    // Closing the document discards anything in flight.
+    _ = single.begin()
+    check(!single.isCurrent(only), "closing discards the pending load")
+}
 // MARK: - Result
 
 print("")
