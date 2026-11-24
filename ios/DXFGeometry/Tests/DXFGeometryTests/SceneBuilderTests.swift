@@ -179,6 +179,7 @@ struct SceneBuilderTests {
         // the chord, the way AutoCAD draws it. The harness asserts the same.
         let lowest = path.points.map(\.y).min() ?? 0
         #expect(abs(lowest + 5) < 0.05)
+    }
 
     @Test("TEXT keeps its position, height and string")
     func text() throws {
