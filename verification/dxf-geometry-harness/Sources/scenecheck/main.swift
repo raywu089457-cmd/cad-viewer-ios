@@ -183,11 +183,18 @@ for line in scene.polylines {
 for text in scene.texts {
     let anchor = text.attachment == .middleCenter ? "middle" : "start"
     let baseline = text.attachment == .middleCenter ? "central" : "alphabetic"
+    // The drawing sits in a scale(1,-1) group, which would mirror the glyphs. Text is wrapped
+    // in a counter-flip so it reads the right way up, and the rotation is negated for the same
+    // reason the app negates it: drawing space is y-up, screen space is y-down.
+    let flip =
+        "translate(\(text.position.x) \(text.position.y)) "
+        + "rotate(\(-text.rotationDegrees)) scale(1,-1) "
+        + "translate(\(-text.position.x) \(-text.position.y))"
     body.append(
         "<text x=\"\(text.position.x)\" y=\"\(text.position.y)\" "
             + "font-size=\"\(text.height)\" fill=\"\(rgb(text.color))\" "
             + "text-anchor=\"\(anchor)\" dominant-baseline=\"\(baseline)\" "
-            + "transform=\"rotate(\(text.rotationDegrees) \(text.position.x) \(text.position.y))\" "
+            + "transform=\"\(flip)\" "
             + "font-family=\"Helvetica, Arial, sans-serif\">\(escapes(text.string))</text>")
 }
 

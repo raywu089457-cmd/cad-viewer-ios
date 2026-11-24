@@ -247,7 +247,7 @@ public struct SceneBuilder {
                 }
                 // SwiftDXF models the measurement, not the glyph geometry, so the value is
                 // drawn at the text position instead of arrows and witness marks.
-                if let label = dimensionLabel(dimension) {
+                if let label = Self.dimensionLabel(dimension) {
                     scene.texts.append(
                         TextItem(
                             string: label,
@@ -359,13 +359,29 @@ public struct SceneBuilder {
     }
 
     /// The text a dimension shows: its override, or the measurement.
-    private func dimensionLabel(_ d: DXF.Dimension) -> String? {
-        if let override = d.textOverride {
-            let trimmed = override.trimmingCharacters(in: .whitespaces)
-            // A literal space is the DXF convention for "suppress the text".
-            if trimmed.isEmpty { return nil }
-            return trimmed
-        }
+    /// The text a dimension shows: its override with the measured value substituted in.
+    ///
+    /// Public because the rule is worth testing without building a scene, and because the
+    /// same substitution is needed anywhere else dimensions are reported.
+    public static func dimensionLabel(_ d: DXF.Dimension) -> String? {
+        let value = Self.measuredText(d)
+
+        guard let override = d.textOverride else { return value }
+        // A literal space is the DXF convention for "suppress the text".
+        let trimmed = override.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { return nil }
+
+        // `<>` is where the measured value goes; almost every dimension uses it as the
+        // format, e.g. "<> mm" or "<>\\P(max)". A reader that does not substitute it shows
+        // the placeholder itself, which is what happened here: nine dimensions read "<>".
+        // `\\P` is a line break in MTEXT.
+        return trimmed
+            .replacingOccurrences(of: "<>", with: value ?? "")
+            .replacingOccurrences(of: "\\P", with: "\n")
+    }
+
+    /// The measurement as text, or nil when the geometry does not give one.
+    private static func measuredText(_ d: DXF.Dimension) -> String? {
         guard let value = d.computedMeasurement, value.isFinite else { return nil }
         let rounded = (value * 100).rounded() / 100
         if rounded == rounded.rounded() { return String(Int(rounded)) }

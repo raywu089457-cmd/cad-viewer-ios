@@ -536,3 +536,48 @@ struct HatchSolidityTests {
         #expect(fill.outer.count >= 3)
     }
 }
+
+/// The text a dimension shows. `<>` is where the measured value goes, and returning the
+/// override verbatim shows the placeholder itself — nine dimensions in the fixtures read
+/// "<>" before this was handled.
+@Suite("Dimension text")
+struct DimensionTextTests {
+    private func label(_ override: String?, width: Double) -> String? {
+        let dimension = DXF.Dimension(
+            kind: .linear, measurement: width, textOverride: override,
+            textPosition: DXF.Point(0, 0, 0), defPoint: DXF.Point(0, 0, 0),
+            defPoint2: DXF.Point(0, 0, 0), defPoint3: DXF.Point(width, 0, 0),
+            layer: "0", color: 7)
+        return SceneBuilder.dimensionLabel(dimension)
+    }
+
+    @Test("A dimension with no override shows its measured value")
+    func plain() {
+        #expect(label(nil, width: 40) == "40")
+    }
+
+    @Test("The measurement placeholder is substituted")
+    func placeholder() {
+        // The value comes from the definition points, not the stored group 42.
+        #expect(label("<>", width: 40) == "40")
+        #expect(label("<> mm", width: 15) == "15 mm")
+        #expect(label("<>", width: 27.321) == "27.32")
+    }
+
+    @Test("Suffixes and line breaks survive")
+    func formatting() {
+        #expect(label("<>\P(max)", width: 67) == "67\n(max)")
+    }
+
+    @Test("Text with no placeholder is left alone")
+    func literalText() {
+        #expect(label("nominal", width: 40) == "nominal")
+    }
+
+    @Test("An empty override suppresses the text")
+    func suppressed() {
+        // A literal space is the DXF convention for "show nothing".
+        #expect(label("", width: 40) == nil)
+        #expect(label(" ", width: 40) == nil)
+    }
+}

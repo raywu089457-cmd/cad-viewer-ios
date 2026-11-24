@@ -891,6 +891,35 @@ do {
     }
 }
 
+section("Dimension text")
+do {
+    // `<>` is where the measured value goes, and almost every dimension uses it as the
+    // format. Returning the override verbatim shows the placeholder itself: nine dimensions
+    // in the fixture drawings read "<>" before this was handled.
+    //
+    // computedMeasurement comes from the definition points rather than the stored group 42,
+    // which is the more trustworthy of the two, so the fixture makes the geometry agree with
+    // the value under test.
+    func label(override: String?, width: Double) -> String? {
+        let dimension = DXF.Dimension(
+            kind: .linear, measurement: width, textOverride: override,
+            textPosition: DXF.Point(0, 0, 0), defPoint: DXF.Point(0, 0, 0),
+            defPoint2: DXF.Point(0, 0, 0), defPoint3: DXF.Point(width, 0, 0),
+            layer: "0", color: 7)
+        return SceneBuilder.dimensionLabel(dimension)
+    }
+
+    check(label(override: nil, width: 40) == "40", "a plain dimension shows its value")
+    check(label(override: "<>", width: 40) == "40", "<> is replaced by the value")
+    check(label(override: "<> mm", width: 15) == "15 mm", "a suffix survives")
+    check(label(override: "<>\\P(max)", width: 67) == "67\n(max)", "a line break is decoded")
+    check(label(override: "nominal", width: 40) == "nominal", "text with no <> is left alone")
+    check(label(override: "<>", width: 27.321) == "27.32", "a fraction keeps two places")
+    // A literal space is the DXF convention for suppressing the text.
+    check(label(override: "", width: 40) == nil, "an empty override shows nothing")
+    check(label(override: " ", width: 40) == nil, "a space override shows nothing")
+}
+
 // MARK: - Result
 
 print("")
