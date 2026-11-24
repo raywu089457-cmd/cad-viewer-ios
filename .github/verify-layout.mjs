@@ -131,6 +131,8 @@ mustExist('verification/check-main-thread-io.mjs')
 mustExist('verification/check-fixture-fresh.mjs')
 // A content controller holds its handler strongly; registering the view leaks the page.
 mustExist('verification/check-retain-cycles.mjs')
+// Applied on CI so the Swift suites can run on Linux; a missing patch means no tests run.
+mustExist('verification/patch-swiftdxf-for-linux.sh')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')

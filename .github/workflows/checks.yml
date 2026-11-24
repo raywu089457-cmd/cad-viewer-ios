@@ -162,3 +162,36 @@ jobs:
           node $GITHUB_WORKSPACE/verification/verify-coordinates.mjs \
             $GITHUB_WORKSPACE/verification/fixtures/circles.dxf \
             $GITHUB_WORKSPACE/verification/fixtures/circles.json
+  swift-tests:
+    name: Geometry tests and harness
+    runs-on: ubuntu-latest
+    container: swift:5.10-jammy
+    steps:
+      - uses: actions/checkout@v4
+
+      # SwiftDXF guards its CoreFoundation code-page decoding with `canImport(CoreFoundation)`,
+      # which succeeds on Linux while the CFString symbols do not exist. The checkout is
+      # patched to narrow that guard, the same way the wasm harness does it, so the test
+      # suites can run here rather than only on a Mac nobody has.
+      - name: Resolve dependencies
+        working-directory: ios/DXFGeometry
+        run: swift package resolve
+
+      - name: Patch the dependency for Linux
+        run: ./verification/patch-swiftdxf-for-linux.sh
+
+      - name: Test DXFGeometry
+        working-directory: ios/DXFGeometry
+        run: swift test
+
+      - name: Build the harness
+        working-directory: verification/dxf-geometry-harness
+        run: swift build -c release
+
+      - name: Run the harness
+        working-directory: verification/dxf-geometry-harness
+        run: swift run -c release verify
+
+      - name: Check the committed snapshot is current
+        working-directory: verification/dxf-geometry-harness
+        run: node ../check-fixture-fresh.mjs "$(swift build -c release --show-bin-path)/scenecheck"
