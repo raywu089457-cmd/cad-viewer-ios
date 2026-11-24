@@ -63,16 +63,10 @@ enum DrawingLoader {
         }
 
         let started = Date()
-        // Paper space is skipped: a phone screen showing a title block scaled down to a
-        // whole sheet is not what "open this drawing" means.
-        var options = DXF.ReadOptions()
-        options.expandBlocks = true
-        options.skipPaperSpace = true
-        // Block attributes are the part numbers and titles the block carries, which AutoCAD
-        // draws and a reader must show. Without this a drawing of parts comes out as outlines
-        // with no labels at all.
-        options.expandAttributes = true
-
+        // The options the app opens with, shared with the tests so both exercise the same
+        // configuration: expanding blocks, skipping paper space and expanding attributes all
+        // change what appears on screen.
+        let options = DrawingReadOptions.app
         let drawing: DXF.Drawing
         do {
             drawing = try DXF.read(data: data, options: options)

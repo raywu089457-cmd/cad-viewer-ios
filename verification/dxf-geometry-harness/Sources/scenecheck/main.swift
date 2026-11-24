@@ -24,13 +24,9 @@ guard !data.isEmpty else {
 }
 let text = String(decoding: data, as: Unicode.ASCII.self)
 
-// Paper space is skipped: the web viewers show model space, and comparing like with like is
-// the whole point of this tool.
-var options = DXF.ReadOptions()
-options.expandBlocks = true
-// Block attributes are what AutoCAD draws for a reference: part numbers and titles.
-options.expandAttributes = true
-options.skipPaperSpace = true
+// The app's own options, so this tool shows what the app shows. Paper space is skipped, the
+// web viewers show model space, and comparing like with like is the whole point of this tool.
+let options = DrawingReadOptions.app
 
 let started = Date()
 let drawing: DXF.Drawing

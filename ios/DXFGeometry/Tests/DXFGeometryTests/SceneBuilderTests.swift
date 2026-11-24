@@ -61,7 +61,10 @@ struct SceneBuilderTests {
     static func build(_ entities: String, extents: (Double, Double, Double, Double)? = nil)
         throws -> DrawScene
     {
-        let drawing = try DXF.read(text: dxf(entities, extents: extents))
+        // The app's own options, not the defaults: a test that read with defaults would be
+        // checking a configuration the app never uses.
+        let drawing = try DXF.read(
+            text: dxf(entities, extents: extents), options: DrawingReadOptions.app)
         return SceneBuilder().build(drawing)
     }
 
@@ -255,7 +258,7 @@ struct SceneBuilderTests {
         ENDSEC
         0
         EOF
-        """)
+        """, options: DrawingReadOptions.app)
         let scene = SceneBuilder().build(drawing)
         let line = try #require(scene.polylines.first)
         // ACI 1 is red.
@@ -450,7 +453,9 @@ struct CurveToleranceTests {
         ENDSEC
         0
         """
-        guard let drawing = try? DXF.read(text: source) else { return -1 }
+        guard let drawing = try? DXF.read(text: source, options: DrawingReadOptions.app) else {
+            return -1
+        }
         return SceneBuilder().build(drawing).polylines.first?.points.count ?? -1
     }
 
