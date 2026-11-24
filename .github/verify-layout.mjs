@@ -126,6 +126,9 @@ mustExist('verification/verify-coordinates.mjs')
 mustExist('verification/check-api-usage.mjs')
 // File reads on the main actor freeze the interface, which no screenshot would show.
 mustExist('verification/check-main-thread-io.mjs')
+// A committed snapshot that stops matching the pipeline turns the independent coordinate
+// check into decoration.
+mustExist('verification/check-fixture-fresh.mjs')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')

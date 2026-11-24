@@ -17,6 +17,7 @@ package, not targets inside `ios/DXFGeometry`, for two reasons:
 
 ```bash
 ./run.sh verify
+./run.sh freshness        # does the committed snapshot still match the pipeline?
 ./run.sh scenecheck --svg < ../../out/example_2018.dxf > drawing.svg
 ./run.sh scenecheck --json < ../../out/example_2018.dxf | jq .counts
 ```

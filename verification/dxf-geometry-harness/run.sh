@@ -17,6 +17,12 @@ shift || true
 
 case "$MODE" in
     verify) exec swift run -c release verify ;;
+    freshness)
+        # The committed snapshot has to still match what the pipeline produces, or the
+        # independent coordinate check is comparing two stale copies of the same thing.
+        swift build -c release --product scenecheck
+        exec node ../check-fixture-fresh.mjs "$(swift build -c release --show-bin-path)/scenecheck"
+        ;;
     scenecheck) exec swift run -c release scenecheck "$@" ;;
     *)
         echo "usage: $0 [verify|scenecheck] [args...]" >&2

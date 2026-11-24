@@ -147,9 +147,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Every other check compares the pipeline against itself. This one has its own small
-      # DXF reader, shares no code with the Swift side, and asserts that the LINE endpoints
-      # and the CIRCLE radii in the file are what came out the other end.
+      # This checks the committed snapshot rather than the pipeline: both files are fixed,
+      # so it proves the JSON has not been edited by hand, not that the pipeline is correct.
+      # The pipeline is checked by the harness, which needs a Swift toolchain and cannot run
+      # on this runner.
+      #
+      # Worth keeping anyway: a snapshot that quietly stops matching is how the independent
+      # check becomes decoration.
       - name: Cross-check a drawing with circles and lines
         run: |
           node $GITHUB_WORKSPACE/verification/verify-coordinates.mjs \
