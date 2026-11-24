@@ -941,6 +941,36 @@ do {
     check(Set(seen).count == 50, "every generation is distinct", "(Set(seen).count)")
     check(seen == seen.sorted(), "and they increase")
 }
+section("Resource location")
+do {
+    // SwiftPM copies the folder into the bundle, but under which name depends on how the
+    // target is built. Guessing wrong gives a blank DWG tab, so the candidates are tried.
+    let candidates = ResourceLocation.candidates(for: "Resources/dwgviewer")
+    check(candidates.contains("dwgviewer"), "the leaf name is a candidate")
+    check(candidates.contains("Resources/dwgviewer"), "so is the written path")
+    check(candidates.count == Set(candidates).count, "with no duplicates")
+
+    // A bare name has no directory to strip, so it must not be listed twice.
+    let bare = ResourceLocation.candidates(for: "dwgviewer")
+    check(bare == ["dwgviewer"], "a bare name yields one candidate", "\(bare)")
+
+    func find(existing: [String]) -> String? {
+        ResourceLocation.find(
+            path: "Resources/dwgviewer", in: "/app", exists: { existing.contains($0) })
+    }
+
+    check(find(existing: ["/app/dwgviewer"]) == "/app/dwgviewer", "finds the leaf name")
+    check(find(existing: ["/app/Resources/dwgviewer"]) == "/app/Resources/dwgviewer", "finds the written path")
+    check(find(existing: []) == nil, "reports nothing when absent")
+    check(find(existing: ["/app/other"]) == nil, "ignores unrelated folders")
+
+    // The leaf name wins when both exist, which is what SwiftPM documents.
+    check(
+        find(existing: ["/app/dwgviewer", "/app/Resources/dwgviewer"])
+            == "/app/dwgviewer",
+        "prefers the leaf name")
+}
+
 // MARK: - Result
 
 print("")

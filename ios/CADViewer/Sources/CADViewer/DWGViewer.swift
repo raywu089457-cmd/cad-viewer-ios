@@ -71,12 +71,21 @@ final class DWGViewerModel {
     func open(url: URL, fileName: String, onError: @escaping (String) -> Void) async {
         errorHandler = onError
 
-        guard let viewerRoot = Bundle.main.url(forResource: "dwgviewer", withExtension: nil)
+        // SwiftPM copies the folder into the bundle, but the name it carries depends on how
+        // the target is built. Every plausible location is tried, and failing to find one is
+        // reported, rather than leaving a blank tab.
+        guard let resourceRoot = Bundle.main.resourceURL?.path,
+              let viewerPath = ResourceLocation.find(
+                path: "Resources/dwgviewer",
+                in: resourceRoot,
+                exists: { FileManager.default.fileExists(atPath: $0) }),
+              FileManager.default.fileExists(atPath: viewerPath + "/index.html")
         else {
-            Self.log.error("dwgviewer bundle folder missing")
-            fail("The DWG viewer was not bundled with the app.")
+            Self.log.error("the dwgviewer folder is missing from the app bundle")
+            fail("The DWG viewer was not bundled with the app. Run ios/web/build-for-ios.sh and rebuild.")
             return
         }
+        let viewerRoot = URL(fileURLWithPath: viewerPath)
 
         // The bytes are read here rather than by the page: the page has no file access, and
         // a security-scoped URL from the picker would not survive the handoff.

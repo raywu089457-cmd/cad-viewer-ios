@@ -143,3 +143,41 @@ public struct LoadGeneration: Equatable, Sendable {
     /// The generation of the load in progress, or 0 before any.
     public var value: Int { current }
 }
+
+/// Where a bundled resource folder ends up.
+///
+/// SwiftPM's `.copy("Resources/dwgviewer")` puts the folder in the bundle, but the name it
+/// carries depends on how the target is built: sometimes the leaf name, sometimes the path
+/// as written. Guessing one and being wrong produces a blank DWG tab with no explanation, so
+/// the candidates are tried in order and the failure is explicit.
+public enum ResourceLocation {
+    /// The file names to try for a resource folder, in order of likelihood.
+    ///
+    /// - Parameter path: the path as written in `Package.swift`, e.g. `Resources/dwgviewer`.
+    public static func candidates(for path: String) -> [String] {
+        let leaf = (path as NSString).lastPathComponent
+        let withoutExtension = (path as NSString).deletingPathExtension
+        var names = [leaf, path, withoutExtension]
+        // Deduplicate while keeping order: a path with no directory repeats the leaf.
+        var seen = Set<String>()
+        return names.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
+    /// Finds the first candidate that exists under `bundleRoot`.
+    ///
+    /// - Parameters:
+    ///   - path: the path as written in `Package.swift`.
+    ///   - root: the directory to search, normally the bundle's resource directory.
+    ///   - exists: injection point, so the search can be tested without a bundle.
+    public static func find(
+        path: String,
+        in root: String,
+        exists: (String) -> Bool
+    ) -> String? {
+        for name in candidates(for: path) {
+            let candidate = (root as NSString).appendingPathComponent(name)
+            if exists(candidate) { return candidate }
+        }
+        return nil
+    }
+}
