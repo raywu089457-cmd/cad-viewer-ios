@@ -22,10 +22,10 @@ const check = (ok, what) => {
 const readme = readFileSync(join(here, 'README.md'), 'utf8')
 const listed = new Set([...readme.matchAll(/\|\s+`([a-z0-9.-]+\.(?:mjs|sh))`/g)].map(m => m[1]))
 
-// Everything at the top of this directory that is a check, by name.
-const onDisk = readdirSync(here)
-  .filter(f => f.endsWith('.mjs') || f.endsWith('.sh'))
-  .filter(f => f !== 'check-inventory.mjs')
+// Everything at the top of this directory that is a check, by name — including this one, which is
+// documented like any other. Excluding it from the disk side made the two counts disagree by one
+// in a way that looked like a missing file.
+const onDisk = readdirSync(here).filter(f => f.endsWith('.mjs') || f.endsWith('.sh'))
 
 // Against the workflow: whatever CI runs has to be documented, and vice versa.
 const workflow = readFileSync(join(here, '..', '.github', 'workflows', 'checks.yml'), 'utf8')
