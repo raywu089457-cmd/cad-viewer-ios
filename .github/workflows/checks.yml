@@ -86,7 +86,9 @@ jobs:
       - name: Install Playwright
         working-directory: verification
         run: |
-          npm install --no-audit --no-fund
+          # `npm ci` rather than `npm install`: it installs exactly the lockfile and fails if
+          # the two have drifted, which is the only way this job is reproducible.
+          npm ci --no-audit --no-fund
           npx playwright install --with-deps chromium
 
       - name: Build the viewer

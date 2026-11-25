@@ -243,6 +243,39 @@ if (process.platform !== 'win32') {
   }
 }
 
+// `npm ci` installs exactly the lockfile and fails when it disagrees with package.json, so a
+// drifted lockfile breaks CI on a commit that looked unrelated. Checked here, where the
+// message can say which package differs.
+{
+  const projects = ['ios/web', 'verification']
+  for (const project of projects) {
+    const manifestPath = join(root, project, 'package.json')
+    const lockPath = join(root, project, 'package-lock.json')
+    if (!existsSync(manifestPath) || !existsSync(lockPath)) {
+      fail(`${project} is missing package.json or package-lock.json`)
+      continue
+    }
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+    const lock = JSON.parse(readFileSync(lockPath, 'utf8'))
+    const rootEntry = (lock.packages && lock.packages['']) || {}
+    for (const field of ['dependencies', 'devDependencies']) {
+      const declared = Object.keys(manifest[field] || {}).sort()
+      const locked = Object.keys(rootEntry[field] || {}).sort()
+      if (JSON.stringify(declared) !== JSON.stringify(locked)) {
+        const onlyManifest = declared.filter(name => !locked.includes(name))
+        const onlyLock = locked.filter(name => !declared.includes(name))
+        fail(
+          `${project} ${field} out of sync with its lockfile` +
+            (onlyManifest.length ? ` (in package.json only: ${onlyManifest.join(', ')})` : '') +
+            (onlyLock.length ? ` (in lockfile only: ${onlyLock.join(', ')})` : '')
+        )
+      } else {
+        ok(`${project} ${field} matches its lockfile`)
+      }
+    }
+  }
+}
+
 if (problems.length > 0) {
   console.error(`layout problems (${problems.length}):`)
   for (const problem of problems) console.error(`  - ${problem}`)
