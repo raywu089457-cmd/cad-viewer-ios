@@ -36,6 +36,11 @@ jobs:
       - name: Verify the tree matches its manifests
         run: node .github/verify-layout.mjs
 
+      # Which scripts are checks, which are records, and whether the README agrees. Eleven
+      # historical scripts used to sit beside the checks, all exiting non-zero.
+      - name: Checks match their inventory
+        run: node verification/check-inventory.mjs
+
       # Seconds, not minutes: the stub declarations are plain text, and each duplicate or missing
       # name it finds used to cost a nine-minute round in the Swift job.
       - name: Stub declarations

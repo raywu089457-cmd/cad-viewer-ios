@@ -1,59 +1,64 @@
-# Verification harness
+# Verification
 
-The scripts used to check the two engines against real drawings. They are kept because the
-claims in the top-level README are only worth anything if they can be re-run.
+Two different things live under this directory, and they are worth keeping apart:
 
-## What is here
+- **Checks**, which run on every push and can fail a build. They say whether the tree is right.
+- **Record**, which says why the app is built the way it is. Nothing here runs them.
 
-| Script | Purpose |
-|---|---|
-| `serve.mjs` | static server for the mlightcad example build |
-| `serve-cad.mjs` | static server that also answers `__dwg__`, like the app's scheme handler |
-| `test-ml.mjs`, `test-ml2.mjs`, `test-ml3.mjs` | open DWG/DXF in mlightcad and screenshot |
-| `test-ff.mjs` | the same for flyfish file-viewer |
-| `test-webkit.mjs` | both of the above in WebKit at iPhone size |
-| `test-ios-web.mjs` | the app's own DWG bundle in WebKit |
-| `test-dwg-reopen.mjs` | the reopen path: a second DWG on an already-loaded page |
-| `shot-html.mjs` | render an SVG to PNG, for comparing native output |
-| `dbg.mjs` | inspect the SVG geometry a viewer produced |
-| `parse-check.sh` | syntax-check the SwiftUI/WebKit/PDF files without Xcode |
-| `verify-coordinates.mjs` | cross-check flattened geometry against the DXF, with its own reader |
-| `check-api-usage.mjs` | the app layer's calls into the geometry, checked against the declarations |
-| `check-main-thread-io.mjs` | file reads in the UI layer, which would freeze it |
-| `check-retain-cycles.mjs` | strong message-handler registrations, which leak the page |
+`engine-bakeoff/` holds the second. Everything else is the first.
+
+## The checks
+
+| Script | What it catches |
+| --- | --- |
+| `check-workflow.mjs` | a workflow that would silently run no jobs |
+| `check-stubs.mjs` | a stub type declared twice, a member that redeclares what it inherits, a generic parameter shadowing a type, an app file using `DXFGeometry` without importing it |
+| `check-types.sh` | the app layer failing to type-check against the platform stubs — needs a toolchain with the Observation plugin |
+| `check-api-usage.mjs` | the app calling the geometry with the wrong argument labels |
+| `check-main-thread-io.mjs` | a file read on the UI layer, which freezes it |
+| `check-retain-cycles.mjs` | a message handler registered strongly, which leaks the page and its wasm engine |
 | `check-actor-isolation.mjs` | `@Observable` state without `@MainActor`, a data race on the UI |
-| `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses |
+| `check-mime-coverage.mjs` | an extension in the built bundle with no MIME type, which WebKit downloads instead of rendering |
+| `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
+| `check-fixture-fresh.mjs` | the committed geometry snapshot drifting from the fixture |
+| `check-inventory.mjs` | this list drifting from what is on disk, or a bake-off script creeping into CI |
+| `make-pdf.mjs` | regenerates the PDF fixtures, so a change to either is reviewable in a diff |
+| `parse-check.sh` | a Swift syntax error, on a machine with no Apple SDK |
+| `verify-coordinates.mjs` | flattened geometry disagreeing with the DXF, read by a second independent reader |
+| `patch-swiftdxf-for-linux.sh` | the dependency's `canImport(CoreFoundation)` guard, which is wrong on Linux |
+| `test-dwg-reopen.mjs` | a second DWG failing to open on an already-loaded page, for each format the samples cover |
 
-## Running one
+Two conventions matter here:
+
+- **77 means skipped, 1 means failed.** A check that cannot run says which; it does not pass
+  quietly and it does not cry wolf.
+- **A check that has never been seen to fail is not known to work.** Each rule in
+  `check-stubs.mjs` and each new check was verified by reintroducing the defect it exists for.
+
+## The geometry harness
+
+`dxf-geometry-harness/` holds the checks that need no browser and no Apple SDK: the geometry, the
+file routing, the load verdicts, the gesture arithmetic, the PDF zoom range. It compiles the same
+sources the app uses, for wasm, so it runs on a Windows machine.
 
 ```bash
-npm install                      # playwright
-npx playwright install chromium webkit
-node serve.mjs <dir> 8099 &
-node test-ml2.mjs
+cd verification/dxf-geometry-harness
+./run.sh verify            # on a Mac
+build-wasm.bat && node runwasm.mjs verify.wasm   # everywhere else
 ```
 
-## What the checks concluded
-
-- LibreDWG's CLI reads R2000, R2013 and R2018 DWG.
-- mlightcad opens all three plus DXF, with no console errors.
-- flyfish opens them too, but only after `cad.wasmPath` and `cad.workerUrl` are set by hand.
-- SwiftDXF parses DXF correctly but does not read DWG at all.
-- Both web viewers behave the same in WebKit (Safari's engine) at iPhone size.
-
-The geometry core has its own harness in `dxf-geometry-harness/`, with no
-browser needed. Run it with `./run.sh verify` there, or `build-wasm.bat` if the machine has
-no Apple SDK.
+`ios/DXFGeometry` also has its own Swift Testing suite, which CI runs on Linux with the
+SwiftDXF dependency patched for that platform.
 
 ## Samples
 
-`samples/` holds four files from LibreDWG's test data (`example_2000.dwg`,
-`example_2013.dwg`, `example_2018.dwg`, `example_r12.dxf`), used by every script here.
+`samples/` holds four files from LibreDWG's test data — `example_2000.dwg`, `example_2013.dwg`,
+`example_2018.dwg`, `example_r12.dxf`. Every DWG format there is opened by
+`test-dwg-reopen.mjs` on CI, because the engine handles them differently and a format nothing
+opens is a format nothing checks.
 
-## Running on Linux
+## Why the app looks like this
 
-Most of this runs anywhere, but the Swift checks do not: SwiftDXF decodes code pages through
-CoreFoundation's `CFStringEncoding`, guarded by `canImport(CoreFoundation)`, which is true on
-Linux where those symbols are absent. Upstream only tests on macOS. CI confirmed the same
-failure, which is why the workflow here checks the repository layout and the DWG web bundle
-instead of pretending to test Swift it cannot compile.
+`engine-bakeoff/` has the scripts that compared three DWG viewers on those four drawings, and its
+README says what each one did and what the comparison concluded. Those scripts are not checks and
+several need a checkout that is not committed.

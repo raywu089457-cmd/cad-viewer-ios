@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+// Checks that the README's list of checks matches what is on disk, in both directions.
+//
+// The directory used to hold eleven scripts that exit non-zero for historical reasons beside
+// the real checks, and the README listed them together. A reader could not tell a broken check
+// from a record of a past experiment, which is the same failure as a check that reports nothing:
+// the signal and the noise look alike.
+//
+//   node verification/check-inventory.mjs
+
+import { readdirSync, readFileSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const here = dirname(fileURLToPath(import.meta.url))
+const failures = []
+const check = (ok, what) => {
+  if (!ok) failures.push(what)
+  console.log(`${ok ? 'ok  ' : 'FAIL'}  ${what}`)
+}
+
+const readme = readFileSync(join(here, 'README.md'), 'utf8')
+const listed = new Set([...readme.matchAll(/\|\s+`([a-z0-9.-]+\.(?:mjs|sh))`/g)].map(m => m[1]))
+
+// Everything at the top of this directory that is a check, by name.
+const onDisk = readdirSync(here)
+  .filter(f => f.endsWith('.mjs') || f.endsWith('.sh'))
+  .filter(f => f !== 'check-inventory.mjs')
+
+// Against the workflow: whatever CI runs has to be documented, and vice versa.
+const workflow = readFileSync(join(here, '..', '.github', 'workflows', 'checks.yml'), 'utf8')
+const run = new Set(
+  [...workflow.matchAll(/verification\/([a-z0-9.-]+\.(?:mjs|sh))/g)].map(m => m[1])
+)
+
+for (const file of [...listed].sort()) {
+  check(existsSync(join(here, file)), `README lists ${file}, and it exists`)
+}
+for (const file of [...run].sort()) {
+  check(listed.has(file), `CI runs ${file}, and the README lists it`)
+}
+for (const file of onDisk.sort()) {
+  // A file that is neither run nor documented will drift: either add it to one or remove it.
+  check(listed.has(file) || run.has(file), `${file} is either run or documented`)
+}
+
+// The bake-off scripts are not checks. If one is ever put in the workflow, that is a decision
+// worth seeing rather than something to leave in place.
+const bakeoff = readdirSync(join(here, 'engine-bakeoff')).filter(f => f.endsWith('.mjs'))
+for (const file of bakeoff) {
+  check(!run.has(file), `${file} stays out of CI, being a record rather than a check`)
+}
+
+// Where the skip convention is used, it should be 77. A script that skips with 1 cannot be told
+// from a script that failed.
+const skips = onDisk.filter(f =>
+  /process\.exit\(77\)|exit 77/.test(readFileSync(join(here, f), 'utf8')))
+console.log(`      ${skips.length} check(s) can skip: ${skips.join(', ') || 'none'}`)
+
+if (failures.length > 0) {
+  console.log(`\n${failures.length} inventory problem(s)`)
+  process.exit(1)
+}
+console.log(`\n${listed.size} checks documented, ${onDisk.length} on disk, ${run.size} on CI`)
