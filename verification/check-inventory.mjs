@@ -65,9 +65,11 @@ for (const file of bakeoff) {
 }
 
 // Where the skip convention is used, it should be 77. A script that skips with 1 cannot be told
-// from a script that failed.
-const skips = onDisk.filter(f =>
-  /process\.exit\(77\)|exit 77/.test(readFileSync(join(here, f), 'utf8')))
+// from a script that failed. This file is excluded: its own source contains the pattern it
+// searches for, so it would report itself.
+const skips = onDisk
+  .filter(f => f !== 'check-inventory.mjs')
+  .filter(f => /process\.exit\(77\)|exit 77/.test(readFileSync(join(here, f), 'utf8')))
 console.log(`      ${skips.length} check(s) can skip: ${skips.join(', ') || 'none'}`)
 
 if (failures.length > 0) {

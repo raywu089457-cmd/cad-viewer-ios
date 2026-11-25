@@ -93,6 +93,11 @@ jobs:
       - name: Every bundle extension has a MIME type
         run: node verification/check-mime-coverage.mjs --require-bundle
 
+      # The bundle is built here, so the one case that needs it can be verified rather than
+      # skipped —  is the only check whose defect lives in .
+      - name: That check fails when it should
+        run: node verification/check-the-checks.mjs
+
       # The app fetches these four by URL at runtime, so a bundle missing one produces a
       # blank DWG tab rather than a build error.
       - name: Check the bundle has what the app fetches
