@@ -168,9 +168,25 @@ for (const file of rest.slice(1)) {
   if (!drew) restOk = false
 }
 
+// Zoom to fit, the button the native toolbar now offers.
+//
+// The native layer draws no zoom controls for DWG — the page's canvas handles pinch and drag —
+// so a reader who pinched past the edge had no way back. This asks the page to frame the whole
+// drawing and requires it to say it did: `false` means the entry point or the engine's fit is
+// missing, which is the failure mode a native call into a page cannot otherwise see.
+const zoomEntry = await page.evaluate(() => typeof window.cadZoomToFit === 'function')
+console.log('cadZoomToFit:', zoomEntry ? 'present' : 'MISSING')
+const zoomed = zoomEntry ? await page.evaluate(() => window.cadZoomToFit()) : false
+console.log('zoom to fit :', zoomed ? 'ran' : 'did NOT run')
+
+// A second call must also work: the first one can be swallowed by a layout that is still
+// settling, and a button that works only once is a button that is broken.
+const zoomedAgain = zoomEntry ? await page.evaluate(() => window.cadZoomToFit()) : false
+console.log('zoom again  :', zoomedAgain ? 'ran' : 'did NOT run')
+
 await browser.close()
 harness.server.close()
 
-const ok = hasEntry && firstLoad.includes('rendered') && restOk
+const ok = hasEntry && firstLoad.includes('rendered') && restOk && zoomEntry && zoomed && zoomedAgain
 console.log(ok ? 'PASS' : 'FAIL')
 process.exit(ok ? 0 : 1)
