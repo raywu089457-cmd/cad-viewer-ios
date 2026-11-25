@@ -58,23 +58,23 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 
 ## 已驗證 / 未驗證
 
-實測通過（不需要 Mac）：
+**每次 push 都在 CI 上跑**（7 個 job，全綠）：
 
-- 幾何核心與檔案路由 **222 項檢查**：圖元攤平、ACI 色票、取景、縮放與平移算式、
-  副檔名路由、錯誤訊息、bundle 路徑逃逸（4 種）、MIME type
-- `example_2018.dwg` → DXF：158 個實體全部轉成幾何，零 NaN，層名與文字正確
-- DWG 網頁端在 WebKit（Safari 引擎）iPhone 尺寸下開圖成功，零 console 錯誤
+- `swift test`：108 個測試，14 個套件
+- harness：222 項檢查（圖元攤平、ACI 色票、取景、縮放/平移、路由、bundle 路徑逃逸、MIME）
+- 座標與檔案交叉驗證，用與 Swift 端零共用的讀取器
+- DWG 網頁端在真實瀏覽器中載入與重開
+- 佈局、workflow 結構、API 參數標籤、主執行緒 I/O、retain cycle
 
-還需要 macOS 才能確認：
+**仍然未驗證，而且證實做不到**：
 
-- SwiftUI 層編譯（含 `PDFViewer`、`DWGViewer`）
-- `WKURLSchemeHandler` 在真機的載入
-- 手勢手感
+- SwiftUI / WebKit / PDFKit 的**型別檢查**，以及手勢手感、真機上的 scheme handler
 
-**為什麼不是 Linux CI 全包**：SwiftDXF 在 Linux 上編譯不過 —— 它的 `CodePage` 用
-CoreFoundation 的 `CFStringEncoding` 解碼，guard 寫的是 `canImport(CoreFoundation)`，
-在 Linux 上成立但符號不存在。上游自己也只在 macOS 測試。所以那 222 項檢查只能在
-Mac 上跑；CI 只做不需要 Swift 的部分（佈局檢查、DWG 網頁端建置）。
+原因是這個帳號**沒有 macOS runner**：即使 repo 已公開、Actions 已啟用，`macos-14` 的
+job 仍在一秒內被取消且沒有指派 runner。我用一個探測 workflow 直接確認過。
+
+所以那一層只做到語法（`swiftc -parse`）與參數標籤（`check-api-usage.mjs`）。
+凡是不需要 Apple SDK 能驗的，都驗了；剩下的寫在這裡，沒有假裝覆蓋。
 
 ## 授權
 
