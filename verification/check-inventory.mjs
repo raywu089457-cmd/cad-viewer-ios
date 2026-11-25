@@ -44,6 +44,19 @@ for (const file of onDisk.sort()) {
   check(listed.has(file) || run.has(file), `${file} is either run or documented`)
 }
 
+// A check that needs an argument cannot be run by hand the way the README implies. Either the
+// README should say what it takes, or the check should find its own input.
+for (const file of onDisk.filter(f => f.endsWith('.mjs'))) {
+  const source = readFileSync(join(here, file), 'utf8')
+  const takesArgs = /process\.argv\[2\]/.test(source) && /usage:/.test(source)
+  if (!takesArgs) continue
+  const documented = new RegExp(`\`${file}\`[^|]*\|[^|]*argument`).test(readme)
+  check(
+    documented || run.has(file),
+    `${file} needs an argument, so either CI passes one or the README says which`
+  )
+}
+
 // The bake-off scripts are not checks. If one is ever put in the workflow, that is a decision
 // worth seeing rather than something to leave in place.
 const bakeoff = readdirSync(join(here, 'engine-bakeoff')).filter(f => f.endsWith('.mjs'))
