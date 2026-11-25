@@ -47,32 +47,36 @@ extension Never: View {
     public var body: Never { fatalError() }
 }
 
-public struct Nothing: View {
-    public init() {}
-    public var body: Never { fatalError() }
+/// A view with no content, which the builders below return when they cannot name a type.
+/// `nonisolated` on purpose: `View` is `@MainActor`, but these builders are called from
+/// `nonisolated` static context, so constructing an empty view must not cross actors.
+public nonisolated struct Nothing: View {
+    public nonisolated init() {}
+    public nonisolated var body: Never { fatalError() }
 }
 
 @resultBuilder public struct ViewBuilder {
-    public static func buildBlock() -> Nothing { Nothing() }
-    public static func buildBlock<C: View>(_ c: C) -> C { c }
-    public static func buildBlock<C0: View, C1: View>(_ c0: C0, _ c1: C1) -> Nothing { Nothing() }
-    public static func buildBlock<C0: View, C1: View, C2: View>(
+    public nonisolated static func buildBlock() -> Nothing { Nothing() }
+    public nonisolated static func buildBlock<C: View>(_ c: C) -> C { c }
+    public nonisolated static func buildBlock<C0: View, C1: View>(_ c0: C0, _ c1: C1) -> Nothing { Nothing() }
+    public nonisolated static func buildBlock<C0: View, C1: View, C2: View>(
         _ c0: C0, _ c1: C1, _ c2: C2) -> Nothing { Nothing() }
-    public static func buildBlock<C0: View, C1: View, C2: View, C3: View>(
+    public nonisolated static func buildBlock<C0: View, C1: View, C2: View, C3: View>(
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
-    public static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent)
+    public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
+    public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
+    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent)
         -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
-    public static func buildEither<TrueContent: View, FalseContent: View>(second: FalseContent)
+    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(second: FalseContent)
         -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
 }
 
 /// What the result builder produces for an `if`/`else` whose branches are different views.
 /// It is a `View` whatever its arguments are, which is the whole point: the branches do not have
 /// to have the same type.
-public struct _ConditionalContent<TrueContent: View, FalseContent: View>: View {
-    public var body: Never { fatalError() }
+public nonisolated struct _ConditionalContent<TrueContent: View, FalseContent: View>: View {
+    public nonisolated init() {}
+    public nonisolated var body: Never { fatalError() }
 }
 
 @propertyWrapper public final class State<Value> {
