@@ -153,7 +153,7 @@ public enum TextAlignment { case leading, center, trailing }
 
 public enum HorizontalAlignment { case center, leading, trailing }
 public enum VerticalAlignment { case center, top, bottom }
-public enum Alignment { case center, top, bottom, topLeading, bottomTrailing }
+public enum Alignment { case center, top, bottom, topLeading, bottomTrailing, leading, trailing }
 public struct UnitPoint {
     public init() { x = 0.5; y = 0.5 }
     public static let bottomLeading = UnitPoint()
