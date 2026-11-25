@@ -78,12 +78,13 @@ public nonisolated struct Nothing: View {
 @resultBuilder public struct ViewBuilder {
     public nonisolated static func buildBlock() -> Nothing { Nothing() }
     public nonisolated static func buildBlock(_ views: any View...) -> Nothing { Nothing() }
-    public nonisolated static func buildOptional<T: View>(_ view: T?) -> Nothing { Nothing() }
-    public nonisolated static func buildIf<T: View>(_ view: T?) -> Nothing { Nothing() }
+    public nonisolated static func buildOptional(_ view: Any?) -> Nothing { Nothing() }
+    public nonisolated static func buildIf(_ view: Any?) -> Nothing { Nothing() }
     // Not generic on the result: an `if`/`else if` chain with no final `else` leaves nothing
     // to infer a second parameter from. The branches are still type-checked.
     public nonisolated static func buildEither(first: Any) -> Nothing { Nothing() }
     public nonisolated static func buildEither(second: Any) -> Nothing { Nothing() }
+    public nonisolated static func buildLimitedAvailability(_ view: Any) -> Nothing { Nothing() }
 }
 
 @propertyWrapper public final class State<Value> {
