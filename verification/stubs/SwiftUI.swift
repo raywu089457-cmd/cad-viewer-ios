@@ -376,11 +376,14 @@ extension Rectangle: Shape {}
 
 public protocol ShapeStyle {}
 
-/// The translucent surface the app puts behind its status pill.
-public struct Material: ShapeStyle {
-    public static let ultraThin = Material()
-    public static let thin = Material()
-    public static let regular = Material()
+/// The translucent surfaces the app puts behind its status pill. Declared on the protocol because
+/// that is the type in scope at the call site.
+public struct Material: ShapeStyle {}
+
+extension ShapeStyle {
+    public static var ultraThinMaterial: Material { Material() }
+    public static var thinMaterial: Material { Material() }
+    public static var regularMaterial: Material { Material() }
 }
 extension Color: ShapeStyle {}
 
