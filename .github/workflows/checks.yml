@@ -41,6 +41,11 @@ jobs:
       - name: Stub declarations
         run: node verification/check-stubs.mjs
 
+      # No PDF was ever a fixture: the verdict was checked with made-up page counts and nothing
+      # established that a real file reaches them.
+      - name: PDF fixtures match their verdicts
+        run: node verification/check-pdf-fixtures.mjs
+
   web-viewer:
     name: DWG bundle builds
     runs-on: ubuntu-latest

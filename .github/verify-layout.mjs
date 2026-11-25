@@ -137,6 +137,10 @@ mustExist('verification/check-actor-isolation.mjs')
 // README there says why.
 mustExist('verification/stubs/README.md')
 mustExist('verification/check-stubs.mjs')
+mustExist('verification/check-pdf-fixtures.mjs')
+mustExist('verification/make-pdf.mjs')
+mustExist('verification/fixtures/pdf/one-page.pdf')
+mustExist('verification/fixtures/pdf/no-pages.pdf')
 mustExist('verification/check-types.sh')
 // A workflow that does not parse runs no jobs at all, and the failure looks infrastructural.
 mustExist('verification/check-workflow.mjs')
