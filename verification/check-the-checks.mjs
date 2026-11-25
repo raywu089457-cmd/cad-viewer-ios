@@ -115,12 +115,14 @@ const cases = [
   },
   {
     check: 'check-format-consistency.mjs',
-    what: 'a format the plist does not declare',
+    what: 'a UTI naming an extension the router does not draw',
     break: root => {
       const path = join(root, 'ios/CADViewer/Info.plist')
       const text = readFileSync(path, 'utf8')
-      assert(text, 'com.adobe.pdf', 'format-consistency: PDF is not in the plist to remove')
-      writeFileSync(path, text.replace(/<string>com\.adobe\.pdf<\/string>/g, '<string>com.adobe.removed</string>'))
+      assert(text, '<string>dxf</string>', 'format-consistency: the dxf extension is not there')
+      // The typo a UTI is most likely to carry: right type, wrong tag. The app then registers a
+      // type no file maps to, and Files shows a generic icon with nothing offering to open it.
+      writeFileSync(path, text.replace('<string>dxf</string>', '<string>dxff</string>'))
     }
   },
   {

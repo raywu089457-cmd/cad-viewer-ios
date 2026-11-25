@@ -89,6 +89,41 @@ for (const [ext, uti] of plistExtensions) {
 check(drawn.size === plistExtensions.size && drawn.size === allowed.size,
   `all three lists are the same size (${drawn.size} drawn, ${plistExtensions.size} declared, ${allowed.size} offered)`)
 
+// 4. Each UTI the app declares has to name the extension the router knows. A typo here leaves the
+//    type unresolvable: the app registers a UTI that no file maps to, and Files then shows a
+//    generic icon with nothing offering to open it.
+const declaredExtensions = new Map()
+for (const m of plist.matchAll(
+  /<key>UTTypeIdentifier<\/key>\s*<string>([^<]+)<\/string>[\s\S]*?<key>public\.filename-extension<\/key>\s*<array>([\s\S]*?)<\/array>/g
+)) {
+  for (const ext of m[2].matchAll(/<string>([^<]+)<\/string>/g)) {
+    declaredExtensions.set(ext[1].toLowerCase(), m[1])
+  }
+}
+for (const [ext, uti] of declaredExtensions) {
+  check(drawn.has(ext), uti + ' declares .' + ext + ', which the router draws')
+}
+// A system UTI already knows its extensions: `com.adobe.pdf` is declared by iOS, and claiming it
+// in UTImportedTypeDeclarations would be wrong as well as unnecessary. Only the app's own types
+// have to carry their extension.
+const systemOwned = uti => /^(com\.adobe|public|org\.iso|com\.microsoft)\./.test(uti)
+for (const ext of drawn) {
+  if ([...plistExtensions].some(([e, u]) => e === ext && systemOwned(u))) {
+    check(true, '.' + ext + ' maps through a system UTI, which iOS already knows')
+    continue
+  }
+  check(declaredExtensions.has(ext), '.' + ext + ' is declared by a UTI, so a file maps to the app')
+}
+
+// A UTI identifier is reverse-DNS. An app cannot claim one it does not own, and a malformed one is
+// ignored by the system rather than rejected — so the failure is silent.
+for (const uti of declaredUTIs) {
+  check(
+    /^[a-z][a-z0-9]*(\.[a-z0-9-]+)+$/.test(uti),
+    uti + ' is a reverse-DNS identifier'
+  )
+}
+
 if (failures.length > 0) {
   console.log(`\n${failures.length} inconsistency(ies) between the three format lists`)
   process.exit(1)
