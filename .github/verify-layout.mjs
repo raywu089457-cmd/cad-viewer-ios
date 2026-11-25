@@ -136,6 +136,7 @@ mustExist('verification/check-actor-isolation.mjs')
 // Kept as a record of what was attempted and what is still missing. Not run on CI: the
 // README there says why.
 mustExist('verification/stubs/README.md')
+mustExist('verification/check-stubs.mjs')
 mustExist('verification/check-types.sh')
 // A workflow that does not parse runs no jobs at all, and the failure looks infrastructural.
 mustExist('verification/check-workflow.mjs')

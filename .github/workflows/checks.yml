@@ -203,10 +203,14 @@ jobs:
       # Observation macro plugin, which the local wasm target does not, so `@Observable`
       # resolves. Blocking, because a step that reports errors while showing green is the thing
       # this project keeps having to remove.
+      # Seconds, not minutes: the stub declarations are plain text, and every duplicate or
+      # missing name it finds used to cost a nine-minute round.
+      - name: Stub declarations
+        run: node verification/check-stubs.mjs
+
       - name: Type-check the app layer
         shell: bash
         run: ./verification/check-types.sh
-
       - name: Build the harness
         working-directory: verification/dxf-geometry-harness
         run: swift build -c release

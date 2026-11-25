@@ -362,7 +362,6 @@ extension View {
     public func onOpenURL(perform action: @escaping (URL) -> Void) -> some View { Nothing() }
 }
 
-public enum Edge { public struct Set {} }
 public enum ControlSize { case regular, large, small }
 public struct PresentationDetent: Hashable { public static let medium = PresentationDetent() }
 public enum NavigationBarItem {
@@ -473,10 +472,6 @@ extension UIViewRepresentable {
     public func makeCoordinator() -> Void {}
 }
 
-public struct UTType {
-    public init?(_ identifier: String) { return nil }
-    public static let pdf = UTType()
-    public static let data = UTType()
-    public init(filenameExtension: String) { self.init() }
-    public init() {}
-}
+// `UTType` belongs to UniformTypeIdentifiers; naming it here as well would make it ambiguous
+// for anything that imports both. The script builds that module after this one, so the member is
+// declared there and this file does not repeat it.
