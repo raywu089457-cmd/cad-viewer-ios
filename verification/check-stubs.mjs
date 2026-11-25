@@ -112,6 +112,15 @@ for (const collect of [true, false]) {
       const end = rest.indexOf('\n}')
       const body = end < 0 ? rest : rest.slice(0, end)
       const own = new Set([...body.matchAll(storedMember)].map(x => x[1]))
+      // `mutating` is illegal on a class member. It cost a round when the drawing context became
+      // a class and one method kept the keyword.
+      if (/\bclass\s+/.test(m[0])) {
+        const body = rest.slice(0, end < 0 ? rest.length : end)
+        if (/\bmutating\s+(?:func|var)\b/.test(body)) {
+          const note = `${file}: '${name}' is a class but has a mutating member`
+          if (!failures.includes(note)) failures.push(note)
+        }
+      }
       if (membersOf.has(parent)) {
         for (const member of own) {
           if (membersOf.get(parent).has(member)) {

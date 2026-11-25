@@ -308,7 +308,7 @@ public final class GraphicsContext {
     }
     public enum Style {}
     public func fill(_ path: Path, with shading: Shading) {}
-    public mutating func fill(_ path: Path, with shading: Shading, style: FillStyle) {}
+    public func fill(_ path: Path, with shading: Shading, style: FillStyle) {}
     public func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
     public func translateBy(x: Double, y: Double) {}
     public func rotate(by angle: Angle) {}
