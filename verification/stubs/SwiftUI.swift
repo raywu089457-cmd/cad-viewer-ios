@@ -1,5 +1,9 @@
 import Foundation
 
+// A real SwiftUI re-exports Foundation, which is why the app uses `URL` and `Data` after only
+// importing SwiftUI. The stub has to do the same or the app appears to be missing them.
+@_exported import Foundation
+
 public struct CGPoint {
     public var x: Double
     public var y: Double
