@@ -165,6 +165,11 @@ extension CGPoint {
     var unitPoint: UnitPoint { UnitPoint(x: x, y: y) }
 }
 
+extension CGSize {
+    /// A drag reports its travel as a size, and the pan takes it as an offset.
+    var screenPoint: ScreenPoint { ScreenPoint(x: width, y: height) }
+}
+
 extension ScreenSize {
     /// The size as a `CGSize`, for `Canvas` and friends.
     var cgSize: CGSize { CGSize(width: width, height: height) }

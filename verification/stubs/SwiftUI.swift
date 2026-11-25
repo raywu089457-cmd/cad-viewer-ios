@@ -39,7 +39,7 @@ public struct CGPoint {
     public init(x: Double, y: Double) { self.x = x; self.y = y }
 }
 
-public struct CGSize {
+public struct CGSize: Equatable {
     public var width: Double
     public var height: Double
     public init() { width = 0; height = 0 }
@@ -81,6 +81,9 @@ public struct Animation {
     public static let `default` = Animation()
     public static func easeInOut(duration: Double) -> Animation { Animation() }
     public static func spring(duration: Double) -> Animation { Animation() }
+    public static let easeOut = Animation()
+    public static let easeIn = Animation()
+    public static let linear = Animation()
 }
 
 /// Runs a state change inside an animation. A free function in the real API, which is why the
@@ -165,6 +168,12 @@ public struct HStack<Content: View>: View {
 
 public struct ZStack<Content: View>: View {
     public init(alignment: Alignment = .center, @ViewBuilder content: () -> Content) {}
+    public var body: Nothing { Nothing() }
+}
+
+/// One view per element of a collection, which is how the app lists skipped entities.
+public struct ForEach<Data: RandomAccessCollection, Content: View>: View {
+    public init(_ data: Data, @ViewBuilder content: @escaping (Data.Element) -> Content) {}
     public var body: Nothing { Nothing() }
 }
 
@@ -346,6 +355,8 @@ extension View {
     public func frame(width: Double? = nil, height: Double? = nil) -> some View { Nothing() }
     public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil) -> some View { Nothing() }
     public func foregroundStyle(_ c: Color) -> some View { Nothing() }
+    public func font(_ f: Font?) -> some View { Nothing() }
+    public func tint(_ c: Color?) -> some View { Nothing() }
     public func background(_ c: Color) -> some View { Nothing() }
     public func background(_ s: Material, in shape: Shape) -> some View { Nothing() }
     public func overlay<V: View>(alignment: Alignment = .center, @ViewBuilder content: () -> V)
@@ -412,6 +423,12 @@ public struct Material: ShapeStyle {
 extension Color: ShapeStyle {}
 
 public protocol ButtonStyle {}
+
+public struct PlainButtonStyle: ButtonStyle {}
+
+extension ButtonStyle where Self == PlainButtonStyle {
+    public static var plain: PlainButtonStyle { PlainButtonStyle() }
+}
 
 public protocol Gesture {}
 extension DragGesture: Gesture {}
