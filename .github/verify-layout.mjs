@@ -131,6 +131,8 @@ mustExist('verification/check-main-thread-io.mjs')
 mustExist('verification/check-fixture-fresh.mjs')
 // A content controller holds its handler strongly; registering the view leaks the page.
 mustExist('verification/check-retain-cycles.mjs')
+// UI state that is not main-actor isolated is a data race the compiler only finds under Swift 6.
+mustExist('verification/check-actor-isolation.mjs')
 // A workflow that does not parse runs no jobs at all, and the failure looks infrastructural.
 mustExist('verification/check-workflow.mjs')
 // Applied on CI so the Swift suites can run on Linux; a missing patch means no tests run.

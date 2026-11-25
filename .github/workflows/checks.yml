@@ -121,6 +121,9 @@ jobs:
       - name: Check for retain cycles that would leak a web view
         run: node verification/check-retain-cycles.mjs
 
+      - name: Check UI state is main-actor isolated
+        run: node verification/check-actor-isolation.mjs
+
   syntax:
     name: App layer parses
     runs-on: ubuntu-latest

@@ -54,7 +54,11 @@ struct PDFViewer: View {
 }
 
 /// The state a PDF view needs, kept out of the view body.
+///
+/// `@MainActor` because it is UI state: `@Observable` is a change-tracking macro, not an
+/// isolation guarantee, and a comment here previously claimed otherwise.
 @Observable
+@MainActor
 final class PDFViewerModel {
     var document: PDFDocument?
     var error: String?
@@ -63,8 +67,8 @@ final class PDFViewerModel {
 
     func open(url: URL) async {
         // Opening a PDF reads and indexes it. On a large drawing that is long enough to be
-        // felt, and this class is @Observable so it is main-actor bound: doing the work here
-        // would freeze the interface before the view even appears.
+        // felt, and this class is main-actor bound, so doing the work here would freeze the
+        // interface before the view even appears.
         let outcome = await Self.load(url: url)
         switch outcome {
         case .success(let loaded):

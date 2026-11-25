@@ -55,7 +55,15 @@ struct DWGViewer: View {
 }
 
 /// Owns the `WKWebView` and the messages it sends back.
+/// The state a DWG view needs.
+///
+/// `@MainActor` because it is UI state and `@Observable` does not provide isolation by
+/// itself: WebKit delivers script messages and navigation callbacks without promising a
+/// thread, so without this the view's state could be written off the main thread — a data
+/// race the compiler would not have caught before Swift 6, and one that shows up as a
+/// corrupted or stale interface rather than a crash.
 @Observable
+@MainActor
 final class DWGViewerModel {
     /// Text for the loading overlay, `nil` once the drawing is on screen.
     var statusText: String? = "Preparing the DWG engine…"
@@ -283,20 +291,29 @@ final class DWGViewerModel {
 }
 
 extension DWGViewerModel: WKNavigationDelegate {
-    func webView(
+    /// `nonisolated` because the protocol is, then asserted back onto the main actor:
+    /// navigation callbacks are delivered on the main thread, and both of these report
+    /// through the model's state.
+    nonisolated func webView(
         _ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error
     ) {
-        Self.log.error("navigation failed: \(error.localizedDescription, privacy: .public)")
-        fail(error.localizedDescription)
+        MainActor.assumeIsolated {
+            logAndFail("navigation failed", error)
+        }
     }
 
-    func webView(
+    nonisolated func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
-        Self.log.error(
-            "provisional load failed: \(error.localizedDescription, privacy: .public)")
+        MainActor.assumeIsolated {
+            logAndFail("provisional load failed", error)
+        }
+    }
+
+    private func logAndFail(_ what: String, _ error: Error) {
+        Self.log.error("\(what, privacy: .public): \(error.localizedDescription, privacy: .public)")
         fail(error.localizedDescription)
     }
 }
@@ -304,7 +321,10 @@ extension DWGViewerModel: WKNavigationDelegate {
 extension DWGViewerModel: WKUIDelegate {
     /// Nothing on the page should open a window, but a stray `target=_blank` should not
     /// silently do nothing either.
-    func webView(
+    ///
+    /// `nonisolated` because the protocol is. Nothing here touches the model, so there is
+    /// nothing to assert back onto the main actor.
+    nonisolated func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
         for navigationAction: WKNavigationAction,
@@ -315,9 +335,17 @@ extension DWGViewerModel: WKUIDelegate {
 }
 
 extension DWGViewerModel: WKScriptMessageHandler {
-    func userContentController(
+    /// `nonisolated` because the protocol is, then asserted back onto the main actor: WebKit
+    /// delivers these on the main thread, and the model's state may only be touched there.
+    nonisolated func userContentController(
         _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
     ) {
+        MainActor.assumeIsolated {
+            handleMessage(message)
+        }
+    }
+
+    private func handleMessage(_ message: WKScriptMessage) {
         guard let body = message.body as? [String: Any] else {
             // A message the page sent in a shape this does not understand. Dropping it in
             // silence is how a broken page comes to look like a working one: the app would
