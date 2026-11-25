@@ -44,6 +44,11 @@ check(/view\.displaysPageBreaks\s*=\s*false/.test(code),
 check(/view\.autoScales\s*=/.test(code),
   'the fit setting is driven by the reader, not left at its default')
 
+// With auto-scaling on, PDFKit chooses the scale and ignores an explicit one, so setting it made
+// the page jump on every update. Only the off case sets it.
+check(/if !autoScales \{/.test(code),
+  'the explicit scale is only set when auto-scaling is off')
+
 // The pinch range has to come from a measured view, which is checked elsewhere; here it is only
 // worth confirming the view gets limits at all.
 check(/minScaleFactor\s*=/.test(code) && /maxScaleFactor\s*=/.test(code),

@@ -151,7 +151,11 @@ private struct PDFKitView: UIViewRepresentable {
             if let page = view.currentPage {
                 view.go(to: PDFDestination(page: page, at: CGPoint(x: 0, y: page.bounds(for: .mediaBox).maxY)))
             }
-            view.scaleFactor = view.scaleFactorForSizeToFit
+            // With auto-scaling on, PDFKit chooses the scale and ignores this; setting it anyway
+            // made the page jump on every update. Off, it is what re-frames the page.
+            if !autoScales {
+                view.scaleFactor = view.scaleFactorForSizeToFit
+            }
         }
     }
 }

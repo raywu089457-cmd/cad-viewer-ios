@@ -125,12 +125,22 @@ const cases = [
   },
   {
     check: 'check-pdf-reading-setup.mjs',
-    what: 'the page gap left on, interrupting a drawing',
+    what: 'an explicit scale set even when PDFKit is choosing one',
     break: root => {
       const path = join(root, 'ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
       const text = readFileSync(path, 'utf8')
-      assert(text, 'view.displaysPageBreaks = false', 'pdf-reading: the anchor setting is gone')
-      writeFileSync(path, text.replace('        view.displaysPageBreaks = false\n', ''))
+      assert(
+        text,
+        'if !autoScales {',
+        'pdf-reading: the anchor condition is gone'
+      )
+      writeFileSync(
+        path,
+        text.replace(
+          '            if !autoScales {\n                view.scaleFactor = view.scaleFactorForSizeToFit\n            }',
+          '            view.scaleFactor = view.scaleFactorForSizeToFit'
+        )
+      )
     }
   },
   {
