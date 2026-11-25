@@ -76,6 +76,13 @@ public nonisolated struct Nothing: View {
     public nonisolated var body: Nothing { Nothing() }
 }
 
+/// How a change is animated. The app only passes it around, never inspects it.
+public struct Animation {
+    public static let `default` = Animation()
+    public static func easeInOut(duration: Double) -> Animation { Animation() }
+    public static func spring(duration: Double) -> Animation { Animation() }
+}
+
 /// Runs a state change inside an animation. A free function in the real API, which is why the
 /// app calls it without a receiver.
 public func withAnimation<Result>(_ animation: Animation? = nil, _ body: () throws -> Result) rethrows -> Result { try body() }
