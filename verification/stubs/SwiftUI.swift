@@ -192,12 +192,6 @@ public struct Text: View {
     public func padding(_ length: Double) -> Text { self }
 }
 
-/// A label with a title and an icon, which the app uses in its error state.
-public struct Label: View {
-    public init(_ title: String, systemImage: String) {}
-    public var body: Nothing { Nothing() }
-}
-
 public struct Font {
     public static func system(size: Double) -> Font { Font() }
     public static func system(size: Double, weight: Font.Weight) -> Font { Font() }
