@@ -5,31 +5,20 @@
 # off Apple platforms. `swiftc -parse` checks syntax only, and accepts a stored property
 # declared twice or a wrong argument type — both of which have been in this repository.
 #
-# The stubs in `stubs/` declare the part of that surface the app uses. On CI the real
-# DXFGeometry and SwiftDXF are resolved by SwiftPM, so the app is checked against them; the
-# platform surface is stubbed either way, because no Apple SDK is available there.
+# The stubs in `stubs/` declare the part of that surface the app uses. They are plain Swift, so
+# this runs on any Swift toolchain, including the Linux one in CI. DXFGeometry and SwiftDXF are
+# reusing the modules SwiftPM already built there.
 #
 #   ./check-types.sh
 #
-# Needs a Swift toolchain and the Swift SDK for WebAssembly.
+# Exit codes: 0 checked and clean, 1 checked and failing, 77 skipped (nothing was checked).
 set -uo pipefail
 cd "$(dirname "$0")"
 
-SW="${SWIFT_TOOLCHAIN:-$HOME/AppData/Local/Programs/Swift/Toolchains/6.4.3+Asserts}"
-SDK="${SWIFT_WASM_SDK:-${TEMP:-/tmp}/wasmsdk/swift-6.4.3-RELEASE_wasm.artifactbundle/swift-6.4.3-RELEASE_wasm/wasm32-unknown-wasip1}"
-
-if [ ! -d "$SW" ]; then
-  echo "SKIPPED: Swift toolchain not found at $SW" >&2
+if ! command -v swiftc >/dev/null 2>&1; then
+  echo "SKIPPED: no swiftc on PATH" >&2
   exit 77
 fi
-if [ ! -d "$SDK" ]; then
-  echo "SKIPPED: wasm SDK not found at $SDK" >&2
-  exit 77
-fi
-
-PATH="$SW/usr/bin:$PATH"
-TARGET=( -target wasm32-unknown-wasip1 -sdk "$SDK/WASI.sdk"
-         -resource-dir "$SDK/swift.xctoolchain/usr/lib/swift_static" )
 
 work="$(dirname "$0")/.typecheck"
 rm -rf "$work"
@@ -45,7 +34,7 @@ for module in SwiftUI os UniformTypeIdentifiers WebKit PDFKit; do
     failures=$((failures + 1))
     continue
   fi
-  if ! swiftc "${TARGET[@]}" -emit-module -module-name "$module" -I "$work" \
+  if ! swiftc -emit-module -module-name "$module" -I "$work" \
       -emit-module-path "$work/$module.swiftmodule" "$stub" 2>"$work/$module.log"; then
     echo "STUB FAILED: $module"
     grep -E "error:" "$work/$module.log" | head -6
@@ -57,28 +46,26 @@ if [ "$failures" -gt 0 ]; then
   exit 1
 fi
 
-# DXFGeometry and SwiftDXF are built by SwiftPM where it can, and reused from its build
-# directory. They are not stubbed: the app's use of them is exactly what wants checking, and a
-# stub of a library this size would be its own source of wrong answers.
-modules=()
+# DXFGeometry and SwiftDXF are real libraries. Where SwiftPM has built them, their module
+# interfaces are reused — the app's use of them is exactly what wants checking, and a stub of a
+# library that size would be its own source of wrong answers.
+search=()
 for candidate in \
+    ../ios/DXFGeometry/.build/out/Modules \
     ../ios/DXFGeometry/.build/release/Modules \
     ../ios/DXFGeometry/.build/debug/Modules \
     ../ios/DXFGeometry/.build/*/release/Modules \
-    ../ios/DXFGeometry/.build/*/debug/Modules \
-    ../verification/dxf-geometry-harness/.build/release/Modules \
-    ../verification/dxf-geometry-harness/.build/debug/Modules; do
+    ../ios/DXFGeometry/.build/*/debug/Modules; do
   for dir in $candidate; do
     if [ -d "$dir" ] && compgen -G "$dir/DXFGeometry.swiftmodule" > /dev/null; then
-      modules+=("$dir")
+      search+=( -I "$dir" )
       break 2
     fi
   done
 done
 
-if [ "${#modules[@]}" -eq 0 ]; then
-  echo "SKIPPED: DXFGeometry has not been built here, so the app cannot be checked against it" >&2
-  echo "         run \`swift build\` in ios/DXFGeometry first" >&2
+if [ "${#search[@]}" -eq 0 ]; then
+  echo "SKIPPED: DXFGeometry has not been built, so the app cannot be checked against it" >&2
   exit 77
 fi
 
@@ -88,12 +75,8 @@ if [ ! -e "${app_sources[0]}" ]; then
   exit 1
 fi
 
-search=( "$work" )
-for dir in "${modules[@]}"; do search+=( -I "$dir" ); done
-
-if swiftc "${TARGET[@]}" -typecheck -I "$work" "${search[@]}" "${app_sources[@]}" \
-    2>"$work/app.log"; then
-  echo "${#app_sources[@]} app source(s) type-check against the stubs and DXFGeometry"
+if swiftc -typecheck -I "$work" "${search[@]}" "${app_sources[@]}" 2>"$work/app.log"; then
+  echo "${#app_sources[@]} app source(s) type-check against the stubs"
 else
   grep -E "error:" "$work/app.log" | head -20
   echo "the app layer does not type-check"
