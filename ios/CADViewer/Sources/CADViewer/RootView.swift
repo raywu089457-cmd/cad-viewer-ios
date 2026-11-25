@@ -120,7 +120,7 @@ struct RootView: View {
                     .font(.system(size: 52, weight: .light))
                     .foregroundStyle(.tint)
 
-                Text(42)
+                Text("CAD Viewer")
                     .font(.title2.weight(.semibold))
 
                 Text("Open a DXF, DWG or PDF file.")
