@@ -101,6 +101,12 @@ jobs:
 
       # The bundle is built here, so the one case that needs it can be verified rather than
       # skipped —  is the only check whose defect lives in .
+      # A licence that does not travel with the code is not honoured. The bundle ships a
+      # GPL-3.0 engine and an Apache-2.0 fork with its own attribution, so this is the one
+      # check whose failure is legal rather than technical.
+      - name: The notices match what ships
+        run: node verification/check-licences.mjs --require-bundle
+
       # The page names two worker files by path; nothing in the module graph knows they are
       # needed. A missing one loads, reports ready, and fails on the first multi-line text.
       - name: The DWG page has its assets

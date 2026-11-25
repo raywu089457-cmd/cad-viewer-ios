@@ -146,6 +146,18 @@ const cases = [
     }
   },
   {
+    check: 'check-licences.mjs',
+    what: 'a runtime dependency no notice names',
+    break: root => {
+      const path = join(root, 'THIRD-PARTY-NOTICES.md')
+      const text = readFileSync(path, 'utf8')
+      assert(text, 'lodash-es', 'licences: the anchor dependency is not named')
+      // A dependency dropped from the notices is the failure: the code still ships, and nothing
+      // says under what terms.
+      writeFileSync(path, text.replace('lodash-es', 'lodash-removed'))
+    }
+  },
+  {
     check: 'check-dwg-assets.mjs',
     what: 'a worker file the page names, missing from the bundle',
     requiresBuiltBundle: true,
@@ -233,6 +245,12 @@ for (const { check, what, break: breakIt, requiresBuiltBundle } of cases) {
     for (const part of ['ios', 'verification', '.github', 'samples']) {
       const from = join(repo, part)
       if (existsSync(from)) cpSync(from, join(work, part), { recursive: true })
+    }
+    // The root-level files a check reads. Copied by name rather than by copying the root, which
+    // would pull in `.git` and every screenshot.
+    for (const file of ['THIRD-PARTY-NOTICES.md', 'README.md', 'LICENSE']) {
+      const from = join(repo, file)
+      if (existsSync(from)) cpSync(from, join(work, file))
     }
 
     // A thunk that throws means the anchor it edits is gone, so this case cannot be verified at

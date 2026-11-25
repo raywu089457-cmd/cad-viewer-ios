@@ -27,7 +27,14 @@ const WORKER_ASSETS = [
  */
 const LICENCE_ASSETS = [
   { source: `${LIBREDWG_DIST}/../LICENSE`, name: 'LICENSE-LibreDWG.txt' },
-  { source: `${VIEWER_DIST}/../LICENSE`, name: 'LICENSE-cad-simple-viewer.txt' }
+  { source: `${VIEWER_DIST}/../LICENSE`, name: 'LICENSE-cad-simple-viewer.txt' },
+  // Apache-2.0 asks for a NOTICE file to travel with the work when one exists. This package is a
+  // fork with its own attribution in `NOTICE.md`, and its code is inside the renderer chunk —
+  // so the notice has to be in the bundle even though no file is named after it.
+  {
+    source: 'node_modules/@mlightcad/emf-converter/NOTICE.md',
+    name: 'NOTICE-mlightcad-emf-converter.md'
+  }
 ]
 
 /** Copies the runtime worker bytes and their licences after Vite writes the bundle. */
