@@ -6,13 +6,11 @@ struct DXFViewer: View {
     var drawing: LoadedDrawing
 
     @State private var transform: ViewTransform
-    /// The transform when the current pan began. Gesture deltas apply to this base rather
-    /// than to the previous frame, which is what stops a drag from drifting.
-    @State private var panBase: ViewTransform?
-    /// The transform when the current pinch began, kept separately from `panBase`: both
-    /// gestures are live at once, and sharing one base makes the second one start from a
-    /// stale transform the moment the first one ends.
-    @State private var zoomBase: ViewTransform?
+    /// Each gesture keeps its own origin, in a type that is tested on its own. Both are live at
+    /// once, and sharing one origin made the second gesture start from a stale transform the
+    /// moment the first ended.
+    @State private var pan = GestureSession()
+    @State private var pinch = GestureSession()
     @State private var showsDetails = false
 
     private static let background = Color(
@@ -72,31 +70,23 @@ struct DXFViewer: View {
     private var panGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                let base = panBase ?? transform
-                if panBase == nil { panBase = base }
-                var next = base
-                next.pan(by: value.translation.screenPoint)
-                transform = next
+                transform = pan.pan(transform, by: value.translation.screenPoint)
             }
-            .onEnded { _ in panBase = nil }
+            .onEnded { _ in pan.end() }
     }
 
     /// Pinch to zoom around the fingers.
     private var zoomGesture: some Gesture {
         MagnifyGesture(minimumScaleDelta: 0.01)
             .onChanged { value in
-                let base = zoomBase ?? transform
-                if zoomBase == nil { zoomBase = base }
-                var next = base
-                // `startAnchor` is normalised, so scale it back to screen points.
-                let anchor = ScreenPoint(
-                    x: value.startAnchor.x * next.viewSize.width,
-                    y: value.startAnchor.y * next.viewSize.height
+                transform = pinch.zoom(
+                    transform,
+                    by: value.magnification,
+                    at: ScreenPoint(
+                        x: value.startAnchor.x, y: value.startAnchor.y)
                 )
-                next.zoom(by: value.magnification, around: anchor)
-                transform = next
             }
-            .onEnded { _ in zoomBase = nil }
+            .onEnded { _ in pinch.end() }
     }
 
     /// Frames the whole drawing again.

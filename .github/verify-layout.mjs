@@ -155,6 +155,7 @@ mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/DrawingReadOptionsTests.swift'
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/PDFZoomTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/FilePickOutcomeTests.swift')
 mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/DrawBatchingTests.swift')
+mustExist('ios/DXFGeometry/Tests/DXFGeometryTests/GestureSessionTests.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/DrawingReadOptions.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/SkippedEntities.swift')
 // The attribute test reads this fixture from the test bundle, so its absence silently

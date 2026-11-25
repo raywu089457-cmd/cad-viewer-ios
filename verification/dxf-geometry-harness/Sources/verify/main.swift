@@ -1170,6 +1170,57 @@ do {
     _ = single.begin()
     check(!single.isCurrent(only), "closing discards the pending load")
 }
+section("Gesture session")
+do {
+    let size = ScreenSize(width: 390, height: 844)
+    let square = Bounds(minX: 0, minY: 0, maxX: 1000, maxY: 1000)
+    let fitted = ViewTransform.fitting(square, in: size)
+
+    // A drag applies its delta to the transform the gesture started from, not to the last
+    // frame: frame-by-frame deltas compound rounding and the drawing drifts from the finger.
+    var session = GestureSession()
+    let start = session.pan(fitted, by: ScreenPoint(x: 10, y: 0))
+    let later = session.pan(start, by: ScreenPoint(x: 10, y: 0))
+    let single = session.pan(fitted, by: ScreenPoint(x: 10, y: 0))
+    check(later == single, "a dragged update is relative to the origin, not the last frame")
+    session.end()
+
+    // The origin is captured once per gesture.
+    var fresh = GestureSession()
+    _ = fresh.pan(fitted, by: ScreenPoint(x: 5, y: 0))
+    check(fresh.isActive, "a gesture is active once it starts")
+    fresh.end()
+    check(!fresh.isActive, "and inactive after it ends")
+
+    // The bug this guards: both gestures are live at once, and sharing one origin made the
+    // second start from a stale transform the moment the first ended.
+    var panSession = GestureSession()
+    var zoomSession = GestureSession()
+    _ = panSession.pan(fitted, by: ScreenPoint(x: 20, y: 0))
+    let zoomed = zoomSession.zoom(
+        fitted, by: 2, at: ScreenPoint(x: 0.5, y: 0.5))
+    check(zoomed.scale != fitted.scale, "the pinch took effect")
+    panSession.end()
+    // The pinch session keeps its own origin, so a further update is still measured from where
+    // *it* started — not from the value the drag left behind. Ending the drag must not disturb
+    // it, which is the bug this guards.
+    let afterPanEnds = zoomSession.zoom(
+        zoomed, by: 1.1, at: ScreenPoint(x: 0.5, y: 0.5))
+    // `magnification` is the total factor since the gesture began, so every update in a
+    // session multiplies the same origin. That is why the second update lands at origin × 1.1
+    // and not at the value the first one produced.
+    check(
+        abs(afterPanEnds.scale - fitted.scale * 1.1) < 1e-9,
+        "the pinch keeps its own origin while the drag ends",
+        "\(afterPanEnds.scale)")
+
+    // A pinch anchor is normalised, so it lands at that fraction of the view.
+    var anchored = GestureSession()
+    let pinched = anchored.zoom(fitted, by: 4, at: ScreenPoint(x: 0, y: 1))
+    check(pinched.scale > fitted.scale, "zooming in increases the scale")
+    check(pinched.scale.isFinite && pinched.scale > 0, "and stays sane")
+}
+
 // MARK: - Result
 
 print("")
