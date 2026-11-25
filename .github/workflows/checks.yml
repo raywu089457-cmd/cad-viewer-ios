@@ -65,7 +65,7 @@ jobs:
       # An extension the handler does not know is served as octet-stream, which WebKit
       # downloads instead of rendering. Nothing compared the table with the bundle before.
       - name: Every bundle extension has a MIME type
-        run: node verification/check-mime-coverage.mjs
+        run: node verification/check-mime-coverage.mjs --require-bundle
 
       # The app fetches these four by URL at runtime, so a bundle missing one produces a
       # blank DWG tab rather than a build error.

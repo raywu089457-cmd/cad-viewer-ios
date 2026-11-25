@@ -49,9 +49,14 @@ const walk = dir => {
 try {
   walk(dist)
 } catch (error) {
-  console.log(`FAIL  the bundle is not built: ${error.message}`)
-  console.log('      run `npm run build` in ios/web first')
-  process.exit(1)
+  // `dist/` is generated and not committed, so a fresh checkout has none. Exit 77 to say
+  // "nothing was checked" rather than 1, which would claim a failure — the same convention the
+  // other checks use, and the reason a skip has a code of its own.
+  console.log(`SKIPPED: the bundle is not built (${error.code || error.message})`)
+  console.log('         run `npm run build` in ios/web to check it')
+  // On CI the bundle is built just before this runs, so a missing one there is a failure, not a
+  // skip. Anywhere else it is simply not built yet.
+  process.exit(process.argv.includes('--require-bundle') ? 1 : 77)
 }
 
 for (const [ext, files] of [...found].sort()) {
