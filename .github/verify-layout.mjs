@@ -133,6 +133,11 @@ mustExist('verification/check-fixture-fresh.mjs')
 mustExist('verification/check-retain-cycles.mjs')
 // UI state that is not main-actor isolated is a data race the compiler only finds under Swift 6.
 mustExist('verification/check-actor-isolation.mjs')
+// The closest thing to a build of the app layer without an Apple SDK.
+mustExist('verification/check-types.sh')
+mustExist('verification/stubs/SwiftUI.swift')
+mustExist('verification/stubs/WebKit.swift')
+mustExist('verification/stubs/PDFKit.swift')
 // A workflow that does not parse runs no jobs at all, and the failure looks infrastructural.
 mustExist('verification/check-workflow.mjs')
 // Applied on CI so the Swift suites can run on Linux; a missing patch means no tests run.
