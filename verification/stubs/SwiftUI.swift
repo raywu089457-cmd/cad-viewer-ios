@@ -302,17 +302,17 @@ public struct Rectangle: View {
     public var body: Nothing { Nothing() }
 }
 
-public final class GraphicsContext {
+public struct GraphicsContext {
     public struct Shading {
         public static func color(_ c: Color) -> Shading { Shading() }
     }
     public enum Style {}
-    public func fill(_ path: Path, with shading: Shading) {}
+    public mutating func fill(_ path: Path, with shading: Shading) {}
     public func fill(_ path: Path, with shading: Shading, style: FillStyle) {}
-    public func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
-    public func translateBy(x: Double, y: Double) {}
-    public func rotate(by angle: Angle) {}
-    public func draw(_ text: Text, at point: CGPoint, anchor: UnitPoint) {}
+    public mutating func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
+    public mutating func translateBy(x: Double, y: Double) {}
+    public mutating func rotate(by angle: Angle) {}
+    public mutating func draw(_ text: Text, at point: CGPoint, anchor: UnitPoint) {}
 }
 
 public struct FillStyle {
@@ -342,7 +342,7 @@ public struct Canvas: View {
     public init(
         opaque: Bool = false, colorMode: ColorMode = .nonLinear,
         rendersAsynchronously: Bool = false,
-        renderer: @escaping (GraphicsContext, CGSize) -> Void
+        renderer: @escaping (inout GraphicsContext, CGSize) -> Void
     ) {}
     public enum ColorMode { case nonLinear, linear }
     public var body: Nothing { Nothing() }
