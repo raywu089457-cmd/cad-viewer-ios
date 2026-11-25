@@ -115,7 +115,7 @@ else
   done
 
   # The stand-in the substitution calls.
-  printf 'func _uncheckedResponse(url: URL, statusCode: Int, httpVersion: String?,\n    headerFields: [String: String]?) -> URLResponse? { nil }\n' > "$work/_uncheckedResponse.swift"
+  printf 'import WebKit\n\nfunc _uncheckedResponse(url: URL, statusCode: Int, httpVersion: String?,\n    headerFields: [String: String]?) -> URLResponse? { nil }\n' > "$work/_uncheckedResponse.swift"
 
   if swiftc -typecheck -I "$work" "${search[@]}" "$work/_uncheckedResponse.swift" "${app_sources[@]}" 2>"$work/app2.log"; then
     echo "${#app_sources[@]} app source(s) type-check against the stubs"
