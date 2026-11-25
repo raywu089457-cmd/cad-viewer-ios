@@ -20,7 +20,9 @@ if ! command -v swiftc >/dev/null 2>&1; then
   exit 77
 fi
 
-work="$(dirname "$0")/.typecheck"
+# Absolute: the script changes directory to build the package, and a relative path stops
+# meaning the same thing once it does.
+work="$(cd "$(dirname "$0")" && pwd)/.typecheck"
 rm -rf "$work"
 mkdir -p "$work"
 trap 'rm -rf "$work"' EXIT
