@@ -56,6 +56,12 @@ jobs:
       - name: The PDF view reads a drawing
         run: node verification/check-pdf-reading-setup.mjs
 
+      # Every check above is confirmed to fail on the defect it names, by breaking one thing in a
+      # copy of the tree and running it. Two of these were reporting clean while unable to see
+      # anything, and a hand verification is a thing you do once.
+      - name: Every check fails when it should
+        run: node verification/check-the-checks.mjs
+
       # Seconds, not minutes: the stub declarations are plain text, and each duplicate or missing
       # name it finds used to cost a nine-minute round in the Swift job.
       - name: Stub declarations
