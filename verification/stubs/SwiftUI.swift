@@ -128,6 +128,13 @@ public func withAnimation<Result>(_ animation: Animation? = nil, _ body: () thro
         getter = get
         setter = set
     }
+    /// A binding that is not connected to anything, which is what a stub can offer for the
+    /// projected value of state that no one else owns.
+    public init(wrappedValue: Value) {
+        var v = wrappedValue
+        getter = { v }
+        setter = { v = $0 }
+    }
 }
 
 public enum HorizontalAlignment { case center, leading, trailing }
