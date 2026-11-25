@@ -126,6 +126,10 @@ private struct PDFKitView: UIViewRepresentable {
         view.maxScaleFactor = limits.maximum
         view.displayMode = .singlePageContinuous
         view.displayDirection = .vertical
+        // A drawing is often one sheet split across several pages, and the default draws a
+        // grey band between them. With the band gone the sheets read as one continuous drawing,
+        // which is how they were drawn; the page count is still in the toolbar.
+        view.displaysPageBreaks = false
         return view
     }
 

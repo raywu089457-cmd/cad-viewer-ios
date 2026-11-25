@@ -19,6 +19,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-retain-cycles.mjs` | a message handler registered strongly, which leaks the page and its wasm engine |
 | `check-actor-isolation.mjs` | `@Observable` state without `@MainActor`, a data race on the UI |
 | `check-mime-coverage.mjs` | an extension in the built bundle with no MIME type, which WebKit downloads instead of rendering |
+| `check-pdf-reading-setup.mjs` | the PDF view left at its document-reading defaults, with a page gap interrupting a drawing |
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-fixture-fresh.mjs` | the committed geometry snapshot drifting from the fixture — takes the `scenecheck` binary as its argument, which `dxf-geometry-harness/run.sh` supplies |
 | `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |

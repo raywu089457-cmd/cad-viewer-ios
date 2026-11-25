@@ -19,6 +19,8 @@ public final class PDFView: UIView {
     public var scaleFactorForSizeToFit: Double = 1
     public var displayMode: DisplayMode = .singlePageContinuous
     public var displayDirection: DisplayDirection = .vertical
+    /// The grey band PDFKit draws between pages in continuous mode. Default true.
+    public var displaysPageBreaks: Bool = true
     public var currentPage: PDFPage? { nil }
     // `init()` and `backgroundColor` are inherited from UIView.
     public func go(to page: PDFPage) {}
