@@ -5,17 +5,19 @@
 // exposed `cadReload` — so Swift's `window.cadOpenDwg?.(...)` silently did nothing and a
 // second DWG never opened. Nothing caught it, because the page still reported `ready`.
 //
-//   node test-dwg-reopen.mjs <viewer-dist> <first.dwg> <second.dwg>
+//   node test-dwg-reopen.mjs <viewer-dist> <first.dwg> <next.dwg>...
 //
-// Prints the events the page posts for each load; both must end in `rendered`.
+// Every file after the first is opened through the reopen path, in order. A DWG format the
+// samples cover but this test never opened was a format nothing ran — R2000 sat in the tree
+// while only R2013 and R2018 were exercised.
 import { chromium } from 'playwright'
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
 
-const [root, first, second] = process.argv.slice(2)
-if (!root || !first || !second) {
-  console.error('usage: node test-dwg-reopen.mjs <viewer-dist> <first.dwg> <second.dwg>')
+const [root, first, ...rest] = process.argv.slice(2)
+if (!root || !first || rest.length === 0) {
+  console.error('usage: node test-dwg-reopen.mjs <viewer-dist> <first.dwg> <next.dwg>...')
   process.exit(2)
 }
 
@@ -123,12 +125,12 @@ const hasEntry = await page.evaluate(() => typeof window.cadOpenDwg === 'functio
 console.log('cadOpenDwg :', hasEntry ? 'present' : 'MISSING')
 
 const before = events.length
-harness.drawing = second
-const base64 = fs.readFileSync(second).toString('base64')
+harness.drawing = rest[0]
+const base64 = fs.readFileSync(rest[0]).toString('base64')
 // A missing entry point must fail this test, not throw out of it.
 try {
   await page.evaluate(
-    ([data]) => window.cadOpenDwg(data, 'second.dwg', 100),
+    ([data]) => window.cadOpenDwg(data, 'next.dwg', 100),
     [base64]
   )
 } catch (error) {
@@ -141,9 +143,34 @@ await waitFor(list =>
 const reopen = names(events.slice(before))
 console.log('reopen     :', reopen.join(' -> '))
 
+// Every further file goes through the same path, so a format that only the engine mishandles
+// is caught rather than inferred from the first pair.
+let restOk = reopen.includes('rendered')
+for (const file of rest.slice(1)) {
+  const mark = events.length
+  harness.drawing = file
+  try {
+    await page.evaluate(
+      ([data, name]) => window.cadOpenDwg(data, name, 100),
+      [fs.readFileSync(file).toString('base64'), path.basename(file)]
+    )
+  } catch (error) {
+    console.log('reopen     : threw,', String(error).split(String.fromCharCode(10))[0])
+    restOk = false
+    continue
+  }
+  await waitFor(list =>
+    list.slice(mark).some(e => e.event === 'rendered' || e.event === 'error' || e.event === 'pageerror')
+  )
+  const seen = names(events.slice(mark))
+  const drew = seen.includes('rendered')
+  console.log(`reopen     : ${path.basename(file)} ${drew ? 'rendered' : 'FAILED'} (${seen.join(' -> ')})`)
+  if (!drew) restOk = false
+}
+
 await browser.close()
 harness.server.close()
 
-const ok = hasEntry && firstLoad.includes('rendered') && reopen.includes('rendered')
+const ok = hasEntry && firstLoad.includes('rendered') && restOk
 console.log(ok ? 'PASS' : 'FAIL')
 process.exit(ok ? 0 : 1)

@@ -102,12 +102,15 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-      - name: Reopen a second drawing
+      # Every DWG format the samples cover, because the engine handles them differently and a
+      # format nothing opens is a format nothing checks. R2000 was in the tree and untested.
+      - name: Reopen every sample drawing
         run: |
           node verification/test-dwg-reopen.mjs \
             "$PWD/ios/web/dist" \
             "$PWD/samples/example_2018.dwg" \
-            "$PWD/samples/example_2013.dwg"
+            "$PWD/samples/example_2013.dwg" \
+            "$PWD/samples/example_2000.dwg"
 
   api-usage:
     name: App calls match the geometry API
