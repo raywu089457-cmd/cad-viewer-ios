@@ -1,6 +1,7 @@
 // A stub of the PDFKit surface this app uses.
 import Foundation
 import SwiftUI
+import SwiftUI
 
 public final class PDFDocument {
     public var pageCount: Int = 0
@@ -9,7 +10,7 @@ public final class PDFDocument {
 
 public final class PDFPage {}
 
-public final class PDFView {
+public final class PDFView: UIView {
     public var document: PDFDocument?
     public var autoScales: Bool = true
     public var minScaleFactor: Double = 0

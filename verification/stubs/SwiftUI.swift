@@ -141,6 +141,14 @@ public func withAnimation<Result>(_ animation: Animation? = nil, _ body: () thro
     }
 }
 
+public struct SafeAreaRegions: OptionSet {
+    public let rawValue: Int
+    public init(rawValue: Int) { self.rawValue = rawValue }
+    public static let all = SafeAreaRegions(rawValue: 1)
+    public static let container = SafeAreaRegions(rawValue: 2)
+    public static let keyboard = SafeAreaRegions(rawValue: 4)
+}
+
 public enum HorizontalAlignment { case center, leading, trailing }
 public enum VerticalAlignment { case center, top, bottom }
 public enum Alignment { case center, top, bottom, topLeading, bottomTrailing }
@@ -382,6 +390,7 @@ extension View {
         -> some View { Nothing() }
     public func onAppear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
     public func onDisappear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
+    public func ignoresSafeArea(_ regions: SafeAreaRegions = .all) -> some View { Nothing() }
     public func onChange<V: Equatable>(of value: V, initial: Bool = false, _ action: @escaping (V, V) -> Void) -> some View { Nothing() }
     public func onChange<V: Equatable>(of value: V, _ action: @escaping (V) -> Void) -> some View { Nothing() }
     public func animation(_ a: Animation? = nil, value: some Equatable) -> some View { Nothing() }

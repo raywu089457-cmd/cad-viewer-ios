@@ -1,6 +1,7 @@
 import SwiftUI
 import PDFKit
 import UIKit
+import DXFGeometry
 
 /// The PDF surface.
 ///
