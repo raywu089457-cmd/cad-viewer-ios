@@ -66,18 +66,14 @@ public nonisolated struct Nothing: View {
     public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
     public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
     public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent)
-        -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
+        -> Nothing { Nothing() }
     public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(second: FalseContent)
-        -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
+        -> Nothing { Nothing() }
 }
 
-/// What the result builder produces for an `if`/`else` whose branches are different views.
-/// It is a `View` whatever its arguments are, which is the whole point: the branches do not have
-/// to have the same type.
-public nonisolated struct _ConditionalContent<TrueContent: View, FalseContent: View>: View {
-    public nonisolated init() {}
-    public nonisolated var body: Never { fatalError() }
-}
+// The two branches of an / need not be the same view, so the builder takes them
+// separately and returns one concrete type. Nothing here needs to know which is which: what
+// matters is that each branch is type-checked.
 
 @propertyWrapper public final class State<Value> {
     private final class Box {

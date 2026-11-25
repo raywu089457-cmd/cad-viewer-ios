@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import os
+import DXFGeometry
 
 /// The DWG surface: the bundled web viewer in a `WKWebView`.
 ///
