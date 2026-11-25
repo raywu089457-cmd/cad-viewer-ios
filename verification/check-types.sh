@@ -46,27 +46,32 @@ if [ "$failures" -gt 0 ]; then
   exit 1
 fi
 
-# DXFGeometry and SwiftDXF are real libraries. Where SwiftPM has built them, their module
-# interfaces are reused — the app's use of them is exactly what wants checking, and a stub of a
-# library that size would be its own source of wrong answers.
+# DXFGeometry and SwiftDXF are real libraries. They are built here rather than stubbed: the
+# app's use of them is exactly what wants checking, and a stub of a library that size would be
+# its own source of wrong answers.
+if ! ( cd ../ios/DXFGeometry && swift build > "$work/geometry-build.log" 2>&1 ); then
+  echo "DXFGeometry did not build; the test step reports that, so it is not repeated here"
+  tail -5 "$work/geometry-build.log"
+  exit 1
+fi
+
+# `--show-bin-path` is where SwiftPM says its outputs are; the module sits one level up from
+# the binaries, whichever spelling that takes on this toolchain.
+bin_path="$( cd ../ios/DXFGeometry && swift build --show-bin-path 2>/dev/null )"
 search=()
-for candidate in \
-    ../ios/DXFGeometry/.build/out/Modules \
-    ../ios/DXFGeometry/.build/release/Modules \
-    ../ios/DXFGeometry/.build/debug/Modules \
-    ../ios/DXFGeometry/.build/*/release/Modules \
-    ../ios/DXFGeometry/.build/*/debug/Modules; do
-  for dir in $candidate; do
-    if [ -d "$dir" ] && compgen -G "$dir/DXFGeometry.swiftmodule" > /dev/null; then
-      search+=( -I "$dir" )
-      break 2
-    fi
-  done
+for dir in "$bin_path/Modules" "$bin_path/../Modules" \
+           ../ios/DXFGeometry/.build/out/Modules \
+           ../ios/DXFGeometry/.build/debug/Modules \
+           ../ios/DXFGeometry/.build/release/Modules; do
+  if [ -d "$dir" ] && compgen -G "$dir/DXFGeometry.swiftmodule" > /dev/null; then
+    search=( -I "$dir" )
+    break
+  fi
 done
 
 if [ "${#search[@]}" -eq 0 ]; then
-  echo "SKIPPED: DXFGeometry has not been built, so the app cannot be checked against it" >&2
-  exit 77
+  echo "cannot find the DXFGeometry module; searched under $bin_path" >&2
+  exit 1
 fi
 
 app_sources=( ../ios/CADViewer/Sources/CADViewer/*.swift )
