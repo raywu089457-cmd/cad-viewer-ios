@@ -146,6 +146,16 @@ const cases = [
     }
   },
   {
+    check: 'check-dwg-assets.mjs',
+    what: 'a worker file the page names, missing from the bundle',
+    requiresBuiltBundle: true,
+    break: root => {
+      const path = join(root, 'ios/web/dist/assets/mtext-renderer-worker.js')
+      // Removing it is the whole defect: the page names a path and nothing is there.
+      rmSync(path, { force: true })
+    }
+  },
+  {
     check: 'check-project-spec.mjs',
     what: 'an Info.plist key a drawing needs, removed',
     break: root => {

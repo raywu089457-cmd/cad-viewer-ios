@@ -26,6 +26,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |
 | `check-viewer-identity.mjs` | a viewer identified by file name, so a same-named file in another folder is not rebuilt |
 | `check-the-checks.mjs` | a check that passes on a tree where the defect it names has been put back |
+| `check-dwg-assets.mjs` | a worker or the wasm engine missing from the bundle, or not really a wasm module |
 | `check-dwg-controls.mjs` | a DWG page entry point Swift calls that the page never defines |
 | `check-inventory.mjs` | this list drifting from what is on disk, or a bake-off script creeping into CI |
 | `make-pdf.mjs` | regenerates the PDF fixtures, so a change to either is reviewable in a diff |

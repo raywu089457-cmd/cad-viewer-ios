@@ -101,6 +101,11 @@ jobs:
 
       # The bundle is built here, so the one case that needs it can be verified rather than
       # skipped —  is the only check whose defect lives in .
+      # The page names two worker files by path; nothing in the module graph knows they are
+      # needed. A missing one loads, reports ready, and fails on the first multi-line text.
+      - name: The DWG page has its assets
+        run: node verification/check-dwg-assets.mjs --require-bundle
+
       # Every DWG entry point Swift calls has to exist on the page. One did not, once, and
       # Swift's optional-chained call silently did nothing.
       - name: The DWG page defines what Swift calls
