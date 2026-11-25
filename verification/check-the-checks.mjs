@@ -13,10 +13,17 @@
 //   node verification/check-the-checks.mjs [--verbose]
 
 import { execFileSync } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync as readRaw, rmSync, writeFileSync as writeRaw, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+/// A checkout on Windows has CRLF line endings; one on CI has LF. Every anchor below is written
+/// with a plain newline, so on a developer's machine the edit would silently miss — and a
+/// `replace` that matches nothing leaves the tree intact, which reads exactly like a check that
+/// works. Reading normalised makes the anchors hold either way.
+const readFileSync = path => readRaw(path, 'utf8').replace(/\r\n/g, '\n')
+const writeFileSync = (path, text) => writeRaw(path, text, 'utf8')
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repo = join(here, '..')
@@ -184,8 +191,15 @@ for (const { check, what, break: breakIt, requiresBuiltBundle } of cases) {
       if (existsSync(from)) cpSync(from, join(work, part), { recursive: true })
     }
 
-    breakIt(work)
-
+    // A thunk that throws means the anchor it edits is gone, so this case cannot be verified at
+    // all. Reported as its own failure rather than allowed to abort the run, because the anchors
+    // drift as the app changes and the whole check would stop being useful.
+    try {
+      breakIt(work)
+    } catch (error) {
+      failures.push(`${check}: cannot be verified — ${error.message}. The anchor it edits has moved.`)
+      continue
+    }
     let passed = true
     let detail = ''
     try {
@@ -226,4 +240,10 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log(`\n${results.length} check(s) confirmed to fail on the defect they name`)
+console.log(`\n${results.filter(r => r.outcome === 'reported it').length} check(s) confirmed to fail on the defect they name`)
+const skipped = results.filter(r => r.outcome !== 'reported it')
+if (skipped.length > 0) {
+  // Said separately, because a skip is not a confirmation and counting them together would
+  // overstate what was verified.
+  console.log(`${skipped.length} not verified here: ${skipped.map(r => r.check).join(', ')}`)
+}
