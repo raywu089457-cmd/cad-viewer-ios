@@ -149,6 +149,8 @@ public struct SafeAreaRegions: OptionSet {
     public static let keyboard = SafeAreaRegions(rawValue: 4)
 }
 
+public enum TextAlignment { case leading, center, trailing }
+
 public enum HorizontalAlignment { case center, leading, trailing }
 public enum VerticalAlignment { case center, top, bottom }
 public enum Alignment { case center, top, bottom, topLeading, bottomTrailing }
@@ -261,6 +263,7 @@ public struct Button<LabelContent: View>: View {
     public init(action: @escaping () -> Void, @ViewBuilder label: () -> LabelContent) {}
     public init(_ title: String, action: @escaping () -> Void) where LabelContent == Text {}
     public init(_ title: String, systemImage: String, action: @escaping () -> Void) where LabelContent == Label<Text, Image> {}
+    public init(_ title: String, role: ButtonRole?, action: @escaping () -> Void) where LabelContent == Text {}
     public var body: Nothing { Nothing() }
 }
 
@@ -384,6 +387,7 @@ extension View {
     public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil) -> some View { Nothing() }
     public func foregroundStyle(_ c: Color) -> some View { Nothing() }
     public func font(_ f: Font?) -> some View { Nothing() }
+    public func multilineTextAlignment(_ a: TextAlignment) -> some View { Nothing() }
     public func tint(_ c: Color?) -> some View { Nothing() }
     public func background(_ c: Color) -> some View { Nothing() }
     public func background(_ s: Material, in shape: Shape) -> some View { Nothing() }
@@ -451,6 +455,7 @@ public protocol ShapeStyle {}
 
 /// The translucent surface the app puts behind its status pill.
 public struct Material: ShapeStyle {
+    public static var tint: Material { Material() }
     public static var ultraThinMaterial: Material { Material() }
     public static var thinMaterial: Material { Material() }
     public static var regularMaterial: Material { Material() }
@@ -458,6 +463,8 @@ public struct Material: ShapeStyle {
 extension Color: ShapeStyle {}
 
 public protocol ButtonStyle {}
+
+public enum ButtonRole { case cancel, destructive }
 
 public struct PlainButtonStyle: ButtonStyle {}
 
