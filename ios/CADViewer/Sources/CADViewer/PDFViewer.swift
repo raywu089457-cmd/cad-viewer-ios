@@ -145,7 +145,9 @@ private struct PDFKitView: UIViewRepresentable {
         }
         if view.autoScales != autoScales {
             view.autoScales = autoScales
-            // Re-frame after switching, or the page keeps the previous zoom.
+            // Re-frame after switching, or the page keeps the previous zoom. `go(to:)` takes a
+            // destination rather than a page — a page has no position, and scrolling to one
+            // needs a point on it. The top-left is where a drawing is read from.
             if let page = view.currentPage {
                 view.go(to: page)
             }
