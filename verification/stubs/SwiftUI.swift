@@ -81,9 +81,9 @@ public struct Animation {
     public static let `default` = Animation()
     public static func easeInOut(duration: Double) -> Animation { Animation() }
     public static func spring(duration: Double) -> Animation { Animation() }
-    public static let easeOut = Animation()
-    public static let easeIn = Animation()
-    public static let linear = Animation()
+    public static func easeOut(duration: Double) -> Animation { Animation() }
+    public static func easeIn(duration: Double) -> Animation { Animation() }
+    public static func linear(duration: Double) -> Animation { Animation() }
 }
 
 /// Runs a state change inside an animation. A free function in the real API, which is why the
@@ -172,8 +172,14 @@ public struct ZStack<Content: View>: View {
 }
 
 /// One view per element of a collection, which is how the app lists skipped entities.
-public struct ForEach<Data: RandomAccessCollection, Content: View>: View {
-    public init(_ data: Data, @ViewBuilder content: @escaping (Data.Element) -> Content) {}
+public struct ForEach<Data: RandomAccessCollection, ID: Hashable, Content: View>: View {
+    public init(_ data: Data, id: KeyPath<Data.Element, ID>, @ViewBuilder content: @escaping (Data.Element) -> Content) {}
+    public var body: Nothing { Nothing() }
+}
+
+/// A label and a value, which is how the app lists skipped entities.
+public struct LabeledContent<Content: View, Value: View>: View {
+    public init(_ title: String, value: String) where Content == Text, Value == Text {}
     public var body: Nothing { Nothing() }
 }
 
@@ -210,6 +216,10 @@ public struct Text: View {
 }
 
 public struct Font {
+    public static let caption = Font()
+    public static let body = Font()
+    public static let footnote = Font()
+    public static let title = Font()
     public static func system(size: Double) -> Font { Font() }
     public static func system(size: Double, weight: Font.Weight) -> Font { Font() }
     public struct Weight {}
@@ -450,11 +460,6 @@ public struct Section<Content: View, Header: View>: View {
     public var body: Nothing { Nothing() }
 }
 
-public struct LabeledContent<Content: View, Label: View>: View {
-    public init(@ViewBuilder content: () -> Content, @ViewBuilder label: () -> Label) {}
-    public init(_ title: String, value: String) where Content == Text, Label == Text {}
-    public var body: Nothing { Nothing() }
-}
 
 public struct ToolbarItem<Content: View>: View {
     public init(placement: ToolbarItemPlacement, @ViewBuilder content: () -> Content) {}
