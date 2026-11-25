@@ -13,7 +13,7 @@
 //   node verification/check-the-checks.mjs [--verbose]
 
 import { execFileSync } from 'node:child_process'
-import { cpSync, mkdtempSync, readFileSync as readRaw, rmSync, writeFileSync as writeRaw, existsSync } from 'node:fs'
+import { cpSync, mkdtempSync, mkdirSync, readFileSync as readRaw, rmSync, writeFileSync as writeRaw, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -23,11 +23,14 @@ if ! command -v swiftc >/dev/null 2>&1; then
     exit 77
 fi
 
-files=(
-    ios/CADViewer/Sources/CADViewer/*.swift
-    ios/CADViewer/Sources/CADViewerApp/*.swift
-    ios/DXFGeometry/Sources/DXFGeometry/*.swift
-)
+# Every Swift file in the repository except the manifest and the build output. The list used to be
+# hand-written per target directory, which meant a source file in a directory nobody remembered
+# was never parsed — `Sources/SwiftDXFReexport/Export.swift` was outside all three globs for as
+# long as it existed. A list that has to be remembered will be forgotten.
+files=()
+while IFS= read -r file; do
+    files+=("$file")
+done < <(find ios -name '*.swift' -not -path '*/Tests/*' -not -path '*/.build/*' -not -name 'Package.swift' | sort)
 
 failures=0
 parsed=0
