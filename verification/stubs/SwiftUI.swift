@@ -28,13 +28,17 @@ public struct CGSize {
 public struct CGRect {
     public var origin: CGPoint
     public var size: CGSize
+    public static let zero = CGRect()
     public init() { origin = CGPoint(); size = CGSize() }
     public init(origin: CGPoint, size: CGSize) { self.origin = origin; self.size = size }
     public func insetBy(dx: Double, dy: Double) -> CGRect { self }
     public func contains(_ point: CGPoint) -> Bool { false }
 }
 
-public protocol View {
+/// `@MainActor` as in the real thing. A view's `body` and its stored state are main-actor
+/// isolated, and without the attribute a type whose storage constructs a `@MainActor` model —
+/// which both of this app's viewers do — fails to compile under Swift 6.
+@MainActor public protocol View {
     associatedtype Body: View
     @ViewBuilder var body: Body { get }
 }
@@ -58,8 +62,17 @@ public struct Nothing: View {
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
     public static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
     public static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public static func buildEither<C: View>(first: C) -> C { first }
-    public static func buildEither<C: View>(second: C) -> C { second }
+    public static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent)
+        -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
+    public static func buildEither<TrueContent: View, FalseContent: View>(second: FalseContent)
+        -> _ConditionalContent<TrueContent, FalseContent> { _ConditionalContent() }
+}
+
+/// What the result builder produces for an `if`/`else` whose branches are different views.
+/// It is a `View` whatever its arguments are, which is the whole point: the branches do not have
+/// to have the same type.
+public struct _ConditionalContent<TrueContent: View, FalseContent: View>: View {
+    public var body: Never { fatalError() }
 }
 
 @propertyWrapper public final class State<Value> {
@@ -72,11 +85,10 @@ public struct Nothing: View {
         get { box.value }
         set { box.value = newValue }
     }
-    // `@MainActor` as in the real thing: a `@State` is view state, created while the view is
-    // built, which happens on the main actor. Without this, a view whose `@State` default value
-    // touches a `@MainActor` type — as both of this app's models are — is rejected under Swift
-    // 6's concurrency checking.
-    @MainActor public init(wrappedValue: Value) { box = Box(wrappedValue) }
+    // Not `@MainActor` here: `View` carries the attribute, so a `@State` declared in a view is
+    // already main-actor isolated. Marking the initialiser as well made a plain struct's
+    // property initialiser an actor crossing, which is the error this was meant to avoid.
+    public init(wrappedValue: Value) { box = Box(wrappedValue) }
     public init(initialValue: Value) { box = Box(initialValue) }
 }
 

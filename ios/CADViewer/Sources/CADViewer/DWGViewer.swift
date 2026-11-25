@@ -160,12 +160,16 @@ final class DWGViewerModel {
 
         // A configuration is copied when the web view is made, so these can only be set up
         // once. A reload reuses them and pushes the new drawing into the existing handler.
-        let webView: WKWebView
+        //
+        // Named `page`, not `webView`: a local of that name shadows `self.webView`, and the
+        // optional binding below then reads the local rather than the model's — which is never
+        // nil, so the reload path could not be taken.
+        let page: WKWebView
 
         if let existingHandler = schemeHandler, let existingWebView = webView {
             // Reloading: the handler is already installed and cannot be replaced.
             existingHandler.setDrawing(data)
-            webView = existingWebView
+            page = existingWebView
         } else {
             let handler = ViewerSchemeHandler(root: viewerRoot, drawing: data)
             schemeHandler = handler
@@ -180,17 +184,17 @@ final class DWGViewerModel {
             let proxy = WeakScriptMessageHandler(target: self)
             messageHandlerProxy = proxy
             configuration.userContentController.add(proxy, name: "cadEvents")
-            webView = WKWebView(frame: .zero, configuration: configuration)
+            page = WKWebView(frame: .zero, configuration: configuration)
         }
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.backgroundColor = .clear
+        page.isOpaque = false
+        page.backgroundColor = .clear
+        page.scrollView.backgroundColor = .clear
         // Pan and pinch belong to the viewer's own canvas; the page must not rubber-band.
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.bounces = false
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
-        self.webView = webView
+        page.scrollView.isScrollEnabled = false
+        page.scrollView.bounces = false
+        page.navigationDelegate = self
+        page.uiDelegate = self
+        self.webView = page
 
         var components = URLComponents()
         components.scheme = ViewerSchemeHandler.scheme
