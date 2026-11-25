@@ -56,7 +56,7 @@ public struct CGRect {
 }
 
 extension Never: View {
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 /// A view with no content, which the builders below return when they cannot name a type.
@@ -64,7 +64,7 @@ extension Never: View {
 /// `nonisolated` static context, so constructing an empty view must not cross actors.
 public nonisolated struct Nothing: View {
     public nonisolated init() {}
-    public nonisolated var body: Never { fatalError() }
+    public nonisolated var body: Nothing { Nothing() }
 }
 
 @resultBuilder public struct ViewBuilder {
@@ -136,7 +136,7 @@ public struct VStack<Content: View>: View {
         alignment: HorizontalAlignment = .center, spacing: Double? = nil,
         @ViewBuilder content: () -> Content
     ) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct HStack<Content: View>: View {
@@ -144,22 +144,22 @@ public struct HStack<Content: View>: View {
         alignment: VerticalAlignment = .center, spacing: Double? = nil,
         @ViewBuilder content: () -> Content
     ) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct ZStack<Content: View>: View {
     public init(alignment: Alignment = .center, @ViewBuilder content: () -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Group<Content: View>: View {
     public init(@ViewBuilder content: () -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct GeometryReader<Content: View>: View {
     public init(@ViewBuilder content: @escaping (GeometryProxy) -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct GeometryProxy {
@@ -168,17 +168,17 @@ public struct GeometryProxy {
 
 public struct Spacer: View {
     public init() {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Divider: View {
     public init() {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Text: View {
     public init(_ s: String) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
     public func font(_ f: Font?) -> Text { self }
     public func foregroundStyle(_ c: Color) -> Text { self }
     public func padding(_ length: Double) -> Text { self }
@@ -210,39 +210,39 @@ public struct Color {
 public struct Button<Label: View>: View {
     public init(action: @escaping () -> Void, @ViewBuilder label: () -> Label) {}
     public init(_ title: String, action: @escaping () -> Void) where Label == Text {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Label<Title: View, Icon: View>: View {
     public init(@ViewBuilder title: () -> Title, @ViewBuilder icon: () -> Icon) {}
     public init(_ title: String, systemImage: String) where Title == Text, Icon == Image {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Image: View {
     public init(systemName: String) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct ProgressView<Label: View>: View {
     public init(@ViewBuilder label: () -> Label) {}
     public init(_ title: String) where Label == Text {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct RoundedRectangle: View {
     public init(cornerRadius: Double) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Capsule: View {
     public init() {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Rectangle: View {
     public init() {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct GraphicsContext {
@@ -285,7 +285,7 @@ public struct Canvas<Symbols: View>: View {
         renderer: @escaping (inout GraphicsContext, CGSize) -> Void
     ) {}
     public enum ColorMode { case nonLinear, linear }
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct DragGesture {
@@ -373,29 +373,29 @@ extension MagnifyGesture: Gesture {}
 
 public struct NavigationStack<Content: View>: View {
     public init(@ViewBuilder content: () -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct List<Content: View>: View {
     public init(@ViewBuilder content: () -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Section<Content: View, Header: View>: View {
     public init(@ViewBuilder content: () -> Content, @ViewBuilder header: () -> Header) {}
     public init(_ title: String, @ViewBuilder content: () -> Content) where Header == Text {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct LabeledContent<Content: View, Label: View>: View {
     public init(@ViewBuilder content: () -> Content, @ViewBuilder label: () -> Label) {}
     public init(_ title: String, value: String) where Content == Text, Label == Text {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct ToolbarItem<Content: View>: View {
     public init(placement: ToolbarItemPlacement, @ViewBuilder content: () -> Content) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct ToolbarItemPlacement {
@@ -409,7 +409,7 @@ public struct ContentUnavailableView<LabelContent: View, Description: View>: Vie
     public init(
         @ViewBuilder label: () -> LabelContent, @ViewBuilder description: () -> Description
     ) {}
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public struct Alert: View {
@@ -418,7 +418,7 @@ public struct Alert: View {
     ) {}
     public struct Button {}
     public static func `default`(_ title: Text) -> Button { Button() }
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
 }
 
 public enum TaskPriority { case userInitiated, background }
@@ -449,7 +449,7 @@ public protocol UIViewRepresentable: View {
 }
 
 extension UIViewRepresentable {
-    public var body: Never { fatalError() }
+    public var body: Nothing { Nothing() }
     public func makeCoordinator() -> Void {}
 }
 
