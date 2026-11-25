@@ -1116,6 +1116,31 @@ do {
     check(bigger.maximum > measured.maximum, "a larger page zooms further in")
     check(bigger.minimum > measured.minimum, "and its floor rises too")
 }
+section("PDF open verdict")
+do {
+    // Two failures that read the same to a user — a file that is not a PDF, and one that is but
+    // holds nothing — and the reader is told which. Before this the decision lived inside the
+    // viewer, where PDFKit cannot be built off an Apple platform and nothing could check it.
+    check(PDFOpenOutcome.verdict(pageCount: 12) == .readable(pageCount: 12), "a document with pages is readable")
+    check(PDFOpenOutcome.verdict(pageCount: 12).message == nil, "and shows no error")
+
+    // A one-page document is the off-by-one that would read as empty.
+    check(PDFOpenOutcome.verdict(pageCount: 1) == .readable(pageCount: 1), "one page is readable")
+
+    check(PDFOpenOutcome.verdict(pageCount: nil) == .notAPDF, "no document means the bytes are not a PDF")
+    check(PDFOpenOutcome.verdict(pageCount: 0) == .noPages, "no pages is its own failure")
+
+    // A failure with no message would leave the viewer on a spinner forever; a message on a
+    // readable document would replace the page with an error. Both directions matter.
+    for count in [nil, 0] as [Int?] {
+        check(PDFOpenOutcome.verdict(pageCount: count).message != nil, "every failure says something", "\(String(describing: count))")
+    }
+    check(PDFOpenOutcome.verdict(pageCount: 3).message == nil, "a readable document says nothing")
+
+    // The guard is a comparison, not an equality: `pageCount != 0` would let a negative through
+    // and show a document with no pages as readable.
+    check(PDFOpenOutcome.verdict(pageCount: -1) == .noPages, "a negative count is not readable")
+}
 section("File picker cancellation")
 do {
     // Dismissing the picker arrives as a failure with NSUserCancelledError. Reporting it as

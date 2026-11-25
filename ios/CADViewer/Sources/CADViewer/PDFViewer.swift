@@ -90,11 +90,16 @@ final class PDFViewerModel {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
 
-        guard let document = PDFDocument(url: url) else {
-            return .failure("The file is not a readable PDF.")
+        // Which failure it is — not a PDF at all, or one with no pages — is decided in
+        // DXFGeometry, where it can be tested without PDFKit.
+        let document = PDFDocument(url: url)
+        if let message = PDFOpenOutcome.verdict(pageCount: document?.pageCount).message {
+            return .failure(message)
         }
-        guard document.pageCount > 0 else {
-            return .failure("The PDF has no pages.")
+        guard let document else {
+            // Unreachable: `message` is nil only for a document with pages. Written out rather
+            // than forced, so a future change to the verdict surfaces here as a failure.
+            return .failure("The file is not a readable PDF.")
         }
         return .success(document)
     }

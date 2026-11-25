@@ -212,3 +212,36 @@ public enum PDFZoom {
         return (minimum: minimum, maximum: maximum, measured: true)
     }
 }
+
+/// Whether a PDF can be shown, decided away from PDFKit.
+///
+/// `PDFDocument(url:)` returning nil and a document with no pages are different failures with
+/// different causes — a file that is not a PDF at all, and one that is but holds nothing — and
+/// the reader is told which. The check is here rather than in the viewer because PDFKit cannot
+/// be built off an Apple platform, and this is the part that could be wrong.
+public enum PDFOpenOutcome: Equatable, Sendable {
+    /// Pages to show.
+    case readable(pageCount: Int)
+    /// The bytes did not parse into a document.
+    case notAPDF
+    /// It parsed, and holds no pages.
+    case noPages
+
+    /// Decides from what PDFKit reported.
+    ///
+    /// - Parameter pageCount: the document's page count, or nil when PDFKit produced no document.
+    public static func verdict(pageCount: Int?) -> PDFOpenOutcome {
+        guard let pageCount else { return .notAPDF }
+        guard pageCount > 0 else { return .noPages }
+        return .readable(pageCount: pageCount)
+    }
+
+    /// What to show the reader, or nil when there is something to show instead.
+    public var message: String? {
+        switch self {
+        case .readable: return nil
+        case .notAPDF: return "The file is not a readable PDF."
+        case .noPages: return "The PDF has no pages."
+        }
+    }
+}
