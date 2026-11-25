@@ -74,8 +74,8 @@ public final class WKWebView: UIView {
     public var uiDelegate: WKUIDelegate?
     public var scrollView: ScrollView = ScrollView()
     public var isOpaque: Bool = true
-    public var autoresizingMask: SwiftUI.UIView.AutoresizingMask = []
-    public var backgroundColor: UIColor?
+    // `frame`, `bounds`, `backgroundColor` and `autoresizingMask` are inherited from UIView, as
+    // they are in the real framework; declaring them again is an illegal override.
     public var configuration: WKWebViewConfiguration { WKWebViewConfiguration() }
     public init(frame: SwiftUI.CGRect, configuration: WKWebViewConfiguration) {}
     public func load(_ request: URLRequest) -> WKNavigation? { nil }

@@ -96,6 +96,35 @@ for (const [name, files] of names) {
   if (files.length > 1) failures.push(`'${name}' is declared in ${files.join(' and ')}`)
 }
 
+// A stub class that inherits from another stub class cannot redeclare what it inherits: Swift
+// calls that an illegal override, and it cost three rounds to learn one member at a time.
+const classDecl = /^\s*(?:public |)(?:final |)(?:class)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*:\s*([A-Za-z_][A-Za-z0-9_]*))?/gm
+const storedMember = /^\s{4}public (?:var|let) ([a-zA-Z_][A-Za-z0-9_]*)/gm
+const membersOf = new Map() // class -> Set(member)
+// Two passes: a class may inherit from one declared in a file scanned later, and a single pass
+// silently checked nothing for it — which is how this went three rounds without noticing.
+for (const collect of [true, false]) {
+  for (const file of stubs) {
+    const code = stripSource(readFileSync(join(stubsDir, file), 'utf8'))
+    for (const m of code.matchAll(classDecl)) {
+      const [, name, parent] = m
+      const rest = code.slice(m.index + m[0].length)
+      const end = rest.indexOf('\n}')
+      const body = end < 0 ? rest : rest.slice(0, end)
+      const own = new Set([...body.matchAll(storedMember)].map(x => x[1]))
+      if (membersOf.has(parent)) {
+        for (const member of own) {
+          if (membersOf.get(parent).has(member)) {
+            const note = `${file}: '${name}' declares '${member}', which it inherits from '${parent}'`
+            if (!failures.includes(note)) failures.push(note)
+          }
+        }
+      }
+      if (collect && !membersOf.has(name)) membersOf.set(name, own)
+    }
+  }
+}
+
 // Every type-like name the app names must exist in a stub, or the type check will say so in nine
 // minutes. Framework names are modules, not types.
   // Framework names are modules, not types.
