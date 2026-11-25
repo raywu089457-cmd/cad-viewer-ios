@@ -74,7 +74,7 @@ public final class WKWebView {
     public var uiDelegate: WKUIDelegate?
     public var scrollView: ScrollView = ScrollView()
     public var isOpaque: Bool = true
-    public var backgroundColor: UIColor?
+    public var backgroundColor: UIKit.UIColor?
     public var configuration: WKWebViewConfiguration { WKWebViewConfiguration() }
     public init(frame: SwiftUI.CGRect, configuration: WKWebViewConfiguration) {}
     public func load(_ request: URLRequest) -> WKNavigation? { nil }

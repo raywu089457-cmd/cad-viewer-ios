@@ -11,6 +11,9 @@ import Foundation
 @_exported import Observation
 #endif
 
+// The folded-in UIKit view below has a `backgroundColor`, so name that module too.
+import UIKit
+
 public struct CGPoint {
     public var x: Double
     public var y: Double
@@ -414,7 +417,7 @@ public enum TaskPriority { case userInitiated, background }
 public final class UIView {
     public var frame: CGRect = CGRect()
     public var autoresizingMask: AutoresizingMask = []
-    public var backgroundColor: UIColor? = nil
+    public var backgroundColor: UIKit.UIColor? = nil
     public init() {}
     public func addSubview(_ view: UIView) {}
 
