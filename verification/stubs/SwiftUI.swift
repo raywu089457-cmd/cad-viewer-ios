@@ -241,6 +241,11 @@ public struct Font {
     public static let title = Font()
     public static let title2 = Font()
     public static let title3 = Font()
+    public static let subheadline = Font()
+    public static let headline = Font()
+    public static let callout = Font()
+    public static let largeTitle = Font()
+    public static let caption2 = Font()
     /// The same font at a different weight, which the app uses for its title.
     public func weight(_ w: Weight) -> Font { self }
 }
