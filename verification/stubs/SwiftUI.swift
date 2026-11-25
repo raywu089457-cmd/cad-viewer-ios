@@ -393,7 +393,7 @@ extension View {
     public func padding(_ length: Double = 0) -> some View { Nothing() }
     public func padding(_ edges: Edge.Set, _ length: Double = 0) -> some View { Nothing() }
     public func frame(width: Double? = nil, height: Double? = nil) -> some View { Nothing() }
-    public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil) -> some View { Nothing() }
+    public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil, alignment: Alignment = .center) -> some View { Nothing() }
     public func foregroundStyle(_ c: Color) -> some View { Nothing() }
     public func font(_ f: Font?) -> some View { Nothing() }
     public func multilineTextAlignment(_ a: TextAlignment) -> some View { Nothing() }
