@@ -206,29 +206,7 @@ jobs:
         run: |
           binary="$(swift build -c release --show-bin-path)/scenecheck"
           "$binary" --json < ../fixtures/circles.dxf > /tmp/fresh.json 2>/dev/null
-          # Compared semantically, not textually. The committed snapshot was produced by the
-          # wasm build and this one is a native Linux build; both are the same geometry, but
-          # the two Foundations format doubles differently, and a byte comparison would fail
-          # on that rather than on anything that matters.
-          python3 - <<'PY'
-import json, sys
-fresh = json.load(open("/tmp/fresh.json"))
-committed = json.load(open("../fixtures/circles.json"))
-
-def points(scene):
-    return [[(p["x"], p["y"]) for p in line["points"]] for line in scene["polylines"]]
-
-a, b = points(fresh), points(committed)
-if len(a) != len(b):
-    print(f"polyline count differs: {len(a)} vs {len(b)}")
-    sys.exit(1)
-for i, (x, y) in enumerate(zip(a, b)):
-    if len(x) != len(y):
-        print(f"polyline {i} has {len(x)} points, committed has {len(y)}")
-        sys.exit(1)
-    for j, ((x1, y1), (x2, y2)) in enumerate(zip(x, y)):
-        if abs(x1 - x2) > 1e-6 or abs(y1 - y2) > 1e-6:
-            print(f"polyline {i} point {j}: ({x1}, {y1}) vs ({x2}, {y2})")
-            sys.exit(1)
-print("the fixture snapshot is current")
-PY
+          # Compared as geometry rather than as bytes: the committed snapshot came from a
+          # wasm build and this one is native, and the two Foundations format doubles
+          # differently. The helper says which point differs when one does.
+          python3 ../check-fixture-fresh.py /tmp/fresh.json ../fixtures/circles.json
