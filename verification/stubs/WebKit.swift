@@ -52,7 +52,7 @@ public struct URLRequest {
     public init(url: URL) { self.url = url }
 }
 
-public class URLResponse {
+public typealias URLResponse = SwiftUI.URLResponse
     public var url: URL?
     public init(url: URL) { self.url = url }
 }

@@ -24,6 +24,19 @@ public final class UIColor {
     public init(red: Double, green: Double, blue: Double, alpha: Double) {}
 }
 
+/// The response type a scheme handler builds. On Linux, Foundation declares this as an alias of
+/// `AnyObject` with no initialiser, so the app reads as if it invented one.
+/// The base a scheme handler reports against, which Linux Foundation leaves as an alias.
+open class URLResponse {
+    public init() {}
+}
+
+open class HTTPURLResponse: URLResponse {
+    public var statusCode: Int { 200 }
+    public var allHeaderFields: [AnyHashable: Any] { [:] }
+    public init?(url: URL, statusCode: Int, httpVersion: String?, headerFields: [String: String]?) { super.init() }
+}
+
 /// A security-scoped URL is an app-platform addition to Foundation, so a Linux toolchain has no
 /// such method and the app looks wrong for using one. The app opens files from the document
 /// picker, which hands back scoped URLs; declaring it here is what lets the rest be checked.
