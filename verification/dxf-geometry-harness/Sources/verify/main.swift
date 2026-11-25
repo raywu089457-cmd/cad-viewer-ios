@@ -1221,6 +1221,97 @@ do {
     check(pinched.scale.isFinite && pinched.scale > 0, "and stays sane")
 }
 
+section("Damaged input")
+do {
+    // Files arrive damaged: a truncated download, a copy that stopped half way. None of these
+    // may crash, and a file that parses to nothing must be reported rather than shown as a
+    // blank canvas.
+
+    // Not a DXF at all.
+    check(
+        (try? DXF.read(text: "hello world, not a drawing\n")) == nil,
+        "garbage is rejected"
+    )
+
+    // A header whose entities never arrived. This is the case that shows an empty canvas and
+    // calls it success, because the header alone gives it extents to frame.
+    let headerOnly = """
+    0
+    SECTION
+    2
+    HEADER
+    9
+    $ACADVER
+    1
+    AC1009
+    9
+    $EXTMIN
+    10
+    0
+    20
+    0
+    9
+    $EXTMAX
+    10
+    100
+    20
+    100
+    0
+    ENDSEC
+    0
+    SECTION
+    2
+    ENTITIES
+    0
+    ENDSEC
+    0
+    EOF
+    """
+    if let drawing = try? DXF.read(text: headerOnly) {
+        let scene = SceneBuilder().build(drawing)
+        check(scene.samplePoints.isEmpty, "a header alone yields no points")
+        check(
+            scene.bounds != nil,
+            "but still has extents, which is why an empty canvas looked like success"
+        )
+        let verdict = LoadReadiness.verdict(
+            samplePoints: scene.samplePoints, hasBounds: scene.bounds != nil)
+        check(verdict == .empty, "and is reported as empty, not drawable")
+    } else {
+        check(false, "a header-only file parses")
+    }
+
+    // A real drawing is drawable.
+    if let scene = build("""
+        0
+        LINE
+        10
+        0
+        20
+        0
+        11
+        10
+        21
+        10
+        """) {
+        let verdict = LoadReadiness.verdict(
+            samplePoints: scene.samplePoints, hasBounds: scene.bounds != nil)
+        check(verdict == .drawable, "a drawing with a line is drawable")
+    } else {
+        check(false, "the line fixture parses")
+    }
+
+    // Points without bounds must not be framed as if there were a viewport for them.
+    check(
+        LoadReadiness.verdict(samplePoints: [Point(0, 0)], hasBounds: false) == .empty,
+        "points without extents are not drawable"
+    )
+    check(
+        LoadReadiness.verdict(samplePoints: [], hasBounds: true) == .empty,
+        "extents without points are not drawable"
+    )
+}
+
 // MARK: - Result
 
 print("")

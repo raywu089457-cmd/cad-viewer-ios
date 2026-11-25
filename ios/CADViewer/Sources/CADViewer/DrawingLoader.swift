@@ -83,6 +83,17 @@ enum DrawingLoader {
 
         let scene = SceneBuilder().build(drawing, onDarkBackground: onDarkBackground)
 
+        // A file that parses but yields nothing drawable. A truncated DXF is the usual cause:
+        // its header survives, so the extents are present and a viewport can be framed around
+        // them, and the app would then show a blank canvas and call it a success. Saying so is
+        // better than an empty screen the reader cannot explain.
+        guard
+            LoadReadiness.verdict(
+                samplePoints: scene.samplePoints, hasBounds: scene.bounds != nil) == .drawable
+        else {
+            return .failure(LoadFailure(fileName: name, reason: .noGeometry))
+        }
+
         guard
             let viewport = Viewport.fit(
                 points: scene.samplePoints, fallback: scene.bounds)
