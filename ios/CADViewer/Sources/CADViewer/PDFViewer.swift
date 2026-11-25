@@ -149,7 +149,7 @@ private struct PDFKitView: UIViewRepresentable {
             // destination rather than a page — a page has no position, and scrolling to one
             // needs a point on it. The top-left is where a drawing is read from.
             if let page = view.currentPage {
-                view.go(to: page)
+                view.go(to: PDFDestination(page: page, at: CGPoint(x: 0, y: page.bounds(for: .mediaBox).maxY)))
             }
             view.scaleFactor = view.scaleFactorForSizeToFit
         }
