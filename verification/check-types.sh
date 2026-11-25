@@ -86,6 +86,11 @@ if [ ! -e "${app_sources[0]}" ]; then
   exit 1
 fi
 
+# Which modules were found, said before the check rather than guessed at afterwards.
+module_dir="${search[0]#-I }"
+echo "modules from $module_dir:" >&2
+ls "$module_dir" 2>/dev/null | head -8 >&2
+
 if swiftc -typecheck -I "$work" "${search[@]}" "${app_sources[@]}" 2>"$work/app.log"; then
   echo "${#app_sources[@]} app source(s) type-check against the stubs"
 else

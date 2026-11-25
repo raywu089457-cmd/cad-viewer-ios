@@ -201,9 +201,9 @@ jobs:
       # The app layer cannot be compiled here, but it can be type-checked against the stubs in
       # verification/stubs now that DXFGeometry has been built. This toolchain ships the
       # Observation macro plugin, which the local wasm target does not, so `@Observable`
-      # resolves. Not yet blocking: the first runs are to find out what it reports.
+      # resolves. Blocking, because a step that reports errors while showing green is the thing
+      # this project keeps having to remove.
       - name: Type-check the app layer
-        continue-on-error: true
         run: ./verification/check-types.sh
 
       - name: Build the harness

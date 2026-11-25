@@ -72,7 +72,11 @@ public struct Nothing: View {
         get { box.value }
         set { box.value = newValue }
     }
-    public init(wrappedValue: Value) { box = Box(wrappedValue) }
+    // `@MainActor` as in the real thing: a `@State` is view state, created while the view is
+    // built, which happens on the main actor. Without this, a view whose `@State` default value
+    // touches a `@MainActor` type — as both of this app's models are — is rejected under Swift
+    // 6's concurrency checking.
+    @MainActor public init(wrappedValue: Value) { box = Box(wrappedValue) }
     public init(initialValue: Value) { box = Box(initialValue) }
 }
 
@@ -168,6 +172,10 @@ public struct Color {
     public static let primary = Color()
     public static let secondary = Color()
     public static func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color { Color() }
+
+    /// The colour space a literal names, e.g. `Color(.sRGB, red: …)`.
+    public enum ColorSpace { case sRGB, displayP3 }
+    public init(_ space: ColorSpace, red: Double, green: Double, blue: Double, opacity: Double) {}
 }
 
 public struct Button<Label: View>: View {
