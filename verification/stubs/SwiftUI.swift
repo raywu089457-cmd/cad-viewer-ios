@@ -257,10 +257,10 @@ public struct Color: View {
     public nonisolated init(_ space: ColorSpace, red: Double, green: Double, blue: Double, opacity: Double) {}
 }
 
-public struct Button<Label: View>: View {
-    public init(action: @escaping () -> Void, @ViewBuilder label: () -> Label) {}
-    public init(_ title: String, action: @escaping () -> Void) where Label == Text {}
-    public init(_ title: String, systemImage: String, action: @escaping () -> Void) where Label == Label<Text, Image> {}
+public struct Button<LabelContent: View>: View {
+    public init(action: @escaping () -> Void, @ViewBuilder label: () -> LabelContent) {}
+    public init(_ title: String, action: @escaping () -> Void) where LabelContent == Text {}
+    public init(_ title: String, systemImage: String, action: @escaping () -> Void) where LabelContent == Label<Text, Image> {}
     public var body: Nothing { Nothing() }
 }
 

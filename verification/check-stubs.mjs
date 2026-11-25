@@ -241,6 +241,35 @@ for (const file of readdirSync(appDir).filter(f => f.endsWith('.swift'))) {
   }
 }
 
+// A generic parameter that has the same name as a type declared *at the top level* of a stub file
+// shadows it: `Button<Label>` cannot then name the `Label` view. It cost a round, and it is
+// visible in the text.
+//
+// Nested types are not counted: `State<Value>` is fine next to `DragGesture.Value`, because the
+// two never see each other.
+for (const file of stubs) {
+  const code = stripSource(readFileSync(join(stubsDir, file), 'utf8'))
+  const topLevel = new Set()
+  let d = 0
+  let sc = 0
+  for (const m of code.matchAll(types)) {
+    for (; sc < m.index; sc += 1) {
+      if (code[sc] === '{') d += 1
+      else if (code[sc] === '}') d -= 1
+    }
+    if (d === 0) topLevel.add(m[2])
+  }
+  for (const m of code.matchAll(/\b(struct|class|enum|protocol)\s+[A-Za-z_][A-Za-z0-9_]*\s*<([^>]+)>/g)) {
+    for (const parameter of m[2].split(',')) {
+      const name = parameter.split(':')[0].trim()
+      if (topLevel.has(name)) {
+        const note = `${file}: generic parameter '${name}' shadows the type of the same name`
+        if (!failures.includes(note)) failures.push(note)
+      }
+    }
+  }
+}
+
 if (failures.length > 0) {
   for (const f of failures) console.log(f)
   console.log(`\n${failures.length} stub problem(s)`)
