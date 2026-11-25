@@ -230,6 +230,9 @@ public struct Text: View {
 }
 
 public struct Font {
+    public enum Weight { case light, bold, regular, medium, semibold }
+    public static func system(size: Double, weight: Weight = .regular) -> Font { Font() }
+
     public static let caption = Font()
     public static let body = Font()
     public static let footnote = Font()
@@ -260,6 +263,7 @@ public struct Color: View {
 public struct Button<Label: View>: View {
     public init(action: @escaping () -> Void, @ViewBuilder label: () -> Label) {}
     public init(_ title: String, action: @escaping () -> Void) where Label == Text {}
+    public init(_ title: String, systemImage: String, action: @escaping () -> Void) where Label == Label<Text, Image> {}
     public var body: Nothing { Nothing() }
 }
 
@@ -403,6 +407,12 @@ extension View {
     public func alert<S: StringProtocol, A: View, M: View>(
         _ title: S, isPresented: Binding<Bool>, @ViewBuilder actions: () -> A,
         @ViewBuilder message: () -> M
+    ) -> some View { Nothing() }
+    /// The form the app uses to show a failure: the title, a flag, and the value being shown so
+    /// the actions can be written in terms of it.
+    public func alert<S: StringProtocol, T, A: View>(
+        _ title: S, isPresented: Binding<Bool>, presenting data: T?,
+        @ViewBuilder actions: (T) -> A
     ) -> some View { Nothing() }
     public func sheet<V: View>(isPresented: Binding<Bool>, @ViewBuilder content: () -> V)
         -> some View { Nothing() }

@@ -86,6 +86,14 @@ if [ ! -e "${app_sources[0]}" ]; then
   exit 1
 fi
 
+# `#Preview` is a macro, and a macro needs a plugin this stub set cannot ship. The previews are
+# not part of what the app does at runtime, so they are removed before the check rather than
+# mocked — a stub that pretends to expand one would be checking its own invention.
+for src in "${app_sources[@]}"; do
+  awk '/^#Preview/ {skip=1} skip && /^}$/ {skip=0; next} !skip' "$src" > "$work/$(basename "$src")"
+done
+app_sources=( "$work"/*.swift )
+
 # Which modules were found, said before the check rather than guessed at afterwards.
 module_dir="${search[1]}"
 echo "modules from $module_dir:" >&2
