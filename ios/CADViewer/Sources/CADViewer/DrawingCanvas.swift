@@ -59,18 +59,21 @@ struct DrawingCanvas: View {
             $0.points.count >= 2 && transform.isVisible($0.bounds)
         }
         let groups = DrawBatching.groups(
-            colors: scene.polylines.map(\.colorIndex), visible: visible)
+            colors: scene.polylines.map(\.color), visible: visible)
 
-        for (colorIndex, indices) in groups {
+        for (packed, indices) in groups {
             var path = Path()
-            var color = RGB.white
             for index in indices {
                 let line = scene.polylines[index]
-                color = line.color
                 var run = polylinePath(line.points)
                 if line.isClosed { run.closeSubpath() }
                 path.addPath(run)
             }
+            // Every polyline in a group resolved to the same colour, which is what the
+            // grouping is by, so any of them gives the colour for the stroke.
+            guard let first = indices.first else { continue }
+            let color = scene.polylines[first].color
+            _ = packed
             context.stroke(
                 path,
                 with: .color(color.swiftUIColor),

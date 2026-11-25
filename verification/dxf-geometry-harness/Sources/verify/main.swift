@@ -1059,27 +1059,38 @@ do {
 }
 section("Draw batching")
 do {
-    // A canvas costs a command per stroke; grouping by colour turns 1652 commands into three
-    // without changing what is drawn.
-    let colors = [4, 4, 8, 4, 256, 8]
+    // Grouped by the colour an entity is drawn in, not by its ACI index: two entities can
+    // share index 256 (ByLayer) and resolve to different layers, and therefore different
+    // colours. Grouping by index painted 354 lines of one real drawing in the wrong colour.
+    let red = RGB(1, 0, 0)
+    let green = RGB(0, 1, 0)
+    let blue = RGB(0, 0, 1)
+    let colors = [red, red, green, red, blue, green]
     let groups = DrawBatching.groups(colors: colors)
-    check(groups[4] == [0, 1, 3], "index 4 keeps drawing order", "\(groups[4] ?? [])")
-    check(groups[8] == [2, 5], "index 8 groups its two")
-    check(groups[256] == [4], "a single one")
-    check(groups.count == 3, "three colours, three groups", "\(groups.count)")
-
-    // Every polyline must appear exactly once, or something silently disappears.
-    let total = groups.values.reduce(0) { $0 + $1.count }
-    check(total == colors.count, "nothing is lost or duplicated", "\(total)")
-
-    // Culled polylines are left out, as before.
-    let visible = [true, false, true, true, false, true]
-    let culled = DrawBatching.groups(colors: colors, visible: visible)
-    check(culled[4] == [0, 3], "a culled one is skipped", "\(culled[4] ?? [])")
-    check(culled[256] == nil, "a colour with everything culled is absent")
-
+    check(groups[red.packed] == [0, 1, 3], "red keeps drawing order")
+    check(groups[green.packed] == [2, 5], "green groups its two")
+    check(groups[blue.packed] == [4], "a single one")
+    check(groups.count == 3, "three colours, three groups")
+    check(groups.values.reduce(0) { $0 + $1.count } == colors.count, "nothing lost")
+    let culled = DrawBatching.groups(
+        colors: colors, visible: [true, false, true, true, false, true])
+    check(culled[red.packed] == [0, 3], "a culled one is skipped")
+    check(culled[blue.packed] == nil, "a colour with everything culled is absent")
     check(DrawBatching.groups(colors: []).isEmpty, "nothing groups to nothing")
+
+    let white = RGB(1, 1, 1)
+    let yellow = RGB(1, 1, 0)
+    let mixed = DrawBatching.groups(colors: [white, yellow, white])
+    check(mixed.count == 2, "the same index in two colours is two groups")
+    check(mixed[white.packed] == [0, 2], "the white ones stay together")
+    check(mixed[yellow.packed] == [1], "the yellow one is alone")
+
+    check(RGB(1, 1, 1).packed == 0xFF_FFFF, "white packs to the top of the range")
+    check(RGB(0, 0, 0).packed == 0, "black to zero")
+    check(RGB(2, -1, 0.5).packed == (255 << 16) | 128, "values outside 0...1 are clamped")
+    check(RGB(Double.nan, 0, 0).packed == 0, "a non-finite component becomes zero")
 }
+
 section("PDF zoom limits")
 do {
     // scaleFactorForSizeToFit is meaningless before layout. Deriving limits from it in

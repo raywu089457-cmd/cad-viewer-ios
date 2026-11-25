@@ -36,18 +36,23 @@ public enum SkippedEntities {
 public enum DrawBatching {
     /// The colours present, each with the indices of the polylines drawn in it.
     ///
+    /// Grouped by the colour an entity is actually drawn in, not by its ACI index. Two
+    /// entities can share index 256 — ByLayer — and resolve to different layers and therefore
+    /// different colours; grouping by index would paint them all the last one's colour, which
+    /// on a real drawing meant 354 lines in the wrong colour.
+    ///
     /// - Parameters:
-    ///   - colors: the resolved colour index of each polyline, in drawing order.
+    ///   - colors: the resolved colour of each polyline, in drawing order.
     ///   - visible: whether each polyline survives culling; `nil` means all do.
-    /// - Returns: colour index to polyline indices, keeping drawing order within a colour.
+    /// - Returns: packed colour to polyline indices, keeping drawing order within a colour.
     public static func groups(
-        colors: [Int],
+        colors: [RGB],
         visible: [Bool]? = nil
     ) -> [Int: [Int]] {
         var groups: [Int: [Int]] = [:]
         for (index, color) in colors.enumerated() {
             if let visible, index < visible.count, !visible[index] { continue }
-            groups[color, default: []].append(index)
+            groups[color.packed, default: []].append(index)
         }
         return groups
     }

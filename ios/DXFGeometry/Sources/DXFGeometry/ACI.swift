@@ -77,7 +77,7 @@ public enum ACI {
 }
 
 /// A colour with components in `0...1`.
-public struct RGB: Equatable, Sendable {
+public struct RGB: Equatable, Hashable, Sendable {
     public var r: Double
     public var g: Double
     public var b: Double
@@ -90,4 +90,25 @@ public struct RGB: Equatable, Sendable {
 
     public static let white = RGB(1, 1, 1)
     public static let black = RGB(0, 0, 0)
+
+    /// A stable key for grouping entities that are drawn in the same colour.
+    ///
+    /// Quantised to a 0–255 channel, because the renderer shows eight bits per channel and two
+    /// colours that differ below that are the same on screen. Using the raw doubles as a
+    /// dictionary key would also work, but two entities that resolved to the same ACI index
+    /// through different layers can carry values that differ in the last bit.
+    public var packed: Int {
+        let red = Int((r.clampedForColour * 255).rounded())
+        let green = Int((g.clampedForColour * 255).rounded())
+        let blue = Int((b.clampedForColour * 255).rounded())
+        return (red << 16) | (green << 8) | blue
+    }
+}
+
+extension Double {
+    /// Clamped into the range a colour channel can hold, so a malformed value cannot trap.
+    fileprivate var clampedForColour: Double {
+        guard isFinite else { return 0 }
+        return Swift.min(Swift.max(self, 0), 1)
+    }
 }

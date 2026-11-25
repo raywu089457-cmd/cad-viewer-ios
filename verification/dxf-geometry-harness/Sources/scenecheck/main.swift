@@ -159,6 +159,9 @@ if wantJSON {
             "layer": line.layer,
             "closed": line.isClosed,
             "colorIndex": line.colorIndex,
+            // The colour it is actually drawn in: index 256 means ByLayer, which resolves
+            // differently per layer, so the index alone does not say what is on screen.
+            "rgb": [line.color.r, line.color.g, line.color.b],
             "points": line.points.map(pointObject)
         ]
     }
