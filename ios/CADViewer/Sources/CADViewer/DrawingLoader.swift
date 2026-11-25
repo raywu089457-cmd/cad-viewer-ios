@@ -9,6 +9,13 @@ import DXFGeometry
 /// A drawing that has been flattened, ready to draw.
 struct LoadedDrawing {
     var name: String
+    /// Where it came from.
+    ///
+    /// The viewers are identified by this rather than by name, because two files in different
+    /// folders can share a name — `drawings/plan.dwg` and `archive/plan.dwg` — and an identity
+    /// that collides leaves the previous drawing on screen when the second one is opened.
+    /// `URL.standardizedFileURL` so the same file reached two ways is still one file.
+    var source: URL
     var scene: DrawScene
     var viewport: Viewport
     /// Wall-clock parse + flatten time, shown so the cost of a big drawing is visible.
@@ -104,6 +111,7 @@ enum DrawingLoader {
         return .success(
             LoadedDrawing(
                 name: name,
+                source: url.standardizedFileURL,
                 scene: scene,
                 viewport: viewport,
                 duration: Date().timeIntervalSince(started),

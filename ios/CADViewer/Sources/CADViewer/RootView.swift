@@ -43,16 +43,16 @@ struct RootView: View {
                     // `@State` transform keeps the previous drawing's centre and scale: the
                     // second file would open showing the first file's view of the world.
                     DXFViewer(drawing: drawing)
-                        .id(drawing.name)
+                        .id(drawing.source)
                 case .dwg(let url, let name):
                     // Identified by file for the same reason as the DXF viewer: its `@State`
                     // model carries the loaded page, and a new drawing on the same instance
                     // would keep the previous one's web view.
                     DWGViewer(url: url, fileName: name)
-                        .id(name)
+                        .id(url.standardizedFileURL)
                 case .pdf(let url, let name):
                     PDFViewer(url: url, fileName: name)
-                        .id(name)
+                        .id(url.standardizedFileURL)
                 case nil:
                     welcome
                 }

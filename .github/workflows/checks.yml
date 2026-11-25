@@ -41,6 +41,11 @@ jobs:
       - name: Checks match their inventory
         run: node verification/check-inventory.mjs
 
+      # A viewer identified by its file name is not rebuilt when a same-named file in another
+      # folder is opened, so the previous drawing stays on screen.
+      - name: Viewers are identified by their file
+        run: node verification/check-viewer-identity.mjs
+
       # Seconds, not minutes: the stub declarations are plain text, and each duplicate or missing
       # name it finds used to cost a nine-minute round in the Swift job.
       - name: Stub declarations
