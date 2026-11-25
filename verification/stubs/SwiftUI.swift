@@ -76,6 +76,10 @@ public nonisolated struct Nothing: View {
     public nonisolated var body: Nothing { Nothing() }
 }
 
+/// Runs a state change inside an animation. A free function in the real API, which is why the
+/// app calls it without a receiver.
+public func withAnimation<Result>(_ animation: Animation? = nil, _ body: () throws -> Result) rethrows -> Result { try body() }
+
 @resultBuilder public struct ViewBuilder {
     public nonisolated static func buildBlock() -> Nothing { Nothing() }
     public nonisolated static func buildBlock(_ views: any View...) -> Nothing { Nothing() }
@@ -102,6 +106,7 @@ public nonisolated struct Nothing: View {
     // already main-actor isolated. Marking the initialiser as well made a plain struct's
     // property initialiser an actor crossing, which is the error this was meant to avoid.
     public init(wrappedValue: Value) { box = Box(wrappedValue) }
+    public var projectedValue: Binding<Value> { Binding(wrappedValue: box.value) }
     public init(initialValue: Value) { box = Box(initialValue) }
 }
 
@@ -303,6 +308,8 @@ public struct Canvas<Symbols: View>: View {
 
 public struct DragGesture {
     public init(minimumDistance: Double) {}
+    public func onChanged(_ action: @escaping (Value) -> Void) -> DragGesture { self }
+    public func onEnded(_ action: @escaping (Value) -> Void) -> DragGesture { self }
     public struct Value {
         public var translation: CGSize { CGSize() }
         public var location: CGPoint { CGPoint() }
@@ -311,6 +318,8 @@ public struct DragGesture {
 
 public struct MagnifyGesture {
     public init(minimumScaleDelta: Double) {}
+    public func onChanged(_ action: @escaping (Value) -> Void) -> MagnifyGesture { self }
+    public func onEnded(_ action: @escaping (Value) -> Void) -> MagnifyGesture { self }
     public struct Value {
         public var magnification: Double { 1 }
         public var startAnchor: UnitPoint { .center }
@@ -329,6 +338,10 @@ extension View {
         -> some View { Nothing() }
     public func onAppear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
     public func onDisappear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
+    public func onChange<V: Equatable>(of value: V, initial: Bool = false, _ action: @escaping (V, V) -> Void) -> some View { Nothing() }
+    public func onChange<V: Equatable>(of value: V, _ action: @escaping (V) -> Void) -> some View { Nothing() }
+    public func animation(_ a: Animation? = nil, value: some Equatable) -> some View { Nothing() }
+
     public func task(priority: TaskPriority = .userInitiated, _ action: @escaping () async -> Void)
         -> some View { Nothing() }
     public func alert<S: StringProtocol, A: View>(
