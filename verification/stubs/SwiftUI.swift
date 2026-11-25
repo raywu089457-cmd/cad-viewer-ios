@@ -77,16 +77,19 @@ public nonisolated struct Nothing: View {
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
     public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
     public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(
-        first: TrueContent) -> _Branch<TrueContent, FalseContent> { _Branch() }
-    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(
-        second: FalseContent) -> _Branch<TrueContent, FalseContent> { _Branch() }
+    // Both branches are taken as their own generic parameters so each is type-checked, and one
+    // concrete result so `buildBlock` can combine them. The real builder returns a type carrying
+    // both, which the call site never names — it cannot, the compiler infers them — so pinning
+    // them keeps the inference the app relies on.
+    public nonisolated static func buildEither<T: View, F: View>(first: T) -> _Either<T, F>
+        { _Either() }
+    public nonisolated static func buildEither<T: View, F: View>(second: F) -> _Either<T, F>
+        { _Either() }
 }
 
-/// One of two possible branches. Both parameters appear in the signature so the compiler can
-/// infer each branch independently, which is the whole point of ; nothing needs
-/// to know which one was taken.
-public nonisolated struct _Branch<A: View, B: View>: View {
+/// What the branch builder produces: one concrete type, both branch types carried so the compiler
+/// resolves each of them from the call.
+public nonisolated struct _Either<T: View, F: View>: View {
     public nonisolated init() {}
     public nonisolated var body: Never { fatalError() }
 }
