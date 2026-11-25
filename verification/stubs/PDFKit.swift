@@ -1,7 +1,6 @@
 // A stub of the PDFKit surface this app uses.
 import Foundation
 import SwiftUI
-import SwiftUI
 
 public final class PDFDocument {
     public var pageCount: Int = 0
@@ -10,7 +9,7 @@ public final class PDFDocument {
 
 public final class PDFPage {
     /// The page box, in points. A drawing is read from the top left of the media box.
-    public func bounds(for box: Box) -> CGRect { CGRect() }
+    public func bounds(for box: Box) -> SwiftUI.CGRect { SwiftUI.CGRect() }
     public enum Box { case mediaBox, cropBox, bleedBox, trimBox, artBox }
 }
 
