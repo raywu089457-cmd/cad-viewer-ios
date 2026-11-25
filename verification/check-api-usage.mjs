@@ -83,7 +83,17 @@ function readCalls() {
 
     for (const match of text.matchAll(/([A-Za-z_][A-Za-z0-9_]*)\(/g)) {
       const name = match[1]
-      if (!owned.has(name)) continue
+      // A call written `Type.name(` names the type, so the ambiguous-name exclusion does not
+      // apply to it: there is no other `fit` it could be. Without this distinction,
+      // `ViewTransform.fit` — a typo for `fitting` — was excluded along with a view's own
+      // `fit` and went unreported.
+      const receiver = text.slice(Math.max(0, match.index - 40), match.index)
+      // Only a *type* receiver counts: `ViewTransform.fitting`, not `configuration.userContent
+      // Controller.add` — `userContentController` is a value, and its `add` is WebKit's. The
+      // identifier immediately before the dot has to start with a capital.
+      const lastIdentifier = receiver.match(/([A-Za-z_][A-Za-z0-9_]*)\.$/)
+      const qualified = lastIdentifier !== null && /^[A-Z]/.test(lastIdentifier[1])
+      if (!owned.has(name) && !(ambiguous.has(name) && qualified)) continue
 
       // Collect the argument list, balancing brackets.
       let depth = 0

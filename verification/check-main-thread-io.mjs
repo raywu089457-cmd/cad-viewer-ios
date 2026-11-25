@@ -22,18 +22,33 @@ const uiFiles = [
 ]
 
 /**
- * Whether the code before `index` sits inside a `nonisolated` declaration.
+ * Whether the call at `index` sits inside a `nonisolated` declaration.
  *
- * Approximate by design: it looks at the most recent isolation marker before the call. That
- * is enough to distinguish "read in a nonisolated helper" from "read in the view itself",
- * which is the distinction that matters.
+ * The previous version looked at the most recent isolation marker before the call, which is
+ * wrong across a boundary: a main-actor method after a nonisolated one inherits the earlier
+ * marker and its reads are skipped. That is how a synchronous read placed in a
+ * `UIViewRepresentable`'s `makeUIView` reported as nonisolated — `makeUIView` carries no
+ * `@MainActor` of its own, the protocol supplies it.
+ *
+ * This walks back through the braces instead, so the nearest enclosing declaration decides.
  */
 function isNonisolated(text, index) {
-  const before = text.slice(0, index)
-  const lastNonisolated = before.lastIndexOf('nonisolated')
-  if (lastNonisolated < 0) return false
-  const lastMainActor = before.lastIndexOf('@MainActor')
-  return lastNonisolated > lastMainActor
+  let depth = 0
+  for (let i = index - 1; i > 0; i -= 1) {
+    const c = text[i]
+    if (c === '}') depth += 1
+    else if (c === '{') {
+      if (depth > 0) {
+        depth -= 1
+        continue
+      }
+      // The opening brace of an enclosing scope: read the declaration that starts it.
+      const header = text.slice(Math.max(0, i - 400), i)
+      const line = header.slice(header.lastIndexOf(String.fromCharCode(10)) + 1)
+      return /nonisolated/.test(line)
+    }
+  }
+  return false
 }
 
 const problems = []
@@ -59,11 +74,16 @@ for (const file of uiFiles) {
   }
 }
 
+// A check that inspected nothing is not a passing check.
+if (inspected === 0) {
+  console.error('no UI files found; the paths are wrong')
+  process.exit(1)
+}
+
 console.log(`inspected ${inspected} UI files`)
 if (problems.length > 0) {
   console.error(`BLOCKING ${problems.length}:`)
   for (const problem of problems) console.error(`  ${problem}`)
-  console.error('move the work into a nonisolated helper')
   process.exit(1)
 }
 console.log('no blocking file reads in the UI layer')
