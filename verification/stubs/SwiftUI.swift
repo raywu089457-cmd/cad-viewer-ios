@@ -165,6 +165,7 @@ public struct Font {
 }
 
 public struct Color {
+    public init() {}
     public static let white = Color()
     public static let black = Color()
     public static let clear = Color()
