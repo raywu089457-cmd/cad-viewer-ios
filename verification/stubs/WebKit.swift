@@ -53,9 +53,6 @@ public struct URLRequest {
 }
 
 public typealias URLResponse = SwiftUI.URLResponse
-    public var url: URL?
-    public init(url: URL) { self.url = url }
-}
 
 public protocol WKURLSchemeTask: AnyObject {
     var request: URLRequest { get }
