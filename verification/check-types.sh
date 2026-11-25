@@ -22,7 +22,8 @@ fi
 
 # Absolute: the script changes directory to build the package, and a relative path stops
 # meaning the same thing once it does.
-work="$(cd "$(dirname "$0")" && pwd)/.typecheck"
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+work="$script_dir/.typecheck"
 rm -rf "$work"
 mkdir -p "$work"
 trap 'rm -rf "$work"' EXIT
@@ -57,14 +58,15 @@ if ! ( cd ../ios/DXFGeometry && swift build > "$work/geometry-build.log" 2>&1 );
   exit 1
 fi
 
-# `--show-bin-path` is where SwiftPM says its outputs are; the module sits one level up from
-# the binaries, whichever spelling that takes on this toolchain.
+# `--show-bin-path` gives the products directory; SwiftPM puts the module interfaces in a
+# sibling `Modules` directory, and older layouts used `.build/debug` directly.
 bin_path="$( cd ../ios/DXFGeometry && swift build --show-bin-path 2>/dev/null )"
+bin_parent="$(dirname "$bin_path")"
 search=()
-for dir in "$bin_path/Modules" "$bin_path/../Modules" \
-           ../ios/DXFGeometry/.build/out/Modules \
-           ../ios/DXFGeometry/.build/debug/Modules \
-           ../ios/DXFGeometry/.build/release/Modules; do
+for dir in "$bin_parent/Modules" "$bin_path/Modules" \
+           "$script_dir/../ios/DXFGeometry/.build/out/Modules" \
+           "$script_dir/../ios/DXFGeometry/.build/debug/Modules" \
+           "$script_dir/../ios/DXFGeometry/.build/release/Modules"; do
   if [ -d "$dir" ] && compgen -G "$dir/DXFGeometry.swiftmodule" > /dev/null; then
     search=( -I "$dir" )
     break
@@ -72,7 +74,10 @@ for dir in "$bin_path/Modules" "$bin_path/../Modules" \
 done
 
 if [ "${#search[@]}" -eq 0 ]; then
-  echo "cannot find the DXFGeometry module; searched under $bin_path" >&2
+  echo "cannot find the DXFGeometry module under $bin_parent" >&2
+  # Say what is actually there, so the next person does not have to guess as I did.
+  find "$bin_parent" -name 'DXFGeometry.swiftmodule' -maxdepth 3 2>/dev/null | head -3 >&2
+  ls "$bin_parent" 2>/dev/null | head -6 >&2
   exit 1
 fi
 
