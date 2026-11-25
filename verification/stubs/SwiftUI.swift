@@ -145,6 +145,10 @@ public enum HorizontalAlignment { case center, leading, trailing }
 public enum VerticalAlignment { case center, top, bottom }
 public enum Alignment { case center, top, bottom, topLeading, bottomTrailing }
 public struct UnitPoint {
+    public static let bottomLeading = UnitPoint()
+    public static let bottomTrailing = UnitPoint()
+    public static let topLeading = UnitPoint()
+    public static let topTrailing = UnitPoint()
     public var x: Double
     public var y: Double
     public init(x: Double, y: Double) { self.x = x; self.y = y }
@@ -241,7 +245,7 @@ public struct Color: View {
 
     /// The colour space a literal names, e.g. `Color(.sRGB, red: …)`.
     public enum ColorSpace { case sRGB, displayP3 }
-    public init(_ space: ColorSpace, red: Double, green: Double, blue: Double, opacity: Double) {}
+    public nonisolated init(_ space: ColorSpace, red: Double, green: Double, blue: Double, opacity: Double) {}
 }
 
 public struct Button<Label: View>: View {
@@ -297,17 +301,17 @@ public struct Rectangle: View {
     public var body: Nothing { Nothing() }
 }
 
-public struct GraphicsContext {
+public final class GraphicsContext {
     public struct Shading {
         public static func color(_ c: Color) -> Shading { Shading() }
     }
     public enum Style {}
-    public mutating func fill(_ path: Path, with shading: Shading) {}
+    public func fill(_ path: Path, with shading: Shading) {}
     public mutating func fill(_ path: Path, with shading: Shading, style: FillStyle) {}
-    public mutating func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
-    public mutating func translateBy(x: Double, y: Double) {}
-    public mutating func rotate(by angle: Angle) {}
-    public mutating func draw(_ text: Text, at point: CGPoint, anchor: UnitPoint) {}
+    public func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
+    public func translateBy(x: Double, y: Double) {}
+    public func rotate(by angle: Angle) {}
+    public func draw(_ text: Text, at point: CGPoint, anchor: UnitPoint) {}
 }
 
 public struct FillStyle {
@@ -325,6 +329,7 @@ public struct Angle {
 }
 
 public struct Path {
+    public init(_ rect: CGRect) {}
     public init() {}
     public mutating func move(to point: CGPoint) {}
     public mutating func addLine(to point: CGPoint) {}
