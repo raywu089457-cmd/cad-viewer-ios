@@ -390,7 +390,7 @@ extension View {
         -> some View { Nothing() }
     public func onAppear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
     public func onDisappear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
-    public func ignoresSafeArea(_ regions: SafeAreaRegions = .all) -> some View { Nothing() }
+    public func ignoresSafeArea(_ regions: SafeAreaRegions = .all, edges: Edge.Set = .all) -> some View { Nothing() }
     public func onChange<V: Equatable>(of value: V, initial: Bool = false, _ action: @escaping (V, V) -> Void) -> some View { Nothing() }
     public func onChange<V: Equatable>(of value: V, _ action: @escaping (V) -> Void) -> some View { Nothing() }
     public func animation(_ a: Animation? = nil, value: some Equatable) -> some View { Nothing() }
