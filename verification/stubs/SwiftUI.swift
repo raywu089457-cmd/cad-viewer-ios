@@ -438,12 +438,6 @@ public final class UIView {
     }
 }
 
-public final class UIColor {
-    public init() {}
-    public static let clear = UIColor()
-    public init(red: Double, green: Double, blue: Double, alpha: Double) {}
-}
-
 public struct Context {}
 
 public protocol UIViewRepresentable: View {
