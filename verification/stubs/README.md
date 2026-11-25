@@ -1,43 +1,68 @@
-# Type-checking stubs — attempted, not yet finished
+# Type-checking the app layer
 
 The app layer imports SwiftUI, WebKit, PDFKit, os, UIKit and UniformTypeIdentifiers, none of
-which exist off Apple platforms. `swiftc -parse` is therefore the only check on that layer in
-CI, and it accepts a stored property declared twice or a wrong argument type. Both have been in
-this repository.
+which exist off Apple platforms. Before this, `swiftc -parse` was the only check on that layer,
+and it accepts a stored property declared twice or an argument of the wrong type. Both had been
+in this repository.
 
-These stubs were an attempt to fix that: declare the platform surface, then type-check the app
-against it plus the real DXFGeometry.
+These stubs declare the platform surface the app uses, so the app can be type-checked against
+them plus the real DXFGeometry. It runs on CI in the `Geometry tests and harness` job and reports:
 
-## How far it got
+```
+7 app source(s) type-check against the stubs
+```
 
-The stubs compile, DXFGeometry builds, and the check reached the app's own code. It then
-reported real findings — one of them useful:
+## What it found
 
-- `PDFViewer` imports UIKit by name, which the SwiftUI stub does not provide. Fixed with a
-  separate `UIKit.swift`.
+Real defects in the app, which no other check here could see:
 
-And then one that stopped it:
+- `DWGViewer` declared a local `webView` that shadowed its own stored property, so the reload
+  path's `if let` bound a non-optional.
+- `DWGViewer`, `PDFViewer` and `ViewerSchemeHandler` each named a `DXFGeometry` type without
+  importing `DXFGeometry`. It stayed invisible because a whole-module build lets a file see its
+  siblings' imports.
+- `DrawingCanvas` mapped a drag's translation through `CGSize.screenPoint`, an extension that
+  existed on `CGPoint` only.
+- `webView.load(...)` was called on the optional stored property rather than the page just built.
 
-- `@Observable` and `@ObservationIgnored` are macros. The wasm SDK used locally has
-  `Observation.swiftmodule` but no plugin for it, so the two files that use `@Observable`
-  cannot be checked under that target. **The Linux toolchain in CI does ship the plugin**
-  (`ObservationMacros`), so the check runs there against the host's own modules.
+## What it cannot check
 
-Two of the seven app files use it, and the other five reference them, so the whole layer is
-blocked.
+- **The view bodies are never evaluated**, so anything that would only fail at runtime — a wrong
+  gesture anchor, a missing asset — is out of reach. This proves the code compiles, not that it
+  looks right.
+- **The one response construction** in `ViewerSchemeHandler` is substituted before checking. Linux
+  Foundation declares `HTTPURLResponse` as an alias of `AnyObject` with no initialiser, and a
+  re-exported alias beats a declaration in a stub, so that call cannot be type-checked here. The
+  script says so when it substitutes it.
+- **`#Preview` blocks are removed.** A macro needs a plugin the stub set cannot ship; the previews
+  are not part of what the app does at runtime, and mocking the expansion would only check the
+  mock.
+- **Nothing here replaces building for iOS.** No Mac runner is available to this repository, so
+  this is the closest thing to compiling the layer that exists, not the real thing.
 
-## What would finish it
+## The stub check
 
-- A toolchain whose Observation plugin can be loaded for the target being checked. On a Mac
-  with the iOS SDK this is moot: the real build already does it.
-- Or splitting the two `@Observable` models into their own module behind a protocol, so the
-  rest could be checked without them. That is a change to the app's structure for the sake of
-  the test, which is the wrong trade at this size.
+`verification/check-stubs.mjs` runs in seconds and catches the mistakes the type check finds in
+nine minutes, one per round:
 
-## What is kept
+- a type declared twice, at the top level or twice under the same parent;
+- a class member that redeclares what it inherits, and a `mutating` member on a class;
+- a parent class that is not `open`, when another file inherits from it;
+- a generic parameter that shadows a top-level type of the same name;
+- an app file that names a DXFGeometry type without importing it;
+- a name the app uses that no stub declares.
 
-The stubs and `check-types.sh` stay in the tree. They are the closest thing to compiling this
-layer that exists here, they document exactly which API surface the app uses, and if the
-Observation problem is ever solved they work as they are.
+Each rule was verified by reintroducing the defect and watching the check fail. Two of them
+initially passed while the defect was present, which is how the bugs in the check itself were
+found — a check that reports nothing is indistinguishable from a correct tree.
 
-They are not run on CI, because a check that cannot pass is not a check.
+## Layout
+
+| File | What it declares |
+| --- | --- |
+| `SwiftUI.swift` | views, modifiers, gestures, `Canvas`, `Binding`/`State`, and the Foundation pieces SwiftUI re-exports |
+| `WebKit.swift` | `WKWebView`, the scheme handler, script messages |
+| `PDFKit.swift` | `PDFView` and its document |
+| `UIKit.swift` | re-exports the SwiftUI stub, which owns `UIColor` |
+| `os.swift` | `Logger` and its privacy marker |
+| `UniformTypeIdentifiers.swift` | `UTType`, built before SwiftUI because that stub names it |
