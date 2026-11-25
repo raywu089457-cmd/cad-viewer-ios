@@ -57,8 +57,13 @@ for (const file of stubs) {
   // A nested declaration is legal and shadows the outer name: `Alert.Button` inside `Alert`.
   // Tracking the brace depth is what tells the two apart, and reporting a nested type as a
   // redeclaration is how a check like this earns being ignored.
+  //
+  // Two nested types with the same name are a redeclaration only *inside the same parent*
+  // — `DragGesture.Value` and `MagnifyGesture.Value` are both at depth 1 and both fine.
+  // The enclosing type names are tracked with the depth for that reason.
   let depth = 0
   let scanned = 0
+  const enclosing = [] // type names, innermost last
   const at = (index) => {
     for (; scanned < index; scanned += 1) {
       if (code[scanned] === '{') depth += 1
@@ -66,11 +71,26 @@ for (const file of stubs) {
     }
     return depth
   }
+  // The nearest enclosing type, taken from the declarations seen so far whose scope is still open.
+  const openTypes = [] // { name, depth }
+  const pathAt = (scope) => openTypes.filter(t => t.depth < scope).map(t => t.name).join('.')
+  const nested = new Map() // `${path}:${name}` -> line
   for (const m of code.matchAll(types)) {
     const [, , name] = m
     const line = code.slice(0, m.index).split('\n').length
     const scope = at(m.index)
-    if (scope > 0) continue // nested, so the outer name is not being redeclared
+    // Types whose scope has closed are no longer enclosing anything.
+    while (openTypes.length > 0 && openTypes[openTypes.length - 1].depth >= scope) openTypes.pop()
+    if (scope > 0) {
+      const key = `${pathAt(scope)}:${name}`
+      if (nested.has(key)) {
+        failures.push(`${file}: '${name}' declared twice in '${pathAt(scope)}', lines ${nested.get(key)} and ${line}`)
+      } else {
+        nested.set(key, line)
+      }
+      openTypes.push({ name, depth: scope })
+      continue
+    }
     if (seen.has(name)) {
       failures.push(`${file}: '${name}' declared at line ${seen.get(name)} and again at ${line}`)
     } else {
@@ -78,6 +98,7 @@ for (const file of stubs) {
     }
     if (!names.has(name)) names.set(name, [])
     if (!names.get(name).includes(file)) names.get(name).push(file)
+    openTypes.push({ name, depth: 0 })
   }
   // Extensions are listed, since one that names a type no file declares is a typo, but repeating
   // a name is what an extension does — and extending a framework type (`extension URL`) is

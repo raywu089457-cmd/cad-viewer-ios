@@ -237,11 +237,8 @@ public struct Font {
     public static let body = Font()
     public static let footnote = Font()
     public static let title = Font()
-    public static func system(size: Double) -> Font { Font() }
-    public static func system(size: Double, weight: Font.Weight) -> Font { Font() }
-    public struct Weight {}
-    public static let title2 = Weight()
-    public static let title3 = Weight()
+    public static let title2 = Font()
+    public static let title3 = Font()
 }
 
 public struct Color: View {
