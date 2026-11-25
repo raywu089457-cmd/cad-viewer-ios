@@ -31,9 +31,6 @@ struct RootView: View {
     /// Opening a second file while the first is still parsing would otherwise let the
     /// abandoned one land later and replace the file the reader actually chose.
     @State private var loadGeneration = LoadGeneration()
-    /// Which load is live. Opening a second file while the first is still parsing would
-    /// otherwise let the abandoned one land later and replace the file the reader chose.
-    @State private var loadGeneration = LoadGeneration()
     @State private var isPickingFile = false
 
     var body: some View {
@@ -48,9 +45,14 @@ struct RootView: View {
                     DXFViewer(drawing: drawing)
                         .id(drawing.name)
                 case .dwg(let url, let name):
+                    // Identified by file for the same reason as the DXF viewer: its `@State`
+                    // model carries the loaded page, and a new drawing on the same instance
+                    // would keep the previous one's web view.
                     DWGViewer(url: url, fileName: name)
+                        .id(name)
                 case .pdf(let url, let name):
                     PDFViewer(url: url, fileName: name)
+                        .id(name)
                 case nil:
                     welcome
                 }
