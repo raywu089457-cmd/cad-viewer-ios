@@ -86,4 +86,6 @@ public final class ScrollView {
     public init() {}
     public var isScrollEnabled: Bool = true
     public var bounces: Bool = true
+    /// A scroll view is a view, and the app tinting it is the same property.
+    public var backgroundColor: UIColor? = nil
 }

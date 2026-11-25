@@ -69,7 +69,10 @@ public nonisolated struct Nothing: View {
 
 @resultBuilder public struct ViewBuilder {
     public nonisolated static func buildBlock() -> Nothing { Nothing() }
-    public nonisolated static func buildBlock<C: View>(_ c: C) -> C { c }
+    // One result type for every builder. The real ones produce a tuple of the branches, which
+    // matters when the body is evaluated; here it only has to type-check, and a mix of result
+    // types leaves `buildBlock` with nothing it can accept.
+    public nonisolated static func buildBlock<C: View>(_ c: C) -> Nothing { Nothing() }
     public nonisolated static func buildBlock<C0: View, C1: View>(_ c0: C0, _ c1: C1) -> Nothing { Nothing() }
     public nonisolated static func buildBlock<C0: View, C1: View, C2: View>(
         _ c0: C0, _ c1: C1, _ c2: C2) -> Nothing { Nothing() }
