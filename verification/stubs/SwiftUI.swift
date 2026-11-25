@@ -227,6 +227,21 @@ public struct ProgressView<Label: View>: View {
     public var body: Nothing { Nothing() }
 }
 
+/// The sides a padding applies to.
+public struct Edge {
+    public struct Set: OptionSet {
+        public let rawValue: Int
+        public init(rawValue: Int) { self.rawValue = rawValue }
+        public static let all = Set(rawValue: 0)
+        public static let horizontal = Set(rawValue: 1)
+        public static let vertical = Set(rawValue: 2)
+        public static let top = Set(rawValue: 4)
+        public static let bottom = Set(rawValue: 8)
+        public static let leading = Set(rawValue: 16)
+        public static let trailing = Set(rawValue: 32)
+    }
+}
+
 public struct RoundedRectangle: View {
     public init(cornerRadius: Double) {}
     public var body: Nothing { Nothing() }
@@ -308,7 +323,7 @@ extension View {
     public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil) -> some View { Nothing() }
     public func foregroundStyle(_ c: Color) -> some View { Nothing() }
     public func background(_ c: Color) -> some View { Nothing() }
-    public func background<S: ShapeStyle>(_ s: S, in shape: S) -> some View { Nothing() }
+    public func background<S: ShapeStyle>(_ s: S, in shape: Shape) -> some View { Nothing() }
     public func overlay<V: View>(alignment: Alignment = .center, @ViewBuilder content: () -> V)
         -> some View { Nothing() }
     public func onAppear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
@@ -360,6 +375,13 @@ extension Capsule: Shape {}
 extension Rectangle: Shape {}
 
 public protocol ShapeStyle {}
+
+/// The translucent surface the app puts behind its status pill.
+public struct Material: ShapeStyle {
+    public static let ultraThin = Material()
+    public static let thin = Material()
+    public static let regular = Material()
+}
 extension Color: ShapeStyle {}
 
 public protocol ButtonStyle {}
