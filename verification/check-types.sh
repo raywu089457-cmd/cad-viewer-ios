@@ -20,9 +20,9 @@ if ! command -v swiftc >/dev/null 2>&1; then
   exit 77
 fi
 
-# Absolute: the script changes directory to build the package, and a relative path stops
-# meaning the same thing once it does.
-script_dir="$(cd "$(dirname "$0")" && pwd)"
+# Absolute, because the script changes directory to build the package and a relative path
+# stops meaning the same thing once it does. The `cd` above already put us here.
+script_dir="$(pwd)"
 work="$script_dir/.typecheck"
 rm -rf "$work"
 mkdir -p "$work"
@@ -58,12 +58,12 @@ if ! ( cd ../ios/DXFGeometry && swift build > "$work/geometry-build.log" 2>&1 );
   exit 1
 fi
 
-# `--show-bin-path` gives the products directory; SwiftPM puts the module interfaces in a
-# sibling `Modules` directory, and older layouts used `.build/debug` directly.
+# `--show-bin-path` gives the products directory and the module interfaces sit inside it,
+# under a target-triple subdirectory (`Products/Debug-linux-x86_64/`). Older layouts put them
+# in `.build/debug` directly, so both are tried.
 bin_path="$( cd ../ios/DXFGeometry && swift build --show-bin-path 2>/dev/null )"
-bin_parent="$(dirname "$bin_path")"
 search=()
-for dir in "$bin_parent/Modules" "$bin_path/Modules" \
+for dir in "$bin_path" "$bin_path/Modules" "$(dirname "$bin_path")/Modules" \
            "$script_dir/../ios/DXFGeometry/.build/out/Modules" \
            "$script_dir/../ios/DXFGeometry/.build/debug/Modules" \
            "$script_dir/../ios/DXFGeometry/.build/release/Modules"; do
@@ -74,10 +74,9 @@ for dir in "$bin_parent/Modules" "$bin_path/Modules" \
 done
 
 if [ "${#search[@]}" -eq 0 ]; then
-  echo "cannot find the DXFGeometry module under $bin_parent" >&2
+  echo "cannot find the DXFGeometry module under $bin_path" >&2
   # Say what is actually there, so the next person does not have to guess as I did.
-  find "$bin_parent" -name 'DXFGeometry.swiftmodule' -maxdepth 3 2>/dev/null | head -3 >&2
-  ls "$bin_parent" 2>/dev/null | head -6 >&2
+  find "$(dirname "$bin_path")" -name 'DXFGeometry.swiftmodule' -maxdepth 3 2>/dev/null | head -3 >&2
   exit 1
 fi
 
