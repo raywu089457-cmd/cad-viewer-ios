@@ -241,6 +241,8 @@ public struct Font {
     public static let title = Font()
     public static let title2 = Font()
     public static let title3 = Font()
+    /// The same font at a different weight, which the app uses for its title.
+    public func weight(_ w: Weight) -> Font { self }
 }
 
 public struct Color: View {
