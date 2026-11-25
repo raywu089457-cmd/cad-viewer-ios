@@ -275,9 +275,9 @@ public struct Image: View {
     public var body: Nothing { Nothing() }
 }
 
-public struct ProgressView<Label: View>: View {
-    public init(@ViewBuilder label: () -> Label) {}
-    public init(_ title: String) where Label == Text {}
+public struct ProgressView<LabelContent: View>: View {
+    public init(@ViewBuilder label: () -> LabelContent) {}
+    public init(_ title: String) where LabelContent == Text {}
     public var body: Nothing { Nothing() }
 }
 
