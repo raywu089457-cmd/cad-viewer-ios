@@ -57,6 +57,14 @@ public struct CGRect {
     public var origin: CGPoint
     public var size: CGSize
     public static let zero = CGRect()
+    // The edges, which anything scrolling to a corner reads. A drawing is read from the top of
+    // the page, so `maxY` is the one the PDF viewer names.
+    public var minX: Double { origin.x }
+    public var minY: Double { origin.y }
+    public var maxX: Double { origin.x + size.width }
+    public var maxY: Double { origin.y + size.height }
+    public var width: Double { size.width }
+    public var height: Double { size.height }
     public init() { origin = CGPoint(); size = CGSize() }
     public init(origin: CGPoint, size: CGSize) { self.origin = origin; self.size = size }
     public func insetBy(dx: Double, dy: Double) -> CGRect { self }
