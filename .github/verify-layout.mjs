@@ -62,9 +62,18 @@ for (const package_ of packages) {
     }
   }
 
+  // A directory under Sources without a target is usually a file someone forgot to declare.
+  // One exception is legitimate: the app directory, which `ios/project.yml` compiles straight
+  // into the app target. Declaring it here as well would give the link two `@main` symbols.
+  const byXcodeGen = new Set(['CADViewerApp'])
   if (existsSync(join(root, package_.sources))) {
     for (const entry of readdirSync(join(root, package_.sources), { withFileTypes: true })) {
-      if (entry.isDirectory() && !declared.has(entry.name)) {
+      if (!entry.isDirectory()) continue
+      if (declared.has(entry.name)) {
+        ok(`${entry.name} target directory`)
+      } else if (byXcodeGen.has(entry.name)) {
+        ok(`${entry.name} is compiled by ios/project.yml, not the package`)
+      } else {
         fail(`${package_.sources}/${entry.name} has no target in ${package_.manifest}`)
       }
     }
@@ -144,6 +153,7 @@ mustExist('verification/check-viewer-identity.mjs')
 mustExist('verification/check-format-consistency.mjs')
 mustExist('verification/check-the-checks.mjs')
 mustExist('verification/check-dwg-controls.mjs')
+mustExist('verification/check-project-spec.mjs')
 mustExist('verification/check-pdf-reading-setup.mjs')
 mustExist('verification/engine-bakeoff/README.md')
 mustExist('verification/make-pdf.mjs')

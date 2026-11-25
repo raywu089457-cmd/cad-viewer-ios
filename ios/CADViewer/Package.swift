@@ -27,9 +27,13 @@ let package = Package(
                 // The built DWG viewer; see ios/web/build-for-ios.sh.
                 .copy("Resources/dwgviewer")
             ]
-        ),
-        .executableTarget(name: "CADViewerApp", dependencies: ["CADViewer"])
-        // No test target. Everything here is SwiftUI, WebKit or PDFKit, which needs a
+        )
+        // `Sources/CADViewerApp` is deliberately not a target here. XcodeGen compiles that
+        // directory straight into the app target (`ios/project.yml`), and declaring it as an
+        // `executableTarget` as well would give the link two `@main` symbols. The package's job
+        // is the library; the app target's job is the app.
+        //
+        // No test target either. Everything here is SwiftUI, WebKit or PDFKit, which needs a
         // simulator to exercise; the logic it uses was moved to DXFGeometry, where
         // `swift test` runs it on any machine. A test target here could only test the
         // boring part and would imply coverage the app layer does not have.

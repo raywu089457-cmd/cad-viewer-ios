@@ -144,6 +144,18 @@ const cases = [
     }
   },
   {
+    check: 'check-project-spec.mjs',
+    what: 'an Info.plist key a drawing needs, removed',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Info.plist')
+      const text = readFileSync(path, 'utf8')
+      assert(text, 'LSSupportsOpeningDocumentsInPlace', 'project-spec: the anchor key is gone')
+      // The plist is tab-indented XML; a literal newline in the pattern would have to match
+      // the file byte for byte. Removing the key by regex keeps the edit readable.
+      writeFileSync(path, text.replace(/\s*<key>LSSupportsOpeningDocumentsInPlace<\/key>\s*<true\/>/, ''))
+    }
+  },
+  {
     check: 'check-dwg-controls.mjs',
     what: 'a page entry point that Swift calls but the page does not define',
     break: root => {

@@ -30,6 +30,15 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Without this the app never appears in Files, so a drawing can only be reached by
+	     opening it from somewhere else first. The document types below say what it opens;
+	     this is what makes it a place to open them from. -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<!-- A drawing is routinely tens of megabytes. Without this, opening one from Files copies
+	     it into the app's own container first — the same bytes twice, before anything is drawn. -->
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

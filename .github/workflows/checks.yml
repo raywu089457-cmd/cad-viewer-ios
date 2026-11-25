@@ -48,6 +48,12 @@ jobs:
 
       # A format lives in three lists — the router, the plist and the picker. Absent from the
       # last one, the file is greyed out in the picker with nothing to say why.
+      #  is the only file that turns these packages into an app, and nothing
+      # has ever read it. Two real gaps it found on its first run: the app was not visible in
+      # Files, and opening a drawing from there copied it rather than opening it in place.
+      - name: The XcodeGen spec matches the tree
+        run: node verification/check-project-spec.mjs
+
       - name: The three format lists agree
         run: node verification/check-format-consistency.mjs
 

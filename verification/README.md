@@ -22,6 +22,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-pdf-reading-setup.mjs` | the PDF view left at its document-reading defaults, with a page gap interrupting a drawing |
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-fixture-fresh.mjs` | the committed geometry snapshot drifting from the fixture — takes the `scenecheck` binary as its argument, which `dxf-geometry-harness/run.sh` supplies |
+| `check-project-spec.mjs` |  naming a path that is gone, a target declared twice, or an Info.plist key a drawing needs |
 | `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |
 | `check-viewer-identity.mjs` | a viewer identified by file name, so a same-named file in another folder is not rebuilt |
 | `check-the-checks.mjs` | a check that passes on a tree where the defect it names has been put back |
