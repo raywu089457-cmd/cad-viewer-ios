@@ -2,6 +2,7 @@
 // the compiler resolves the app's own names, signatures and protocols against it.
 import Foundation
 import SwiftUI
+import UIKit
 
 public protocol WKNavigationDelegate: AnyObject {}
 public protocol WKUIDelegate: AnyObject {}
@@ -73,6 +74,7 @@ public final class WKWebView {
     public var uiDelegate: WKUIDelegate?
     public var scrollView: ScrollView = ScrollView()
     public var isOpaque: Bool = true
+    public var backgroundColor: UIColor?
     public var configuration: WKWebViewConfiguration { WKWebViewConfiguration() }
     public init(frame: SwiftUI.CGRect, configuration: WKWebViewConfiguration) {}
     public func load(_ request: URLRequest) -> WKNavigation? { nil }

@@ -393,9 +393,9 @@ public struct ToolbarItemPlacement {
     public static let navigationBarTrailing = ToolbarItemPlacement()
 }
 
-public struct ContentUnavailableView<Label: View, Description: View>: View {
+public struct ContentUnavailableView<LabelContent: View, Description: View>: View {
     public init(
-        @ViewBuilder label: () -> Label, @ViewBuilder description: () -> Description
+        @ViewBuilder label: () -> LabelContent, @ViewBuilder description: () -> Description
     ) {}
     public var body: Never { fatalError() }
 }
