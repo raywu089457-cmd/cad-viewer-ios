@@ -324,7 +324,7 @@ extension View {
     public func frame(maxWidth: Double? = nil, maxHeight: Double? = nil) -> some View { Nothing() }
     public func foregroundStyle(_ c: Color) -> some View { Nothing() }
     public func background(_ c: Color) -> some View { Nothing() }
-    public func background<S: ShapeStyle>(_ s: S, in shape: Shape) -> some View { Nothing() }
+    public func background(_ s: Material, in shape: Shape) -> some View { Nothing() }
     public func overlay<V: View>(alignment: Alignment = .center, @ViewBuilder content: () -> V)
         -> some View { Nothing() }
     public func onAppear(perform action: (() -> Void)? = nil) -> some View { Nothing() }
@@ -374,9 +374,7 @@ extension RoundedRectangle: Shape {}
 extension Capsule: Shape {}
 extension Rectangle: Shape {}
 
-public protocol ShapeStyle {
-    static var ultraThinMaterial: Material { get }
-}
+public protocol ShapeStyle {}
 
 /// The translucent surface the app puts behind its status pill.
 public struct Material: ShapeStyle {
