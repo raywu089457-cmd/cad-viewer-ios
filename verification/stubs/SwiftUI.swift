@@ -65,15 +65,19 @@ public nonisolated struct Nothing: View {
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
     public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
     public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(first: TrueContent)
-        -> Nothing { Nothing() }
-    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(second: FalseContent)
-        -> Nothing { Nothing() }
+    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(
+        first: TrueContent) -> _Branch<TrueContent, FalseContent> { _Branch() }
+    public nonisolated static func buildEither<TrueContent: View, FalseContent: View>(
+        second: FalseContent) -> _Branch<TrueContent, FalseContent> { _Branch() }
 }
 
-// The two branches of an / need not be the same view, so the builder takes them
-// separately and returns one concrete type. Nothing here needs to know which is which: what
-// matters is that each branch is type-checked.
+/// One of two possible branches. Both parameters appear in the signature so the compiler can
+/// infer each branch independently, which is the whole point of ; nothing needs
+/// to know which one was taken.
+public nonisolated struct _Branch<A: View, B: View>: View {
+    public nonisolated init() {}
+    public nonisolated var body: Never { fatalError() }
+}
 
 @propertyWrapper public final class State<Value> {
     private final class Box {
