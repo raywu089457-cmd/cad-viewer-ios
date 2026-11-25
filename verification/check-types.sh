@@ -30,7 +30,7 @@ trap 'rm -rf "$work"' EXIT
 
 # The platform stubs, in dependency order: each may import the ones before it.
 failures=0
-for module in SwiftUI os UniformTypeIdentifiers UIKit WebKit PDFKit; do
+for module in UniformTypeIdentifiers SwiftUI os UIKit WebKit PDFKit; do
   stub="stubs/$module.swift"
   if [ ! -f "$stub" ]; then
     echo "STUB MISSING: $stub" >&2
