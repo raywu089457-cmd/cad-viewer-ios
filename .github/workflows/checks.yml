@@ -46,6 +46,11 @@ jobs:
       - name: Viewers are identified by their file
         run: node verification/check-viewer-identity.mjs
 
+      # A format lives in three lists — the router, the plist and the picker. Absent from the
+      # last one, the file is greyed out in the picker with nothing to say why.
+      - name: The three format lists agree
+        run: node verification/check-format-consistency.mjs
+
       # Seconds, not minutes: the stub declarations are plain text, and each duplicate or missing
       # name it finds used to cost a nine-minute round in the Swift job.
       - name: Stub declarations

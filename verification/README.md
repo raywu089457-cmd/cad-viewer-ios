@@ -21,6 +21,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-mime-coverage.mjs` | an extension in the built bundle with no MIME type, which WebKit downloads instead of rendering |
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-fixture-fresh.mjs` | the committed geometry snapshot drifting from the fixture — takes the `scenecheck` binary as its argument, which `dxf-geometry-harness/run.sh` supplies |
+| `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |
 | `check-viewer-identity.mjs` | a viewer identified by file name, so a same-named file in another folder is not rebuilt |
 | `check-inventory.mjs` | this list drifting from what is on disk, or a bake-off script creeping into CI |
 | `make-pdf.mjs` | regenerates the PDF fixtures, so a change to either is reviewable in a diff |
