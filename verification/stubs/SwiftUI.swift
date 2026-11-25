@@ -374,13 +374,12 @@ extension RoundedRectangle: Shape {}
 extension Capsule: Shape {}
 extension Rectangle: Shape {}
 
-public protocol ShapeStyle {}
+public protocol ShapeStyle {
+    static var ultraThinMaterial: Material { get }
+}
 
-/// The translucent surfaces the app puts behind its status pill. Declared on the protocol because
-/// that is the type in scope at the call site.
-public struct Material: ShapeStyle {}
-
-extension ShapeStyle {
+/// The translucent surface the app puts behind its status pill.
+public struct Material: ShapeStyle {
     public static var ultraThinMaterial: Material { Material() }
     public static var thinMaterial: Material { Material() }
     public static var regularMaterial: Material { Material() }
@@ -445,9 +444,10 @@ public struct Alert: View {
 
 public enum TaskPriority { case userInitiated, background }
 
-public final class UIView {
+public class UIView {
     public var frame: CGRect = CGRect()
     public var bounds: CGRect = CGRect()
+    public var superview: UIView? { nil }
     public var autoresizingMask: AutoresizingMask = []
     public var backgroundColor: UIColor? = nil
     public init() {}
