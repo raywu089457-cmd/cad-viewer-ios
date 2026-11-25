@@ -87,7 +87,7 @@ if [ ! -e "${app_sources[0]}" ]; then
 fi
 
 # Which modules were found, said before the check rather than guessed at afterwards.
-module_dir="${search[1]}""
+module_dir="${search[1]}"
 echo "modules from $module_dir:" >&2
 ls "$module_dir" 2>/dev/null | head -8 >&2
 
