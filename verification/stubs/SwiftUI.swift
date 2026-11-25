@@ -442,7 +442,7 @@ public struct Alert: View {
 
 public enum TaskPriority { case userInitiated, background }
 
-public class UIView {
+open class UIView {
     public var frame: CGRect = CGRect()
     public var bounds: CGRect = CGRect()
     public var superview: UIView? { nil }

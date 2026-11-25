@@ -120,6 +120,20 @@ for (const collect of [true, false]) {
           }
         }
       }
+      // Inheriting across stub files needs `open`, not `public`: the stubs are separate modules,
+      // and `public` only reaches the end of the defining one.
+      if (parent) {
+        const parentFile = stubs.find(f =>
+          /(?:^|\n)\s*(?:open|public)\s+class\s+/.test(readFileSync(join(stubsDir, f), 'utf8')) &&
+          new RegExp(`\\bclass\\s+${parent}\\b`).test(readFileSync(join(stubsDir, f), 'utf8')))
+        if (parentFile && parentFile !== file) {
+          const parentCode = readFileSync(join(stubsDir, parentFile), 'utf8')
+          if (!new RegExp(`\\bopen\\s+class\\s+${parent}\\b`).test(parentCode)) {
+            const note = `${parentFile}: '${parent}' is inherited by '${name}' in ${file}, so it has to be open`
+            if (!failures.includes(note)) failures.push(note)
+          }
+        }
+      }
       if (collect && !membersOf.has(name)) membersOf.set(name, own)
     }
   }
