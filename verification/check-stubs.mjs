@@ -99,7 +99,7 @@ for (const [name, files] of names) {
 // A stub class that inherits from another stub class cannot redeclare what it inherits: Swift
 // calls that an illegal override, and it cost three rounds to learn one member at a time.
 const classDecl = /^\s*(?:public |)(?:final |)(?:class)\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*:\s*([A-Za-z_][A-Za-z0-9_]*))?/gm
-const storedMember = /^\s{4}public (?:var|let) ([a-zA-Z_][A-Za-z0-9_]*)/gm
+const storedMember = /^\s{4}public (?:var|let) ([a-zA-Z_][a-zA-Z0-9_]*)|^\s{4}public init\(\)/gm
 const membersOf = new Map() // class -> Set(member)
 // Two passes: a class may inherit from one declared in a file scanned later, and a single pass
 // silently checked nothing for it — which is how this went three rounds without noticing.
@@ -111,7 +111,7 @@ for (const collect of [true, false]) {
       const rest = code.slice(m.index + m[0].length)
       const end = rest.indexOf('\n}')
       const body = end < 0 ? rest : rest.slice(0, end)
-      const own = new Set([...body.matchAll(storedMember)].map(x => x[1]))
+      const own = new Set([...body.matchAll(storedMember)].map(x => x[1] || "init()"))
       // `mutating` is illegal on a class member. It cost a round when the drawing context became
       // a class and one method kept the keyword.
       if (/\bclass\s+/.test(m[0])) {

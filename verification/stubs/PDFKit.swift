@@ -20,7 +20,7 @@ public final class PDFView: UIView {
     public var displayMode: DisplayMode = .singlePageContinuous
     public var displayDirection: DisplayDirection = .vertical
     public var currentPage: PDFPage? { nil }
-    public init() {}
+    // `init()` and `backgroundColor` are inherited from UIView.
     public func go(to page: PDFPage) {}
 
     public enum DisplayMode { case singlePage, singlePageContinuous }
