@@ -53,6 +53,11 @@ public enum BundleServing {
         case "png": return "image/png"
         case "woff2": return "font/woff2"
         case "ttf": return "font/ttf"
+        // The bundle ships its dependency licences beside the code, and a type they do not have
+        // makes WebKit download them instead of showing them. It is how a reader finds out what
+        // the engine underneath is, so it should open.
+        case "txt", "md": return "text/plain; charset=utf-8"
+        case "map": return "application/json"
         default: return "application/octet-stream"
         }
     }

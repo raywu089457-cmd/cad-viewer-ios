@@ -78,6 +78,17 @@ struct BundleServingTests {
             BundleServing.mimeType(forExtension: "weird") == "application/octet-stream")
     }
 
+    @Test("The licence files the bundle ships are text, not downloads")
+    func licenceMime() {
+        // `app/` contains LICENSE-*.txt beside the code. Without a type they were served as
+        // octet-stream, which WebKit downloads instead of showing — invisible, because nothing
+        // compared the table with what the bundle actually holds.
+        #expect(BundleServing.mimeType(forExtension: "txt").hasPrefix("text/plain"))
+        #expect(BundleServing.mimeType(forExtension: "TXT").hasPrefix("text/plain"))
+        // A source map is JSON, and the dev server serves them.
+        #expect(BundleServing.mimeType(forExtension: "map") == "application/json")
+    }
+
     @Test("Headers carry the length and the policy the wasm worker needs")
     func headers() {
         let headers = BundleServing.headers(mime: "application/wasm", byteCount: 1234)
