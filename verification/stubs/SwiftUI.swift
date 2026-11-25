@@ -481,6 +481,21 @@ public protocol ButtonStyle {}
 public enum ButtonRole { case cancel, destructive }
 
 public struct PlainButtonStyle: ButtonStyle {}
+public struct BorderedButtonStyle: ButtonStyle {}
+public struct BorderedProminentButtonStyle: ButtonStyle {}
+public struct BorderlessButtonStyle: ButtonStyle {}
+
+extension ButtonStyle where Self == BorderedProminentButtonStyle {
+    public static var borderedProminent: BorderedProminentButtonStyle { BorderedProminentButtonStyle() }
+}
+
+extension ButtonStyle where Self == BorderedButtonStyle {
+    public static var bordered: BorderedButtonStyle { BorderedButtonStyle() }
+}
+
+extension ButtonStyle where Self == BorderlessButtonStyle {
+    public static var borderless: BorderlessButtonStyle { BorderlessButtonStyle() }
+}
 
 extension ButtonStyle where Self == PlainButtonStyle {
     public static var plain: PlainButtonStyle { PlainButtonStyle() }
