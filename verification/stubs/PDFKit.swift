@@ -15,7 +15,7 @@ public final class PDFPage {
 
 /// Where to scroll to: a page and a point on it.
 public final class PDFDestination {
-    public init(page: PDFPage, at point: CGPoint) {}
+    public init(page: PDFPage, at point: SwiftUI.CGPoint) {}
 }
 
 public final class PDFView: UIView {
