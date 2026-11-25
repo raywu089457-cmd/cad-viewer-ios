@@ -52,7 +52,13 @@ public struct URLRequest {
     public init(url: URL) { self.url = url }
 }
 
-public typealias URLResponse = SwiftUI.URLResponse
+/// Foundation puts this in FoundationNetworking on Linux, and the re-export marks it unavailable.
+/// The app only passes one along, so a plain class is enough.
+public class URLResponse {
+    public var url: URL?
+    public init(url: URL) { self.url = url }
+    public init() {}
+}
 
 public protocol WKURLSchemeTask: AnyObject {
     var request: URLRequest { get }
