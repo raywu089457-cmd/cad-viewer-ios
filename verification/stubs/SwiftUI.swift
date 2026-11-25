@@ -33,6 +33,7 @@ extension URL {
 }
 
 public struct CGPoint {
+    public static let zero = CGPoint()
     public var x: Double
     public var y: Double
     public init() { x = 0; y = 0 }
@@ -297,11 +298,13 @@ public struct Rectangle: View {
 }
 
 public struct GraphicsContext {
-    public struct Shading {}
+    public struct Shading {
+        public static func color(_ c: Color) -> Shading { Shading() }
+    }
     public enum Style {}
-    public mutating func fill(_ path: Path, with shading: Color) {}
-    public mutating func fill(_ path: Path, with shading: Color, style: FillStyle) {}
-    public mutating func stroke(_ path: Path, with shading: Color, style: StrokeStyle) {}
+    public mutating func fill(_ path: Path, with shading: Shading) {}
+    public mutating func fill(_ path: Path, with shading: Shading, style: FillStyle) {}
+    public mutating func stroke(_ path: Path, with shading: Shading, style: StrokeStyle) {}
     public mutating func translateBy(x: Double, y: Double) {}
     public mutating func rotate(by angle: Angle) {}
     public mutating func draw(_ text: Text, at point: CGPoint, anchor: UnitPoint) {}
@@ -329,11 +332,11 @@ public struct Path {
     public mutating func closeSubpath() {}
 }
 
-public struct Canvas<Symbols: View>: View {
+public struct Canvas: View {
     public init(
         opaque: Bool = false, colorMode: ColorMode = .nonLinear,
         rendersAsynchronously: Bool = false,
-        renderer: @escaping (inout GraphicsContext, CGSize) -> Void
+        renderer: @escaping (GraphicsContext, CGSize) -> Void
     ) {}
     public enum ColorMode { case nonLinear, linear }
     public var body: Nothing { Nothing() }
