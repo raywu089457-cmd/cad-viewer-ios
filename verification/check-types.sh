@@ -102,22 +102,23 @@ ls "$module_dir" 2>/dev/null | head -8 >&2
 if swiftc -typecheck -I "$work" "${search[@]}" "${app_sources[@]}" 2>"$work/app.log"; then
   echo "${#app_sources[@]} app source(s) type-check against the stubs"
 else
-  # Linux Foundation declares `HTTPURLResponse` as an alias of `AnyObject`, and a re-exported
-  # alias beats a declaration in a stub, so the one file that constructs one cannot be checked
-  # here. Retry without it, and say so — a skip that is not announced reads as a pass.
-  assertable=()
-  skipped=()
-  for src in "${app_sources[@]}"; do
+  # Linux Foundation declares `HTTPURLResponse` as an alias of `AnyObject` with no initialiser,
+  # and a re-exported alias beats a declaration in a stub, so the line that constructs one cannot
+  # be checked here. Substituting a call of the same shape keeps the rest of the file — and every
+  # file that refers to its types — under the check, which dropping the file entirely did not.
+  for src in "$work"/*.swift; do
     if grep -q 'HTTPURLResponse(' "$src"; then
-      skipped+=( "$(basename "$src")" )
-    else
-      assertable+=( "$src" )
+      sed -i 's/HTTPURLResponse(/_uncheckedResponse(/g' "$src"
+      echo "NOTE: the response construction in $(basename "$src") is not checked; Linux Foundation" >&2
+      echo "      declares that type as an unusable alias. Everything else in it is." >&2
     fi
   done
-  if [ "${#skipped[@]}" -gt 0 ] && \
-     swiftc -typecheck -I "$work" "${search[@]}" "${assertable[@]}" 2>"$work/app2.log"; then
-    echo "${#assertable[@]} app source(s) type-check against the stubs"
-    echo "SKIPPED (Linux Foundation has no usable HTTPURLResponse): ${skipped[*]}" >&2
+
+  # The stand-in the substitution calls.
+  printf 'func _uncheckedResponse(url: URL, statusCode: Int, httpVersion: String?,\n    headerFields: [String: String]?) -> URLResponse? { nil }\n' > "$work/_uncheckedResponse.swift"
+
+  if swiftc -typecheck -I "$work" "${search[@]}" "$work/_uncheckedResponse.swift" "${app_sources[@]}" 2>"$work/app2.log"; then
+    echo "${#app_sources[@]} app source(s) type-check against the stubs"
   else
     grep -E "error:" "$work/app2.log" | head -20
     echo "the app layer does not type-check"
