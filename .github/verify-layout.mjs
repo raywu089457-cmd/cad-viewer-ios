@@ -230,12 +230,22 @@ mustExist('ios/CADViewer/Sources/CADViewer/PDFViewer.swift')
 // 666 for a file git records as 755, and the check would report every script as broken. The
 // CI runs on Linux, which is where this check belongs.
 if (process.platform !== 'win32') {
-  const scripts = [
-    'ios/web/build-for-ios.sh',
-    'verification/parse-check.sh',
-    'verification/dxf-geometry-harness/run.sh',
-    'verification/patch-swiftdxf-for-linux.sh'
-  ]
+  // Enumerated, not listed. A hand-maintained list of scripts has missed a new one three times
+  // now — each time the check passed while a script CI runs was not executable.
+  const scripts = []
+  const walkScripts = directory => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (entry.name === 'node_modules' || entry.name === '.git' || entry.name.startsWith('.')) {
+        continue
+      }
+      const full = join(directory, entry.name)
+      if (entry.isDirectory()) walkScripts(full)
+      else if (entry.name.endsWith('.sh')) {
+        scripts.push(full.slice(root.length + 1).replace(/\\/g, '/'))
+      }
+    }
+  }
+  walkScripts(root)
   for (const script of scripts) {
     if (!existsSync(join(root, script))) {
       fail(script + ' is missing')
