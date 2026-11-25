@@ -198,6 +198,28 @@ for (const [name, files] of [...missing].sort()) {
   failures.push(`'${name}' is used by ${[...files].join(', ')} but no stub declares it`)
 }
 
+// Every app file that names a DXFGeometry type has to import DXFGeometry. Two of seven did not,
+// and it stayed invisible because each compiled against a sibling file's import. A compiler that
+// is handed every file at once still catches it; this says which file, in a second.
+const geometryTypes = new Set()
+for (const file of readdirSync(geometryDir).filter(f => f.endsWith('.swift'))) {
+  const code = stripSource(readFileSync(join(geometryDir, file), 'utf8'))
+  for (const m of code.matchAll(types)) {
+    // Only public ones: the app cannot name anything else.
+    if (new RegExp(`^\\s*public\\s+(?:nonisolated\\s+)?(?:final\\s+)?(?:struct|class|enum|protocol)\\s+${m[2]}\\b`, 'm')
+          .test(code)) geometryTypes.add(m[2])
+  }
+}
+for (const file of readdirSync(appDir).filter(f => f.endsWith('.swift'))) {
+  const raw = readFileSync(join(appDir, file), 'utf8')
+  const code = stripSource(raw)
+  if (/^\s*import DXFGeometry\b/m.test(code)) continue
+  const used = [...geometryTypes].filter(t => new RegExp(`\\b${t}\\b`).test(code))
+  if (used.length > 0) {
+    failures.push(`${file}: names ${used.join(', ')} but does not import DXFGeometry`)
+  }
+}
+
 if (failures.length > 0) {
   for (const f of failures) console.log(f)
   console.log(`\n${failures.length} stub problem(s)`)

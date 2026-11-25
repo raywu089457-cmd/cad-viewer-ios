@@ -1,6 +1,7 @@
 import Foundation
 import WebKit
 import os
+import DXFGeometry
 
 /// Serves the bundled web viewer over a private scheme.
 ///
