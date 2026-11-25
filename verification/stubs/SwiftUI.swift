@@ -253,6 +253,8 @@ public struct Color: View {
     public static let primary = Color()
     public static let secondary = Color()
     public static func rgb(_ r: Double, _ g: Double, _ b: Double) -> Color { Color() }
+    /// The accent colour, named as a colour because that is the argument the style modifier takes.
+    public static var tint: Color { Color() }
 
     /// The colour space a literal names, e.g. `Color(.sRGB, red: …)`.
     public enum ColorSpace { case sRGB, displayP3 }
@@ -414,6 +416,11 @@ extension View {
     public func alert<S: StringProtocol, T, A: View>(
         _ title: S, isPresented: Binding<Bool>, presenting data: T?,
         @ViewBuilder actions: (T) -> A
+    ) -> some View { Nothing() }
+    /// The same, with a message body.
+    public func alert<S: StringProtocol, T, A: View, M: View>(
+        _ title: S, isPresented: Binding<Bool>, presenting data: T?,
+        @ViewBuilder actions: (T) -> A, @ViewBuilder message: (T) -> M
     ) -> some View { Nothing() }
     public func sheet<V: View>(isPresented: Binding<Bool>, @ViewBuilder content: () -> V)
         -> some View { Nothing() }
