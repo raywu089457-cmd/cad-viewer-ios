@@ -77,24 +77,11 @@ public nonisolated struct Nothing: View {
 
 @resultBuilder public struct ViewBuilder {
     public nonisolated static func buildBlock() -> Nothing { Nothing() }
-    // One result type for every builder. The real ones produce a tuple of the branches, which
-    // matters when the body is evaluated; here it only has to type-check, and a mix of result
-    // types leaves `buildBlock` with nothing it can accept.
-    public nonisolated static func buildBlock<C: View>(_ c: C) -> Nothing { Nothing() }
-    public nonisolated static func buildBlock<C0: View, C1: View>(_ c0: C0, _ c1: C1) -> Nothing { Nothing() }
-    public nonisolated static func buildBlock<C0: View, C1: View, C2: View>(
-        _ c0: C0, _ c1: C1, _ c2: C2) -> Nothing { Nothing() }
-    public nonisolated static func buildBlock<C0: View, C1: View, C2: View, C3: View>(
-        _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
-    public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
-    public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    // Deliberately not generic. With `<T, F>` on the result the compiler has to infer each branch
-    // from the other, and in an `if`/`else if` chain with no final `else` there is nothing to
-    // infer from, so it reports both parameters as unknown. The real builder gets away with it
-    // because the compiler treats it specially; a stub has to be plain enough to resolve.
-    //
-    // The trade: this no longer proves each branch is a `View`. Every branch expression itself is
-    // still type-checked, which is what the check is for.
+    public nonisolated static func buildBlock(_ views: any View...) -> Nothing { Nothing() }
+    public nonisolated static func buildOptional<T: View>(_ view: T?) -> Nothing { Nothing() }
+    public nonisolated static func buildIf<T: View>(_ view: T?) -> Nothing { Nothing() }
+    // Not generic on the result: an `if`/`else if` chain with no final `else` leaves nothing
+    // to infer a second parameter from. The branches are still type-checked.
     public nonisolated static func buildEither(first: Any) -> Nothing { Nothing() }
     public nonisolated static func buildEither(second: Any) -> Nothing { Nothing() }
 }
@@ -434,6 +421,7 @@ public enum TaskPriority { case userInitiated, background }
 
 public final class UIView {
     public var frame: CGRect = CGRect()
+    public var bounds: CGRect = CGRect()
     public var autoresizingMask: AutoresizingMask = []
     public var backgroundColor: UIColor? = nil
     public init() {}
