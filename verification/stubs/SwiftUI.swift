@@ -23,6 +23,14 @@ public final class UIColor {
     public init(red: Double, green: Double, blue: Double, alpha: Double) {}
 }
 
+/// A security-scoped URL is an app-platform addition to Foundation, so a Linux toolchain has no
+/// such method and the app looks wrong for using one. The app opens files from the document
+/// picker, which hands back scoped URLs; declaring it here is what lets the rest be checked.
+extension URL {
+    public func startAccessingSecurityScopedResource() -> Bool { true }
+    public func stopAccessingSecurityScopedResource() {}
+}
+
 public struct CGPoint {
     public var x: Double
     public var y: Double
@@ -182,6 +190,12 @@ public struct Text: View {
     public func font(_ f: Font?) -> Text { self }
     public func foregroundStyle(_ c: Color) -> Text { self }
     public func padding(_ length: Double) -> Text { self }
+}
+
+/// A label with a title and an icon, which the app uses in its error state.
+public struct Label: View {
+    public init(_ title: String, systemImage: String) {}
+    public var body: Nothing { Nothing() }
 }
 
 public struct Font {

@@ -219,7 +219,7 @@ final class DWGViewerModel {
             }
             let generation = loadGeneration.begin()
             readyContinuation = continuation
-            webView.load(URLRequest(url: pageURL))
+            page.load(URLRequest(url: pageURL))
 
             Task { @MainActor in
                 // Never leave the user staring at a spinner if the engine stays silent.
