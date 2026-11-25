@@ -74,8 +74,6 @@ public final class WKWebView: UIView {
     public var uiDelegate: WKUIDelegate?
     public var scrollView: ScrollView = ScrollView()
     public var isOpaque: Bool = true
-    public var frame: SwiftUI.CGRect = SwiftUI.CGRect()
-    public var superview: UIView? { nil }
     public var autoresizingMask: SwiftUI.UIView.AutoresizingMask = []
     public var backgroundColor: UIColor?
     public var configuration: WKWebViewConfiguration { WKWebViewConfiguration() }
