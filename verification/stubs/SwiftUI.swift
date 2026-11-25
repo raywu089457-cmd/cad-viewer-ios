@@ -26,16 +26,9 @@ public final class UIColor {
 
 /// The response type a scheme handler builds. On Linux, Foundation declares this as an alias of
 /// `AnyObject` with no initialiser, so the app reads as if it invented one.
-/// The base a scheme handler reports against, which Linux Foundation leaves as an alias.
-open class URLResponse {
-    public init() {}
-}
-
-open class HTTPURLResponse: URLResponse {
-    public var statusCode: Int { 200 }
-    public var allHeaderFields: [AnyHashable: Any] { [:] }
-    public init?(url: URL, statusCode: Int, httpVersion: String?, headerFields: [String: String]?) { super.init() }
-}
+// `HTTPURLResponse` is an alias of `AnyObject` in Linux Foundation, and a re-exported alias
+// beats a declaration here, so it cannot be stubbed. The check script skips the one file that
+// constructs one on that platform; see verification/stubs/README.md.
 
 /// A security-scoped URL is an app-platform addition to Foundation, so a Linux toolchain has no
 /// such method and the app looks wrong for using one. The app opens files from the document
