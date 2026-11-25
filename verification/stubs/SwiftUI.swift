@@ -200,7 +200,8 @@ public struct Font {
     public static let title3 = Weight()
 }
 
-public struct Color {
+public struct Color: View {
+    public var body: Nothing { Nothing() }
     public init() {}
     public static let white = Color()
     public static let black = Color()
