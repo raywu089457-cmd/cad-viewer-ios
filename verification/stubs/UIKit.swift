@@ -1,10 +1,8 @@
-// A stub of the UIKit pieces the app imports directly.
+// `PDFViewer` writes `import UIKit` for `UIColor`. The real UIKit is a superset of what SwiftUI
+// re-exports, so rather than declare the type twice — which makes it ambiguous in any module
+// that sees both — the SwiftUI stub owns it and this one re-exports it, exactly as UIKit does
+// in relation to SwiftUI.
 //
-// `PDFViewer` writes `import UIKit` for `UIColor`. Everything else UIKit-shaped that the app
-// touches — `UIView`, `UIViewRepresentable` — arrives through the SwiftUI stub, which is where
-// a real project gets them too.
-public final class UIColor {
-    public init() {}
-    public static let clear = UIColor()
-    public init(red: Double, green: Double, blue: Double, alpha: Double) {}
-}
+// Keeping it here instead would mean SwiftUI importing UIKit to name a member of its own folded
+// in view, and the script builds SwiftUI first.
+@_exported import SwiftUI

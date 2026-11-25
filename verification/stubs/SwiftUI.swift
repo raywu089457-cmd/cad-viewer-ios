@@ -11,8 +11,17 @@ import Foundation
 @_exported import Observation
 #endif
 
-// The folded-in UIKit view below has a `backgroundColor`, so name that module too.
-import UIKit
+/// Owned here rather than in the UIKit stub, which re-exports it: SwiftUI re-exports UIKit's
+/// types in the real thing, and declaring it twice makes it ambiguous in modules that see both.
+/// The script builds SwiftUI before UIKit, so this is also the only order that resolves.
+public final class UIColor {
+    public init() {}
+    public static let clear = UIColor()
+    public static let white = UIColor()
+    public static let black = UIColor()
+    public static let gray = UIColor()
+    public init(red: Double, green: Double, blue: Double, alpha: Double) {}
+}
 
 public struct CGPoint {
     public var x: Double
@@ -417,7 +426,7 @@ public enum TaskPriority { case userInitiated, background }
 public final class UIView {
     public var frame: CGRect = CGRect()
     public var autoresizingMask: AutoresizingMask = []
-    public var backgroundColor: UIKit.UIColor? = nil
+    public var backgroundColor: UIColor? = nil
     public init() {}
     public func addSubview(_ view: UIView) {}
 
