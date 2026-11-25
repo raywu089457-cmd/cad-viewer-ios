@@ -169,6 +169,28 @@ async function openFromNative() {
 window.cadReload = openFromNative
 
 /**
+ * Frames the whole drawing again.
+ *
+ * The page has no chrome of its own — the toolbar is native, so a reader who pinches past the
+ * edge of a drawing had no way back short of reopening the file. The engine's own fit call is
+ * what runs once at open; this exposes the same thing to the button.
+ *
+ * Returns whether it ran, so a caller can tell a missing engine from a drawing that is already
+ * framed.
+ */
+window.cadZoomToFit = () => {
+  try {
+    const view = docManager?.curView
+    if (!view?.zoomToFitDrawing) return false
+    view.zoomToFitDrawing()
+    return true
+  } catch (error) {
+    console.error('zoom to fit failed', error)
+    return false
+  }
+}
+
+/**
  * Opens a drawing the native side passes in directly.
  *
  * The first open uses `cadReload`, which fetches from the scheme handler. This is for a

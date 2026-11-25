@@ -95,6 +95,11 @@ jobs:
 
       # The bundle is built here, so the one case that needs it can be verified rather than
       # skipped —  is the only check whose defect lives in .
+      # Every DWG entry point Swift calls has to exist on the page. One did not, once, and
+      # Swift's optional-chained call silently did nothing.
+      - name: The DWG page defines what Swift calls
+        run: node verification/check-dwg-controls.mjs
+
       - name: That check fails when it should
         run: node verification/check-the-checks.mjs
 

@@ -39,6 +39,19 @@ struct DWGViewer: View {
         }
         .navigationTitle(fileName)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Shown only once there is a drawing, because before that there is nothing to frame
+            // and a button that does nothing is worse than no button.
+            if model.webView != nil, loadError == nil {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        Task { await model.zoomToFit() }
+                    } label: {
+                        Label("Fit drawing", systemImage: "arrow.up.left.and.arrow.down.right")
+                    }
+                }
+            }
+        }
         .task {
             // Reading the file and creating the web view both touch UIKit-adjacent state, so
             // they run on the main actor.
@@ -249,6 +262,22 @@ final class DWGViewerModel {
     private func fail(_ message: String) {
         statusText = nil
         errorHandler?(message)
+    }
+
+    /// Frames the whole drawing again.
+    ///
+    /// The native layer draws no zoom controls for DWG — the page's own canvas handles pinch
+    /// and drag — so a reader who pinched past the edge had no way back but reopening the file.
+    /// The page exposes the engine's fit call for this; the toolbar button calls it.
+    func zoomToFit() async {
+        guard let webView else { return }
+        do {
+            _ = try await webView.evaluateJavaScript("window.cadZoomToFit?.()")
+        } catch {
+            // A page that cannot run the script is one still loading, or one whose engine
+            // failed; in both cases there is nothing framed to return to.
+            Self.log.error("zoom to fit failed: \(error.localizedDescription)")
+        }
     }
 
     /// Releases the page and the engine it loaded.

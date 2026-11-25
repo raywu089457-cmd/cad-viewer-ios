@@ -134,6 +134,16 @@ const cases = [
     }
   },
   {
+    check: 'check-dwg-controls.mjs',
+    what: 'a page entry point that Swift calls but the page does not define',
+    break: root => {
+      const path = join(root, 'ios/web/src/main.js')
+      const text = readFileSync(path, 'utf8')
+      assert(text, 'window.cadZoomToFit = ', 'dwg-controls: the anchor export is gone')
+      writeFileSync(path, text.replace('window.cadZoomToFit = ', 'const removedExport = '))
+    }
+  },
+  {
     check: 'check-inventory.mjs',
     what: 'a check that the README does not list',
     break: root => {
