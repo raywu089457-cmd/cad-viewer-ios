@@ -11,13 +11,12 @@ package, not targets inside `ios/DXFGeometry`, for two reasons:
 | Tool | Purpose |
 |---|---|
 | `verify` | 187 checks: tessellation, the ACI palette, viewport framing, pan/zoom maths, file routing, failure messages, bundle path escapes, MIME types |
-| `scenecheck` | flattens a real DXF; `--svg` renders it, `--json` dumps the geometry |
+| `scenecheck` | flattens a real DXF; `--svg` renders it, `--json` dumps the geometry, `--verify-fresh <path>` compares it with a committed snapshot |
 
 ## Running
 
 ```bash
 ./run.sh verify
-./run.sh freshness        # does the committed snapshot still match the pipeline?
 ./run.sh scenecheck --svg < ../../out/example_2018.dxf > drawing.svg
 ./run.sh scenecheck --json < ../../out/example_2018.dxf | jq .counts
 ```

@@ -10,6 +10,13 @@ import SwiftDXF
 let args = Array(CommandLine.arguments.dropFirst())
 let wantSVG = args.contains("--svg")
 let wantJSON = args.contains("--json")
+/// `--verify-fresh <path>`: compare the geometry with a committed snapshot and exit 1 on a
+/// difference. In here rather than in a script because the Swift CI image carries neither
+/// node nor python, and this is the one tool that is already built there.
+let verifyFreshIndex = args.firstIndex(of: "--verify-fresh")
+let verifyFreshPath = verifyFreshIndex.flatMap { index in
+    index + 1 < args.count ? args[index + 1] : nil
+}
 let verbose = args.contains("--verbose")
 
 func log(_ message: String) {
@@ -91,6 +98,55 @@ if verbose {
         .map { "\($0.key):\($0.value.count)" }
         .sorted()
     log("layers: " + layers.joined(separator: " "))
+}
+
+// The committed snapshot has to still match what the pipeline produces, or the independent
+// coordinate check is comparing two stale copies of the same thing.
+if let path = verifyFreshPath {
+    guard let data = FileManager.default.contents(atPath: path) else {
+        log("cannot read the snapshot at \(path)")
+        exit(1)
+    }
+    guard
+        let stored = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let storedPolylines = stored["polylines"] as? [[String: Any]]
+    else {
+        log("the snapshot at \(path) is not in the shape this writes")
+        exit(1)
+    }
+
+    if storedPolylines.count != scene.polylines.count {
+        log(
+            "polyline count differs: \(scene.polylines.count) produced, "
+                + "\(storedPolylines.count) committed")
+        exit(1)
+    }
+
+    for (index, line) in scene.polylines.enumerated() {
+        guard let storedPoints = storedPolylines[index]["points"] as? [[String: Any]] else {
+            log("polyline \(index) in the snapshot has no points")
+            exit(1)
+        }
+        if storedPoints.count != line.points.count {
+            log(
+                "polyline \(index) has \(line.points.count) points, "
+                    + "committed has \(storedPoints.count)")
+            exit(1)
+        }
+        for (position, point) in line.points.enumerated() {
+            let storedX = storedPoints[position]["x"] as? Double ?? .nan
+            let storedY = storedPoints[position]["y"] as? Double ?? .nan
+            if abs(point.x - storedX) > 1e-6 || abs(point.y - storedY) > 1e-6 {
+                log(
+                    "polyline \(index) point \(position): (\(point.x), \(point.y)) produced, "
+                        + "(\(storedX), \(storedY)) committed")
+                exit(1)
+            }
+        }
+    }
+
+    log("the fixture snapshot is current (\(scene.polylines.count) polylines)")
+    exit(0)
 }
 
 // A machine-readable dump, so the flattened geometry can be checked entity by entity

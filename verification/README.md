@@ -20,7 +20,6 @@ claims in the top-level README are only worth anything if they can be re-run.
 | `verify-coordinates.mjs` | cross-check flattened geometry against the DXF, with its own reader |
 | `check-api-usage.mjs` | the app layer's calls into the geometry, checked against the declarations |
 | `check-main-thread-io.mjs` | file reads in the UI layer, which would freeze it |
-| `check-fixture-fresh.mjs` | whether the committed snapshot still matches the pipeline |
 | `check-retain-cycles.mjs` | strong message-handler registrations, which leak the page |
 | `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses (187 checks) |
 

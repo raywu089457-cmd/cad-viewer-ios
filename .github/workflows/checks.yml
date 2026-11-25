@@ -205,8 +205,8 @@ jobs:
         working-directory: verification/dxf-geometry-harness
         run: |
           binary="$(swift build -c release --show-bin-path)/scenecheck"
-          "$binary" --json < ../fixtures/circles.dxf > /tmp/fresh.json 2>/dev/null
-          # Compared as geometry rather than as bytes: the committed snapshot came from a
-          # wasm build and this one is native, and the two Foundations format doubles
-          # differently. The helper says which point differs when one does.
-          python3 ../check-fixture-fresh.py /tmp/fresh.json ../fixtures/circles.json
+          # The comparison lives in the tool, because this image carries neither node nor
+          # python: both were tried and both were missing. It walks the polylines and compares
+          # points to a millionth, which is what the check was always about.
+          "$binary" --verify-fresh ../fixtures/circles.json < ../fixtures/circles.dxf
+
