@@ -4,6 +4,13 @@ import Foundation
 // importing SwiftUI. The stub has to do the same or the app appears to be missing them.
 @_exported import Foundation
 
+// SwiftUI also re-exports Observation, which is where `@Observable` and `@ObservationIgnored`
+// come from. Those are macros: the toolchain supplies the module and its plugin together, so
+// this only works on a target that has both — the Linux one in CI, not the local wasm SDK.
+#if canImport(Observation)
+@_exported import Observation
+#endif
+
 public struct CGPoint {
     public var x: Double
     public var y: Double

@@ -18,9 +18,10 @@ reported real findings — one of them useful:
 
 And then one that stopped it:
 
-- `@Observable` and `@ObservationIgnored` are macros. A macro needs its plugin, which ships with
-  the toolchain only for targets it was built for. The wasm SDK has `Observation.swiftmodule`
-  but no plugin, so the two files that use `@Observable` cannot be type-checked this way.
+- `@Observable` and `@ObservationIgnored` are macros. The wasm SDK used locally has
+  `Observation.swiftmodule` but no plugin for it, so the two files that use `@Observable`
+  cannot be checked under that target. **The Linux toolchain in CI does ship the plugin**
+  (`ObservationMacros`), so the check runs there against the host's own modules.
 
 Two of the seven app files use it, and the other five reference them, so the whole layer is
 blocked.
