@@ -60,8 +60,9 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 
 **每次 push 都在 CI 上跑**（7 個 job，全綠）：
 
-- `swift test`：108 個測試，14 個套件
-- harness：222 項檢查（圖元攤平、ACI 色票、取景、縮放/平移、路由、bundle 路徑逃逸、MIME）
+- `swift test`：幾何、路由、取景、批次、錯誤訊息、actor 隔離等套件（項數以輸出為準）
+- harness：覆蓋圖元攤平、ACI 色票、取景、縮放/平移、路由、bundle 路徑逃逸、MIME、
+  批次繪製、尺寸文字、hatch 實心與圖案、區塊屬性（項數以 harness 自己的輸出為準）
 - 座標與檔案交叉驗證，用與 Swift 端零共用的讀取器
 - DWG 網頁端在真實瀏覽器中載入與重開
 - 佈局、workflow 結構、API 參數標籤、主執行緒 I/O、retain cycle

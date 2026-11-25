@@ -22,7 +22,7 @@ claims in the top-level README are only worth anything if they can be re-run.
 | `check-main-thread-io.mjs` | file reads in the UI layer, which would freeze it |
 | `check-retain-cycles.mjs` | strong message-handler registrations, which leak the page |
 | `check-actor-isolation.mjs` | `@Observable` state without `@MainActor`, a data race on the UI |
-| `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses (187 checks) |
+| `dxf-geometry-harness/` | the geometry, routing and arithmetic harnesses |
 
 ## Running one
 
@@ -41,7 +41,7 @@ node test-ml2.mjs
 - SwiftDXF parses DXF correctly but does not read DWG at all.
 - Both web viewers behave the same in WebKit (Safari's engine) at iPhone size.
 
-The geometry core has its own harness in `dxf-geometry-harness/`, with 187 checks and no
+The geometry core has its own harness in `dxf-geometry-harness/`, with no
 browser needed. Run it with `./run.sh verify` there, or `build-wasm.bat` if the machine has
 no Apple SDK.
 

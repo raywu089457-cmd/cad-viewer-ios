@@ -10,7 +10,7 @@ package, not targets inside `ios/DXFGeometry`, for two reasons:
 
 | Tool | Purpose |
 |---|---|
-| `verify` | 187 checks: tessellation, the ACI palette, viewport framing, pan/zoom maths, file routing, failure messages, bundle path escapes, MIME types |
+| `verify` | tessellation, the ACI palette, viewport framing, pan/zoom maths, file routing, failure messages, bundle path escapes, MIME types, colour batching. Prints its own count. |
 | `scenecheck` | flattens a real DXF; `--svg` renders it, `--json` dumps the geometry, `--verify-fresh <path>` compares it with a committed snapshot |
 
 ## Running
