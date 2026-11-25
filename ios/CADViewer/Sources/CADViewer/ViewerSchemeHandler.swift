@@ -62,21 +62,35 @@ final class ViewerSchemeHandler: NSObject, WKURLSchemeHandler {
             respond(task, status: 403, mime: "text/plain", body: Data("forbidden".utf8))
             return
         }
-        guard let body = try? Data(contentsOf: file) else {
-            // 404 either way, but logged: a file that exists and cannot be read is a different
-            // problem from one that is not there, and the browser only sees "not found".
-            Self.log.error(
-                "cannot read \(file.lastPathComponent, privacy: .public) from the bundle")
-            respond(task, status: 404, mime: "text/plain", body: Data("not found".utf8))
-            return
+        // The page asks for the engine first, and that file is ten megabytes. WebKit calls this
+        // on the main thread, so reading it here froze the interface before anything was drawn —
+        // the same defect the three viewers had, in a file the check did not look at because it
+        // was not in the list.
+        //
+        // The task is handed to a background queue and answered there; `WKURLSchemeTask` is safe
+        // to call from any thread as long as the callbacks are paired, and a task that was
+        // already stopped is ignored by WebKit.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            guard let body = try? Data(contentsOf: file) else {
+                // 404 either way, but logged: a file that exists and cannot be read is a
+                // different problem from one that is not there, and the browser only sees
+                // "not found".
+                Self.log.error(
+                    "cannot read \(file.lastPathComponent, privacy: .public) from the bundle")
+                self.respond(task, status: 404, mime: "text/plain", body: Data("not found".utf8))
+                return
+            }
+            self.respond(
+                task, status: 200,
+                mime: BundleServing.mimeType(forExtension: file.pathExtension), body: body)
         }
-        respond(task, status: 200, mime: BundleServing.mimeType(forExtension: file.pathExtension), body: body)
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {
-        // Every response is produced synchronously, so there is nothing in flight to cancel.
+        // A read that is still running finishes and answers a task WebKit has already stopped,
+        // which WebKit ignores. There is nothing here to cancel.
     }
-
     private func respond(
         _ task: WKURLSchemeTask, status: Int, mime: String, body: Data
     ) {
