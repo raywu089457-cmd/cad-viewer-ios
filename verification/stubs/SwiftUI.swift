@@ -77,21 +77,15 @@ public nonisolated struct Nothing: View {
         _ c0: C0, _ c1: C1, _ c2: C2, _ c3: C3) -> Nothing { Nothing() }
     public nonisolated static func buildOptional<C: View>(_ c: C?) -> Nothing { Nothing() }
     public nonisolated static func buildIf<C: View>(_ c: C?) -> Nothing { Nothing() }
-    // Both branches are taken as their own generic parameters so each is type-checked, and one
-    // concrete result so `buildBlock` can combine them. The real builder returns a type carrying
-    // both, which the call site never names — it cannot, the compiler infers them — so pinning
-    // them keeps the inference the app relies on.
-    public nonisolated static func buildEither<T: View, F: View>(first: T) -> _Either<T, F>
-        { _Either() }
-    public nonisolated static func buildEither<T: View, F: View>(second: F) -> _Either<T, F>
-        { _Either() }
-}
-
-/// What the branch builder produces: one concrete type, both branch types carried so the compiler
-/// resolves each of them from the call.
-public nonisolated struct _Either<T: View, F: View>: View {
-    public nonisolated init() {}
-    public nonisolated var body: Never { fatalError() }
+    // Deliberately not generic. With `<T, F>` on the result the compiler has to infer each branch
+    // from the other, and in an `if`/`else if` chain with no final `else` there is nothing to
+    // infer from, so it reports both parameters as unknown. The real builder gets away with it
+    // because the compiler treats it specially; a stub has to be plain enough to resolve.
+    //
+    // The trade: this no longer proves each branch is a `View`. Every branch expression itself is
+    // still type-checked, which is what the check is for.
+    public nonisolated static func buildEither(first: Any) -> Nothing { Nothing() }
+    public nonisolated static func buildEither(second: Any) -> Nothing { Nothing() }
 }
 
 @propertyWrapper public final class State<Value> {
