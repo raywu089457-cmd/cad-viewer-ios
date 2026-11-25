@@ -8,6 +8,9 @@ import DXFGeometry
 
 var failures = 0
 var checks = 0
+/// Cases that could not run here. Counted apart from the passing checks, because a skip is
+/// not a pass and a total that adds them together overstates what was verified.
+var skipped = 0
 
 // A DXF holding both solid and patterned hatches, passed on the command line. A HATCH needs
 // the full boundary-path encoding, so the fixture is a real converted drawing rather than a
@@ -29,6 +32,16 @@ func check(_ condition: Bool, _ label: String, _ detail: @autoclosure () -> Stri
         let extra = detail()
         print("FAIL  \(label)\(extra.isEmpty ? "" : " — \(extra)")")
     }
+}
+
+/// Records that something was not checked here.
+///
+/// Not a check(true): that counted as a pass, so two cases that never ran were reported
+/// among the passing checks. A skip has its own count and the summary reports it, because
+/// "279 passed" and "277 passed, 2 skipped" are different claims about the same run.
+func skip(_ label: String) {
+    skipped += 1
+    print("SKIP  (label)")
 }
 
 func nearly(_ a: Double, _ b: Double, _ epsilon: Double = 1e-9) -> Bool {
@@ -851,7 +864,7 @@ do {
     // boundary-path encoding and is easy to get subtly wrong. Without one, nothing is
     // claimed — a silent pass here would be worse than no check.
     if hatchSamplePath.isEmpty {
-        check(true, "no hatch sample supplied, so solidity was not checked")
+        skip("no hatch sample supplied, so solidity was not checked")
     } else if let text = hatchSampleText(), let drawing = try? DXF.read(text: text) {
         let fills = SceneBuilder().build(drawing).fills
         check(!fills.isEmpty, "the sample has hatches", "\(fills.count)")
@@ -1023,7 +1036,7 @@ do {
         }
     } else {
         // wasm cannot read by path, so this check only runs where the file is reachable.
-        check(true, "attribute fixture not reachable here, so skipped")
+        skip("attribute fixture not reachable here")
     }
 }
 section("Skipped entities")
@@ -1340,10 +1353,13 @@ do {
 // MARK: - Result
 
 print("")
+// A run that skipped something says so. "279 passed" and "277 passed, 2 skipped" are
+// different claims about the same run, and only one is true here.
+let suffix = skipped == 0 ? "" : ", \(skipped) skipped"
 if failures == 0 {
-    print("PASS — \(checks) checks")
+    print("PASS — \(checks) checks\(suffix)")
     exit(0)
 } else {
-    print("FAILED — \(failures) of \(checks) checks")
+    print("FAILED — \(failures) of \(checks) checks\(suffix)")
     exit(1)
 }

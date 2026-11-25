@@ -169,6 +169,22 @@ mustExist('verification/patch-swiftdxf-for-linux.sh')
 mustExist('verification/fixtures/circles.dxf')
 mustExist('verification/fixtures/circles.json')
 mustExist('verification/dxf-geometry-harness/run.sh')
+
+// A harness that reports a case it did not run as a pass is a harness whose total cannot be
+// trusted. `check(true, …)` was used twice for "not checked here", and both were counted among
+// the passing checks. `skip(…)` is what that is for.
+{
+  const harness = join(root, 'verification/dxf-geometry-harness/Sources/verify/main.swift')
+  if (existsSync(harness)) {
+    const text = readFileSync(harness, 'utf8')
+    const alwaysTrue = [...text.matchAll(/check\(\s*true\s*,/g)].length
+    if (alwaysTrue > 0) {
+      fail(`the harness has ${alwaysTrue} check(true, …), which counts a skipped case as a pass`)
+    } else {
+      ok('the harness does not count a skipped case as a pass')
+    }
+  }
+}
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/ViewTransform.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/FileRouting.swift')
 mustExist('ios/DXFGeometry/Sources/DXFGeometry/BundleServing.swift')
