@@ -21,7 +21,14 @@ const check = (ok, what) => {
   console.log(`${ok ? 'ok  ' : 'FAIL'}  ${what}`)
 }
 
+// Normalised: a checkout on Windows has CRLF and the patterns below are written with plain
+// newlines, so a redirect would silently stop matching.
+// Normalised: a Windows checkout has CRLF and the patterns below are written with plain
+// newlines, so a redirect would stop matching without saying so.
+// Normalised: a Windows checkout has CRLF and the patterns below are written with plain
+// newlines, so a redirect would stop matching without saying so.
 const spec = readFileSync(join(ios, 'project.yml'), 'utf8')
+  .replace(new RegExp('\r\n', 'g'), '\n')
 const pkgRaw = readFileSync(join(ios, 'CADViewer', 'Package.swift'), 'utf8')
 // Comments name the thing being avoided. Reading them as code turns a deliberate note into the
 // defect it is explaining.
