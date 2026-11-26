@@ -102,6 +102,24 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         """
 }
 
+func fixtureText(named name: String) -> String? {
+    let mounted = URL(fileURLWithPath: "/host/verification/fixtures/" + name)
+    if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
+
+    var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    for _ in 0..<5 {
+        let candidate = directory
+            .appendingPathComponent("verification")
+            .appendingPathComponent("fixtures")
+            .appendingPathComponent(name)
+        if let text = try? String(contentsOf: candidate, encoding: .utf8) { return text }
+        let parent = directory.deletingLastPathComponent()
+        if parent.path == directory.path { break }
+        directory = parent
+    }
+    return nil
+}
+
 func quoteChar() -> String { String(UnicodeScalar(34)) }
 func apostrophe() -> String { String(UnicodeScalar(39)) }
 func backslash() -> String { String(UnicodeScalar(92)) }
@@ -622,6 +640,80 @@ do {
         }
     } else {
         check(false, "a tolerance fixture parses")
+    }
+}
+
+
+section("Seven entity kinds that had no sample anywhere")
+// Every one of these was untested: no fixture, no inline drawing, nothing. They are not
+// exotic — a spline and a dimension are in most real drawings — they simply never appeared
+// in the files collected here, so nothing would have noticed if the builder stopped drawing
+// one of them.
+do {
+    struct Kind {
+        let name: String
+        let file: String
+        let polylines: Int
+        let texts: Int
+    }
+    // Counts as measured, not as hoped: the point below is that each kind reaches the scene.
+    let kinds = [
+        Kind(name: "ELLIPSE", file: "ellipse.dxf", polylines: 1, texts: 0),
+        Kind(name: "POINT", file: "point.dxf", polylines: 2, texts: 0),
+        Kind(name: "3DFACE", file: "face3d.dxf", polylines: 1, texts: 0),
+        Kind(name: "SPLINE", file: "spline.dxf", polylines: 1, texts: 0),
+        Kind(name: "LEADER", file: "leader.dxf", polylines: 1, texts: 0),
+        Kind(name: "DIMENSION", file: "dimension.dxf", polylines: 3, texts: 1),
+        Kind(name: "WIPEOUT", file: "wipeout.dxf", polylines: 1, texts: 0),
+    ]
+
+    for kind in kinds {
+        guard let text = fixtureText(named: kind.file),
+            let drawing = try? DXF.read(text: text, options: DrawingReadOptions.app)
+        else {
+            check(false, kind.name + " fixture parses")
+            continue
+        }
+        let scene = SceneBuilder().build(drawing)
+        check(
+            drawing.entities.count == 1,
+            kind.name + " reaches the reader",
+            String(drawing.entities.count))
+        check(
+            scene.polylines.count == kind.polylines,
+            kind.name + " draws " + String(kind.polylines) + " polyline(s)",
+            String(scene.polylines.count))
+        check(
+            scene.texts.count == kind.texts,
+            kind.name + " draws " + String(kind.texts) + " text(s)",
+            String(scene.texts.count))
+        // Whatever it drew has to be somewhere, or the viewport frames nothing.
+        check(scene.bounds != nil, kind.name + " contributes extents")
+    }
+}
+
+// A spline whose knot vector is too short is unrenderable as stored. The builder falls back
+// to the fit points; when there are none either, nothing is drawn — and nothing is counted as
+// skipped, so the drawing silently loses that curve.
+do {
+    let parts = [
+        "0", "SECTION", "2", "ENTITIES",
+        "0", "SPLINE", "8", "0", "70", "8", "71", "3",
+        // Four knots for three degrees and four control points: needs eight.
+        "40", "0", "40", "0", "40", "0", "40", "1",
+        "10", "0", "20", "0", "10", "1", "20", "2", "10", "2", "20", "0", "10", "3", "20", "2",
+        "0", "ENDSEC", "0", "EOF",
+    ].joined(separator: "\n")
+    if let drawing = try? DXF.read(text: parts, options: DrawingReadOptions.app) {
+        let scene = SceneBuilder().build(drawing)
+        check(
+            drawing.entities.count == 1,
+            "a spline with a short knot vector is still read")
+        check(
+            scene.polylines.isEmpty,
+            "and draws nothing, because there is nothing to draw it from")
+    } else {
+        check(false, "the short-knot spline parses")
     }
 }
 
