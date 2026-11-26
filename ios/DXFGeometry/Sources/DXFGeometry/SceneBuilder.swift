@@ -117,12 +117,29 @@ public struct SceneBuilder {
         let reference = max(Self.diagonal(of: drawing), 1)
         let tolerance = max(reference * curveTolerance, .ulpOfOne)
 
-        func resolvedColor(for index: Int, layer: String) -> RGB {
+        /// The colour an entity is drawn in.
+        ///
+        /// `ByBlock` means "take the colour of the entity that inserted this block", not white.
+        /// In practice the drawing arrives already expanded — `DrawingReadOptions.expandBlocks` —
+        /// and that expansion resolves most of it: of 1462 geometric entities in
+        /// `example_r12.dxf`, 49 still carry `ByBlock` and the rest name a layer whose colour is
+        /// known. Painting `ByBlock` white was therefore right for almost everything and wrong for
+        /// the 49, which is the kind of mistake that looks like a colour choice.
+        ///
+        /// `inherited` is the colour of the inserting entity, for a caller that knows it. Nil is
+        /// the top level, where nothing inserted this and the layer colour is the sensible
+        /// reading.
+        ///
+        /// `inherited` is the colour to use for `ByBlock`, resolved by the caller from whatever
+        /// inserted this entity. Nil means nothing did, which is the top level: there `ByBlock`
+        /// has no meaning and the layer colour is the sensible reading.
+        func resolvedColor(for index: Int, layer: String, inherited: Int? = nil) -> RGB {
             let resolved: Int
-            if index == ACI.byLayer || index < 0 {
+            if index == ACI.byBlock {
+                // The inserting entity's colour, or the layer's when nothing inserted this.
+                resolved = inherited ?? layerColors[layer] ?? 7
+            } else if index == ACI.byLayer || index < 0 {
                 resolved = layerColors[layer] ?? 7
-            } else if index == ACI.byBlock {
-                resolved = 7
             } else {
                 resolved = index
             }

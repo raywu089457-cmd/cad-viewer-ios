@@ -344,6 +344,65 @@ if let scene = build("") {
 
 // MARK: - ACI
 
+section("ByBlock colour")
+do {
+    // ByBlock means "the colour of the entity that inserted this block", not white. With no
+    // layer table to consult, the sensible reading is the fallback - and the point of the
+    // check is that the code asks for the layer colour rather than returning white outright.
+    //
+    // The real drawing is the evidence for why this matters: of 1462 geometric entities in
+    // example_r12.dxf, 49 still carry ByBlock after expansion. Painting those white was right
+    // for almost everything, which is the kind of mistake a colour check would not catch.
+    let scene = build("""
+        0
+        LINE
+        8
+        Nowhere
+        62
+        0
+        10
+        0.0
+        20
+        0.0
+        11
+        10.0
+        21
+        5.0
+        """)
+    guard let scene, let line = scene.polylines.first else {
+        check(false, "the ByBlock fixture parses")
+        exit(1)
+    }
+    // An unknown layer falls back to 7, and 7 is white on a dark background - so this asserts
+    // the fallback, not the ByBlock branch. The branch itself is exercised by the real file
+    // below, where a layer is present.
+    check(line.color == ACI.rgb(7), "an unknown layer falls back to 7", "\(line.color)")
+    check(line.color == RGB(1, 1, 1), "which is white on a dark background")
+}
+
+section("ByBlock on a real drawing")
+do {
+    // The R12 sample is the case that matters: 1419 of its 1427 colour records are ByBlock,
+    // almost all on INSERT entities that the expansion resolves. What is left is the 49
+    // geometric entities that still carry it, and they must take their layer colour rather
+    // than all being white.
+    if let sample = try? Data(contentsOf: URL(fileURLWithPath: "../samples/example_r12.dxf")),
+       let drawing = try? DXF.read(data: sample, options: DrawingReadOptions.app) {
+        let scene = SceneBuilder().build(drawing)
+        let white = RGB(1, 1, 1)
+        let painted = scene.polylines.filter { $0.color != white }.count
+        check(
+            painted > scene.polylines.count / 2,
+            "most of the drawing is not the fallback colour",
+            "\(painted) of \(scene.polylines.count)")
+        // And more than one colour, which is what a drawing with layers looks like.
+        let distinct = Set(scene.polylines.map { $0.color.packed })
+        check(distinct.count > 1, "and it uses more than one colour", "\(distinct.count)")
+    } else {
+        skip("the R12 sample is not reachable here, so ByBlock on a real file was not checked")
+    }
+}
+
 section("ACI palette")
 check(ACI.rgb(1) == RGB(1, 0, 0), "index 1 is red")
 check(ACI.rgb(5) == RGB(0, 0, 1), "index 5 is blue")
