@@ -33,6 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The workflow itself, first: a job list that parses but runs nothing is the failure this
+      # catches, and it has happened here.
+      - name: The workflow has the jobs it claims
+        run: node verification/check-workflow.mjs
+
       - name: Verify the tree matches its manifests
         run: node .github/verify-layout.mjs
 

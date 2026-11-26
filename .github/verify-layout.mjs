@@ -137,7 +137,6 @@ mustExist('verification/check-api-usage.mjs')
 mustExist('verification/check-main-thread-io.mjs')
 // A committed snapshot that stops matching the pipeline turns the independent coordinate
 // check into decoration.
-mustExist('verification/check-fixture-fresh.mjs')
 // A content controller holds its handler strongly; registering the view leaks the page.
 mustExist('verification/check-retain-cycles.mjs')
 // UI state that is not main-actor isolated is a data race the compiler only finds under Swift 6.

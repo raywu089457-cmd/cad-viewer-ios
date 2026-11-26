@@ -18,14 +18,15 @@ shift || true
 case "$MODE" in
     verify) exec swift run -c release verify ;;
     freshness)
-        # The committed snapshot has to still match what the pipeline produces, or the
-        # independent coordinate check is comparing two stale copies of the same thing.
+        # The comparison lives in the tool rather than in a script: the Swift CI image carries
+        # neither node nor python, and doing it there means one implementation instead of two.
+        # There was a Node version of this (check-fixture-fresh.mjs) that nothing on CI ran.
         swift build -c release --product scenecheck
-        exec node ../check-fixture-fresh.mjs "$(swift build -c release --show-bin-path)/scenecheck"
+        exec "$(swift build -c release --show-bin-path)/scenecheck" --verify-fresh ../fixtures/circles.json < ../fixtures/circles.dxf
         ;;
     scenecheck) exec swift run -c release scenecheck "$@" ;;
     *)
-        echo "usage: $0 [verify|scenecheck] [args...]" >&2
+        echo "usage: $0 [verify|freshness|scenecheck] [args...]" >&2
         exit 2
         ;;
 esac
