@@ -53,13 +53,27 @@ let text = String(decoding: data, as: Unicode.ASCII.self)
 // complete entity, between sections. A file arrives damaged by being cut off wherever a download
 // stopped, which lands inside a group code or halfway through a coordinate. This runs the real
 // file through the same `DXF.read` and `LoadReadiness` the app uses.
-if args.contains("--truncations") {
+let truncIndex = args.firstIndex(of: "--truncations")
+let truncPath = truncIndex.flatMap { i in i + 1 < args.count ? args[i + 1] : nil }
+if truncIndex != nil {
     let options = DrawingReadOptions.app
+    // `--truncations <path>` carries its own path, because the tool may have been given one with
+    // `--file` or none at all. Reading it here means the argument is self-contained.
+    let whole: Data
+    if let truncPath {
+        guard let read = FileManager.default.contents(atPath: truncPath) else {
+            log("cannot read \(truncPath)")
+            exit(2)
+        }
+        whole = read
+    } else {
+        whole = data
+    }
     var drew = 0
     var reported = 0
     for tenth in 1...10 {
-        let cut = data.count * tenth / 10
-        let piece = String(decoding: data.prefix(cut), as: Unicode.ASCII.self)
+        let cut = whole.count * tenth / 10
+        let piece = String(decoding: whole.prefix(cut), as: Unicode.ASCII.self)
         guard let partial = try? DXF.read(text: piece, options: options) else {
             reported += 1
             print("      \(cut) of \(data.count) bytes: reported")
