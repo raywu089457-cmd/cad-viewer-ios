@@ -69,19 +69,19 @@ MIME type 必須正確（`application/wasm`、`text/javascript`），否則 WebK
 
 ## 已驗證的範圍
 
-在沒有 Xcode 的機器上（Windows + Swift 6.4.3 wasm 工具鏈）驗證過的：
-
-- `DXFGeometry` 全部邏輯：涵蓋圖元攤平、色票、取景、縮放/平移算式、
-  副檔名路由、錯誤訊息、bundle 路徑逃逸與 MIME type
-- 真實樣本（LibreDWG 的 `example_2018.dwg` 轉出的 DXF）：158 個實體全部轉成
-  幾何，零 NaN，文字內容與層名正確
+- `DXFGeometry`：圖元攤平、色票、取景、縮放/平移算式、副檔名路由、錯誤訊息、
+  bundle 路徑逃逸與 MIME type。CI 跑 `swift test`，本機跑 wasm harness。
+- 真實樣本（LibreDWG 的測試圖紙）：`samples/example_r12.dxf` 切成十段都得到結果，
+  `samples/` 三張 DWG 都在真實瀏覽器裡開過一次。數字以 harness 與 CI 的輸出為準，
+  不寫在文件裡——寫死的數字會過時，而且讀者無法複查。
 - DWG 網頁檢視器在 WebKit（Safari 引擎）手機尺寸下正常開圖，零 console 錯誤
+- SwiftUI / WebKit / PDFKit 層的**型別檢查**：靠 `verification/stubs/` 的平台 stub，
+  用真正的 `swiftc -typecheck`。它抓到過 5 個只靠 `-parse` 看不到的真缺陷。
 
 尚未在真機驗證的（需要 macOS）：
 
-- SwiftUI 層的編譯（`DrawingCanvas`、`DXFViewer`、`DWGViewer`）
-- `WKURLSchemeHandler` 在 iOS 上的實際載入
-- 手勢手感
+- 手勢手感，以及 `WKURLSchemeHandler` 在 iOS 上的實際載入
+- stub 的 `body` 從不執行，所以型別檢查證明能編譯，不證明畫面正確
 
 ## 授權
 

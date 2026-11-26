@@ -82,6 +82,31 @@ for (const match of readme.matchAll(/`([a-z][a-z0-9-]*\.(?:mjs|sh|bat))`/g)) {
   check(found, `${name} is where the README implies`)
 }
 
+// 6. The same claim checks apply to the sub-READMEs, and one of their claims is different: a
+//    specific count of something a reader cannot recount. That is worse than vague, because it
+//    invites trust and cannot be checked — `158 個實體` sat in `ios/README.md` for a drawing
+//    converted into a gitignored directory that no fresh checkout has.
+const subReadmes = ['ios/README.md', 'ios/CADViewer/README.md', 'ios/DXFGeometry/README.md',
+  'ios/web/README.md', 'verification/dxf-geometry-harness/README.md']
+  .filter(file => existsSync(join(repo, file)))
+check(subReadmes.length > 0, `found ${subReadmes.length} sub-README(s)`)
+
+for (const file of subReadmes) {
+  const text = readFileSync(join(repo, file), 'utf8')
+
+  // A number attached to something in a gitignored directory cannot be reproduced by a reader.
+  const countsTheUnreachable = /\d+\s*(該|個|entities?|實體)[^\n]{0,40}out\//.test(text)
+  check(!countsTheUnreachable, `${file} does not count what only exists in a gitignored dir`)
+
+  // Every command it tells a reader to run has to exist.
+  for (const match of text.matchAll(/^\s*\.\/([a-z][a-z0-9-]*\.(?:sh|bat))$/gm)) {
+    const name = match[1]
+    const near = [join(repo, 'ios/web', name), join(repo, 'ios', name),
+      join(repo, 'verification', name), join(repo, 'verification/dxf-geometry-harness', name)]
+    check(near.some(existsSync), `${file}: ./${name} exists`)
+  }
+}
+
 if (failures.length > 0) {
   console.log(`\n${failures.length} claim(s) in the README no longer hold`)
   process.exit(1)

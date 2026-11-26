@@ -31,7 +31,7 @@ local `SwiftDXF` checkout at the repository root, then:
 
 ```bash
 ./build-wasm.bat
-node --experimental-wasi-unstable-preview1 runwasm.mjs verify.wasm
+node runwasm.mjs verify.wasm
 ```
 
 One caveat it papers over: SwiftDXF's `CodePage` guards its CoreFoundation path with
