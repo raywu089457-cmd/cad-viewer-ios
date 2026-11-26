@@ -41,9 +41,16 @@ if let filePath {
 } else {
     data = FileHandle.standardInput.readDataToEndOfFile()
 }
-guard !data.isEmpty else {
-    log("no input")
-    exit(2)
+// The `--truncations` flag brings its own input; there is nothing on stdin in that case, and
+// asking for both would make it unusable from a step that has the file and no pipe to feed it.
+let truncIndex = args.firstIndex(of: "--truncations")
+let truncPath = truncIndex.flatMap { i in i + 1 < args.count ? args[i + 1] : nil }
+
+if truncIndex == nil {
+    guard !data.isEmpty else {
+        log("no input")
+        exit(2)
+    }
 }
 let text = String(decoding: data, as: Unicode.ASCII.self)
 
@@ -53,8 +60,6 @@ let text = String(decoding: data, as: Unicode.ASCII.self)
 // complete entity, between sections. A file arrives damaged by being cut off wherever a download
 // stopped, which lands inside a group code or halfway through a coordinate. This runs the real
 // file through the same `DXF.read` and `LoadReadiness` the app uses.
-let truncIndex = args.firstIndex(of: "--truncations")
-let truncPath = truncIndex.flatMap { i in i + 1 < args.count ? args[i + 1] : nil }
 if truncIndex != nil {
     let options = DrawingReadOptions.app
     // `--truncations <path>` carries its own path, because the tool may have been given one with
