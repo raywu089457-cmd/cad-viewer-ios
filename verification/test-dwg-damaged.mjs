@@ -6,6 +6,10 @@
 // presented as a success.
 //
 //   node test-dwg-damaged.mjs <viewer-dist> <drawing.dwg>
+//
+// It also opens something that is not a DWG at all. The engine does not check the header, so a
+// renamed text file is reported as `rendered`; that limit is recorded here rather than asserted
+// away, and the README says the same.
 import { chromium } from 'playwright'
 import fs from 'node:fs'
 import http from 'node:http'
@@ -127,6 +131,27 @@ for (const fraction of [1.0, 0.95, 0.75, 0.5, 0.25, 0.1]) {
   if (outcome === 'reported') reported += 1
   if (outcome === 'drew') drew += 1
 }
+
+// Something that is not a DWG. The engine accepts any bytes, so this is expected to report
+// `rendered` — the assertion is that it does not crash, and the note says what it means.
+currentBytes = Buffer.from('This is not a drawing. '.repeat(12))
+const beforeNot = events.length
+await page.goto(`http://127.0.0.1:${port}/index.html?name=notadwg.dwg`, {
+  waitUntil: 'networkidle'
+})
+let notSettled = true
+try {
+  await waitFor(list =>
+    list.slice(beforeNot).some(e => e.event === 'rendered' || e.event === 'error' || e.event === 'pageerror')
+  )
+} catch {
+  notSettled = false
+}
+const notSeen = events.slice(beforeNot).map(e => e.event)
+const notOutcome = !notSettled ? 'never settled' : notSeen.includes('pageerror') ? 'crashed' : notSeen.includes('error') ? 'reported' : 'reported as rendered'
+console.log(`  not a DWG at all: ${notOutcome}`)
+if (notOutcome === 'crashed') failures.push('a file that is not a DWG crashed the page')
+if (notOutcome === 'never settled') failures.push('a file that is not a DWG left the page waiting')
 
 await browser.close()
 harness.server.close()

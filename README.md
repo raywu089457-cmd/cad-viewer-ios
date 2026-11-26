@@ -90,6 +90,12 @@ PDFKit 介面宣告出來，就可以用真正的 `swiftc -typecheck` 檢查 app
   DWG 的詳細面板把這件事寫給使用者看，而不是假装圖是完整的。
   （`verification/test-dwg-damaged.mjs` 跑這六個切口，並在不是每個切口都得到結果時失敗。）
 
+- **完全不是 DWG 的檔案也會「開成功」**。把一段純文字（245 bytes）當 `.dwg` 開，
+  `openDocument` 一樣回傳成功，頁面一樣回報 `rendered`。引擎不檢查檔頭，
+  所以把 `.txt` 改名成 `.dwg` 看到的是空白畫布加「成功」。
+  DXF 與 PDF 都有真正的格式檢查（`DXF.isBinary`、`PDFDocument(url:)` 回 nil）；
+  DWG 這條路沒有，而那是引擎的行為，不是 app 能補的。
+
 所以「能不能在真機上跑起來」沒人驗過。凡是不需要 Apple SDK 能驗的，都驗了；
 剩下的寫在這裡，沒有假裝覆蓋。
 
