@@ -1259,6 +1259,34 @@ do {
     check(pinched.scale.isFinite && pinched.scale > 0, "and stays sane")
 }
 
+section("DWG version header")
+do {
+    // The engine accepts any bytes and reports that it drew them, so a text file renamed to
+    // `.dwg` used to open to a blank canvas presented as a drawing. Six bytes are the only
+    // format check this path can have.
+    let ascii = { (text: String) in Data(text.utf8) }
+
+    check(DWGHeader.version(of: ascii("AC1015") + Data([0, 0])) == "AC1015", "R2000 is recognised")
+    check(DWGHeader.version(of: ascii("AC1032") + Data([0, 0])) == "AC1032", "R2018 is recognised")
+    check(DWGHeader.looksLikeDWG(ascii("AC1027")), "R2013 is a DWG")
+
+    check(!DWGHeader.looksLikeDWG(ascii("This is not a drawing")), "prose is not a DWG")
+    check(!DWGHeader.looksLikeDWG(ascii("ACME Corporation")), "a word starting AC is not a version")
+    check(!DWGHeader.looksLikeDWG(ascii("AC1")), "too short is not a DWG")
+    check(!DWGHeader.looksLikeDWG(Data()), "empty is not a DWG")
+    check(!DWGHeader.looksLikeDWG(ascii("AC9999")), "a version below R10 is not real")
+    check(!DWGHeader.looksLikeDWG(ascii("AC10AB")), "letters after AC are not a version")
+
+    // A real file, so the signature is confirmed against what LibreDWG writes rather than only
+    // against strings written here.
+    if let sample = try? Data(contentsOf: URL(fileURLWithPath: "../samples/example_2018.dwg")) {
+        let found = DWGHeader.version(of: sample) ?? ("no signature" as String)
+        check(found == "AC1032", "the real sample is R2018", found)
+    } else {
+        skip("no sample reachable here, so the signature was checked only against strings")
+    }
+}
+
 section("Non-finite coordinates")
 do {
     // `min(infinity, .nan)` is `.nan` in Swift, so one bad coordinate used to make the extents

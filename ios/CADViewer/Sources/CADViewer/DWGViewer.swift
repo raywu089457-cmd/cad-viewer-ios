@@ -220,6 +220,15 @@ final class DWGViewerModel {
             return
         }
 
+        // The engine accepts any bytes and reports that it drew them, so a text file renamed to
+        // `.dwg` opens to a blank canvas presented as a drawing. The signature is the only format
+        // check this path can have, and it is cheap: six bytes, before anything is handed over.
+        guard DWGHeader.looksLikeDWG(data) else {
+            Self.log.error("not a DWG: the first bytes are not a version signature")
+            fail("This file does not start with a DWG version header. It may have been renamed.")
+            return
+        }
+
         // A second open reuses the loaded page: the wasm engine stays warm, which is the
         // difference between instant and a three-second reload.
         if didBecomeReady, let webView {

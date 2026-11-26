@@ -50,6 +50,36 @@ public enum DrawingKind: Equatable, Sendable {
 ///
 /// Modelled as data rather than as an error string so the message can be built — and
 /// tested — without a file system or a UI.
+/// What a DWG says it is, in its first six bytes.
+///
+/// Every DWG begins with `AC` and a four-digit version: `AC1015` is R2000, `AC1027` is R2013,
+/// `AC1032` is R2018. The bundled engine does not check this — it accepts any bytes and reports
+/// that it drew them — so a text file renamed to `.dwg` opens to a blank canvas presented as a
+/// drawing. Checking the signature is the only format check the DWG path can have, and it is
+/// cheap enough to do before handing the bytes over.
+public enum DWGHeader {
+    /// The version the bytes claim, or nil when they do not begin with one.
+    ///
+    /// - Parameter bytes: the first few bytes of the file; six is enough.
+    public static func version(of bytes: Data) -> String? {
+        // Six bytes is the whole signature; a file shorter than that cannot be a DWG.
+        guard bytes.count >= 6 else { return nil }
+        let signature = String(decoding: bytes.prefix(6), as: Unicode.ASCII.self)
+        guard signature.hasPrefix("AC") else { return nil }
+        let digits = signature.dropFirst(2)
+        // Four digits, so `ACME Corp` in a text file is not mistaken for a version, and within the
+        // range AutoCAD has actually used: `AC1006` (R10) through `AC1032` (R2018) and no further.
+        // Accepting anything above would let `AC9999` through, which is not a format that exists.
+        guard digits.count == 4, digits.allSatisfy({ $0.isNumber }) else { return nil }
+        guard let number = Int(digits), (1006...1032).contains(number) else { return nil }
+        return signature
+    }
+
+    /// Whether these bytes are a DWG at all.
+    public static func looksLikeDWG(_ bytes: Data) -> Bool {
+        version(of: bytes) != nil
+    }
+}
 public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
     public enum Reason: Equatable, Sendable {
         /// The extension is not one the app can show. The string is what the name had.

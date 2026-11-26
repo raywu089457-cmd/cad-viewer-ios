@@ -106,3 +106,47 @@ struct LoadFailureTests {
         #expect(a.reason == b.reason)
     }
 }
+
+/// The only format check the DWG path can have.
+///
+/// The bundled engine accepts any bytes and reports that it drew them, so a text file renamed to
+/// `.dwg` opens to a blank canvas presented as a drawing. Every DWG begins with `AC` and a real
+/// version number, which is cheap to confirm before handing the bytes over.
+@Suite("DWG version header")
+struct DWGHeaderTests {
+    private func bytes(_ text: String) -> Data { Data(text.utf8) }
+
+    @Test("The three formats in the samples are recognised")
+    func realVersions() {
+        #expect(DWGHeader.version(of: bytes("AC1015")) == "AC1015")
+        #expect(DWGHeader.version(of: bytes("AC1027")) == "AC1027")
+        #expect(DWGHeader.version(of: bytes("AC1032")) == "AC1032")
+    }
+
+    @Test("Prose is not a drawing")
+    func prose() {
+        #expect(!DWGHeader.looksLikeDWG(bytes("This is not a drawing")))
+    }
+
+    @Test("A word that starts with AC is not a version")
+    func looksLikeAC() {
+        #expect(!DWGHeader.looksLikeDWG(bytes("ACME Corporation")))
+    }
+
+    @Test("A version outside the range AutoCAD used is refused")
+    func outOfRange() {
+        #expect(!DWGHeader.looksLikeDWG(bytes("AC9999")))
+        #expect(!DWGHeader.looksLikeDWG(bytes("AC1000")))
+    }
+
+    @Test("Short and empty input is not a DWG")
+    func short() {
+        #expect(!DWGHeader.looksLikeDWG(Data()))
+        #expect(!DWGHeader.looksLikeDWG(bytes("AC1")))
+    }
+
+    @Test("Letters after AC are not a version")
+    func letters() {
+        #expect(!DWGHeader.looksLikeDWG(bytes("AC10AB")))
+    }
+}
