@@ -100,7 +100,7 @@ for (const match of readme.matchAll(/`([a-z][a-z0-9-]*\.(?:mjs|sh|bat))`/g)) {
 //    invites trust and cannot be checked — `158 個實體` sat in `ios/README.md` for a drawing
 //    converted into a gitignored directory that no fresh checkout has.
 const subReadmes = ['ios/README.md', 'ios/CADViewer/README.md', 'ios/DXFGeometry/README.md',
-  'ios/web/README.md', 'verification/dxf-geometry-harness/README.md']
+  'ios/web/README.md', 'verification/dxf-geometry-harness/README.md', 'shots/README.md']
   .filter(file => existsSync(join(repo, file)))
 check(subReadmes.length > 0, `found ${subReadmes.length} sub-README(s)`)
 
@@ -111,6 +111,13 @@ for (const file of subReadmes) {
   const countsTheUnreachable = /\d+\s*(該|個|entities?|實體)[^\n]{0,40}out\//.test(text)
   check(!countsTheUnreachable, `${file} does not count what only exists in a gitignored dir`)
 
+  // A file it names in backticks has to be there: this is how the screenshot index stays true
+  // after a picture is renamed.
+  const named = [...text.matchAll(/`([a-z0-9][a-z0-9._-]*\.(?:png|svg|json|html))`/g)].map(m => m[1])
+  for (const name of new Set(named)) {
+    const beside = join(repo, dirname(file), name)
+    check(existsSync(beside), `${file} names ${name}, and it is beside it`)
+  }
   // Every command it tells a reader to run has to exist.
   for (const match of text.matchAll(/^\s*\.\/([a-z][a-z0-9-]*\.(?:sh|bat))$/gm)) {
     const name = match[1]
