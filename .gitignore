@@ -64,3 +64,5 @@ shots/*.json
 verification/dxf-geometry-harness/e.txt
 shots/*.html
 verify.tmp.sh
+# Throwaway scripts written while investigating; never part of the tree.
+.*.cjs
