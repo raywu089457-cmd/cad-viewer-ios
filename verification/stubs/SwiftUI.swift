@@ -529,9 +529,21 @@ public struct List<Content: View>: View {
     public var body: Nothing { Nothing() }
 }
 
+/// A view with nothing in it, which is what a section without a header has.
+public struct EmptyView: View {
+    public init() {}
+    public var body: Nothing { Nothing() }
+}
+
 public struct Section<Content: View, Header: View>: View {
     public init(@ViewBuilder content: () -> Content, @ViewBuilder header: () -> Header) {}
     public init(_ title: String, @ViewBuilder content: () -> Content) where Header == Text {}
+    /// A section with no header, which is how a paragraph of explanation is placed in a list.
+    /// `Header` cannot be inferred from a call that never mentions it, so this form has to exist
+    /// separately and pin it.
+    public init(@ViewBuilder content: () -> Content) where Header == EmptyView {
+        _ = content
+    }
     public var body: Nothing { Nothing() }
 }
 
