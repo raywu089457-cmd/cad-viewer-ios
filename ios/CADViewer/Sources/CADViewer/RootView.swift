@@ -168,7 +168,7 @@ struct RootView: View {
                         Image(systemName: "network").foregroundStyle(.tint)
                     }
                     Label {
-                        Text("**PDF** opens in the system reader.")
+                        Text("**PDF** pages are read continuously, with fit-to-width or fit-to-page.")
                     } icon: {
                         Image(systemName: "doc.richtext").foregroundStyle(.tint)
                     }

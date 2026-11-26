@@ -193,6 +193,22 @@ const cases = [
     }
   },
   {
+    check: 'check-welcome-claims.mjs',
+    what: 'a welcome line describing an app this is not',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/RootView.swift')
+      const text = readFileSync(path, 'utf8')
+      const anchor = '**PDF** pages are read continuously'
+      assert(text, anchor, 'welcome-claims: the anchor line is gone')
+      // The sentence that was there: it described a viewer that hands PDFs to another app, while
+      // this one embeds PDFKit and draws its own continuous pages.
+      writeFileSync(
+        path,
+        text.replace(anchor, '**PDF** opens in the system reader\n                        //')
+      )
+    }
+  },
+  {
     check: 'check-root-toolbar.mjs',
     what: 'a root screen with no way to switch drawings without closing first',
     break: root => {
