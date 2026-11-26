@@ -411,6 +411,18 @@ if let scene = build("") {
 
 // MARK: - ACI
 
+section("Engine readiness")
+do {
+    // The one message a reader could act on, and it lived inside a timeout closure where nothing
+    // could test it. Two causes produce the same silence and call for different action.
+    let message = EngineReadiness.timeoutMessage
+    check(message.contains("Close the drawing"), "the timeout says what to try first")
+    check(message.contains("viewer itself"), "and names the other possibility")
+    check(message.count > 80, "it is more than a shrug", "(message.count) chars")
+    // A generous wait: a false failure on a large drawing is worse than a longer spinner.
+    check(EngineReadiness.patience >= .seconds(30), "the wait is generous")
+}
+
 section("ByBlock colour")
 do {
     // ByBlock means "the colour of the entity that inserted this block", not white. With no

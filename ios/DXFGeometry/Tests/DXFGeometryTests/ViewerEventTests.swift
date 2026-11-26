@@ -71,3 +71,27 @@ struct ViewerEventTests {
         #expect(ViewerEvent.ignored.errorMessage == nil)
     }
 }
+
+/// The message a reader sees after waiting for an engine that never answered.
+///
+/// It is worth pinning because it is the only failure in the DWG path that a reader can act on:
+/// everything else is the file or the bundle, and the action is obvious. This one is a silence,
+/// and two different causes produce it.
+@Suite("Engine readiness")
+struct EngineReadinessTests {
+    @Test("The timeout says what to try first")
+    func firstStep() {
+        #expect(EngineReadiness.timeoutMessage.contains("Close the drawing"))
+    }
+
+    @Test("And names the other possibility")
+    func secondCause() {
+        #expect(EngineReadiness.timeoutMessage.contains("viewer itself"))
+    }
+
+    @Test("The wait is long enough for a large drawing")
+    func patience() {
+        // A false failure on a big file is worse than a spinner that lasts longer than needed.
+        #expect(EngineReadiness.patience >= .seconds(30))
+    }
+}

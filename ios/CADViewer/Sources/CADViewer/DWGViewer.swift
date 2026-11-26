@@ -332,20 +332,14 @@ final class DWGViewerModel {
 
             Task { @MainActor in
                 // Never leave the user staring at a spinner if the engine stays silent.
-                try? await Task.sleep(for: .seconds(45))
+                try? await Task.sleep(for: EngineReadiness.patience)
                 // A newer load has taken over; this timeout belongs to a load that is gone.
                 guard self.loadGeneration.isCurrent(generation) else { return }
                 if let pending = self.readyContinuation {
                     self.readyContinuation = nil
                     pending.resume()
                     Self.log.error("viewer did not report ready")
-                    // The reader has waited 45 seconds for a spinner. "The engine did not start"
-                    // says what happened and nothing about what to do, and the two likely causes
-                    // — a viewer that never loaded, and a drawing too large to finish — call for
-                    // different action. Both are named rather than left to guesswork.
-                    self.fail(
-                        "The DWG engine did not report ready. Close the drawing and open it again; "
-                        + "if that does not help, the viewer itself may not have loaded.")
+                    self.fail(EngineReadiness.timeoutMessage)
                 }
             }
         }

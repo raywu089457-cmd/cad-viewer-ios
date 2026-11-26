@@ -245,3 +245,22 @@ public enum PDFOpenOutcome: Equatable, Sendable {
         }
     }
 }
+
+/// What the DWG viewer says when the engine never reports ready.
+///
+/// The message lived inside the timeout closure, where nothing could test it — and it was the one
+/// message a reader could act on and was not told how. Two causes produce the same silence, and
+/// they call for different action, so both are named.
+public enum EngineReadiness {
+    /// How long the page is given before the wait is treated as a failure.
+    ///
+    /// A DWG is tens of megabytes and the engine has to start before it can draw anything, so
+    /// this is generous on purpose: a false failure on a large drawing is worse than a spinner
+    /// that lasts a little longer than it needed to.
+    public static let patience: Duration = .seconds(45)
+
+    /// What to tell the reader when the wait ends without a word from the engine.
+    public static let timeoutMessage =
+        "The DWG engine did not report ready. Close the drawing and open it again; "
+        + "if that does not help, the viewer itself may not have loaded."
+}
