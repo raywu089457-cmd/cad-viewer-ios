@@ -81,7 +81,7 @@ if truncIndex != nil {
         let piece = String(decoding: whole.prefix(cut), as: Unicode.ASCII.self)
         guard let partial = try? DXF.read(text: piece, options: options) else {
             reported += 1
-            print("      \(cut) of \(data.count) bytes: reported")
+            print("      \(cut) of \(whole.count) bytes: reported")
             continue
         }
         let partScene = SceneBuilder().build(partial)
@@ -89,10 +89,10 @@ if truncIndex != nil {
             samplePoints: partScene.samplePoints, hasBounds: partScene.bounds != nil)
         if verdict == .drawable {
             drew += 1
-            print("      \(cut) of \(data.count) bytes: drew")
+            print("      \(cut) of \(whole.count) bytes: drew")
         } else {
             reported += 1
-            print("      \(cut) of \(data.count) bytes: reported")
+            print("      \(cut) of \(whole.count) bytes: reported")
         }
     }
     // Every cut lands in exactly one of the two, and a build that drew all ten would mean
