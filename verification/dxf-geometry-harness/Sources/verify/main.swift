@@ -479,6 +479,35 @@ check(
     "and reports the extension it found")
 
 
+section("A read failure says what to do")
+do {
+    let missing = NSError(domain: NSCocoaErrorDomain, code: 260)
+    check(
+        FileReadFailure.classify(missing) == .missing,
+        "a missing file is recognised by its code")
+    check(
+        FileReadFailure.classify(missing).message.contains("moved or deleted"),
+        "and the sentence says so rather than quoting the domain")
+
+    let denied = NSError(domain: NSCocoaErrorDomain, code: 257)
+    check(FileReadFailure.classify(denied) == .notPermitted, "a permission failure too")
+    check(
+        FileReadFailure.classify(denied).message.contains("Copy it into"),
+        "with something the reader can do about it")
+
+    // A parser keeps its own detail: that text names the actual problem.
+    let parse = LoadFailure(fileName: "a.dxf", reason: .unreadable("bad group code"))
+    check(parse.message == "bad group code", "a parser detail is passed through unchanged")
+
+    // And the four sentences are four different sentences.
+    let all = [
+        FileReadFailure.missing, FileReadFailure.notPermitted,
+        FileReadFailure.volumeUnavailable, .other("detail"),
+    ].map(\.message)
+    check(Set(all).count == 4, "the four read failures read differently")
+}
+
+
 section("Bounds")
 if let scene = build("""
     0

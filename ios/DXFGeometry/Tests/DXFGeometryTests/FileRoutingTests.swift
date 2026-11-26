@@ -169,4 +169,33 @@ struct DWGHeaderTests {
         #expect(DrawingKind(fileName: "圖面-2024.dxf").fileExtension == "dxf")
         #expect(DrawingKind(fileName: "план.dwg").canRender)
     }
+
+    @Test("A read failure is classified into something the reader can act on")
+    func readFailureClassification() {
+        // The Cocoa error description names a domain and a code. Shown to someone who tapped a
+        // file in the picker, that says a developer's thing went wrong.
+        let missing = NSError(domain: NSCocoaErrorDomain, code: 260)
+        #expect(FileReadFailure.classify(missing) == .missing)
+        #expect(FileReadFailure.classify(missing).message.contains("moved or deleted"))
+
+        let denied = NSError(domain: NSCocoaErrorDomain, code: 257)
+        #expect(FileReadFailure.classify(denied) == .notPermitted)
+        #expect(FileReadFailure.classify(denied).message.contains("Copy it into"))
+
+        // A domain this code does not model keeps the system's words: a detail naming the real
+        // problem beats a sentence saying something went wrong.
+        let other = NSError(domain: "SomeOtherDomain", code: 1)
+        if case .other = FileReadFailure.classify(other) {} else {
+            Issue.record("a foreign domain should stay .other")
+        }
+
+        // Through the failure, so the wiring is covered and not just the enum.
+        let failure = LoadFailure(fileName: "plan.dxf", reason: .cannotRead(.missing))
+        #expect(failure.message == FileReadFailure.missing.message)
+        #expect(!failure.message.contains("NSCocoaErrorDomain"))
+
+        // Four failures, four sentences.
+        let all = [FileReadFailure.missing, .notPermitted, .volumeUnavailable, .other("x")]
+        #expect(Set(all.map(.message)).count == 4)
+    }
 }

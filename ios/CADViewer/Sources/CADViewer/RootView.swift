@@ -106,8 +106,11 @@ struct RootView: View {
                 // Dismissing the picker arrives here as a failure. Reporting it as one would
                 // show an error for an action that did nothing wrong.
                 if FilePickOutcome.isCancellation(error) { return }
+                // The same classification as a read failure: a document picker that cannot
+                // reach a provider fails with the same family of Cocoa errors, and the reader
+                // gets the same sentence either way.
                 failure = LoadFailure(
-                    fileName: "", reason: .unreadable(error.localizedDescription))
+                    fileName: "", reason: .cannotRead(FileReadFailure.classify(error)))
             }
         }
         // Opening a file from Files, Mail or another app.

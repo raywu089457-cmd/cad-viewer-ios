@@ -59,10 +59,12 @@ enum DrawingLoader {
         do {
             data = try Data(contentsOf: url)
         } catch {
+            // A Cocoa error description is written for a developer. The reader tapped a file
+            // and wants to know what to do next, so the common cases get their own sentence.
             return .failure(
                 LoadFailure(
                     fileName: name,
-                    reason: .unreadable(error.localizedDescription)))
+                    reason: .cannotRead(FileReadFailure.classify(error))))
         }
         guard !data.isEmpty else {
             return .failure(LoadFailure(fileName: name, reason: .empty))

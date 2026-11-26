@@ -98,6 +98,11 @@ public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
         case binaryDXF
         /// The file parsed, but it holds nothing to draw.
         case noGeometry
+        /// The file could not be read for a reason the reader can act on: gone, unreadable,
+        /// outside the sandbox. Distinct from ``unreadable``, which passes a parser's own
+        /// detail through — a Cocoa error description is written for a developer, and the
+        /// reader is not one.
+        case cannotRead(FileReadFailure)
         /// The file has geometry, but all of it is on layers it marks as off or frozen.
         ///
         /// Distinct from ``noGeometry`` because the two need different sentences: one says the
@@ -125,6 +130,8 @@ public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
                 : ".\(ext) files cannot be shown here."
         case .unreadable(let detail):
             return detail
+        case let .cannotRead(failure):
+            return failure.message
         case .empty:
             return "The file is empty."
         case .binaryDXF:
@@ -169,5 +176,61 @@ public enum FilePickOutcome {
             return underlying.domain == NSCocoaErrorDomain && underlying.code == cancelledCode
         }
         return false
+    }
+}
+
+/// Why a file could not be read off disk, in the reader's terms rather than the system's.
+///
+/// `Data(contentsOf:)` fails with a Cocoa error whose description names a domain and a code.
+/// Shown to someone who tapped a file in the picker, that is noise: it says a developer's
+/// thing went wrong, not that the file they chose is gone. These are the four cases that
+/// actually happen, each with something to do about it.
+public enum FileReadFailure: Equatable, Sendable {
+    /// The file is not there — deleted, moved, or a stale reference from a previous session.
+    case missing
+    /// The file exists but this app may not read it: permissions, or a sandbox it never got.
+    case notPermitted
+    /// The volume is unreadable: an ejected drive, a disconnected share.
+    case volumeUnavailable
+    /// Anything else. The system's own words are kept, because a detail that names the real
+    /// problem is better than a sentence that says "something went wrong".
+    case other(String)
+
+    public var message: String {
+        switch self {
+        case .missing:
+            return "The file is no longer there. It may have been moved or deleted since you "
+                + "picked it."
+        case .notPermitted:
+            return "The app is not allowed to read this file. Copy it into the app's folder, "
+                + "or pick it again."
+        case .volumeUnavailable:
+            return "The place this file lives is not available right now. Reconnect the drive "
+                + "or download the file again."
+        case let .other(detail):
+            return detail
+        }
+    }
+
+    /// Classifies a read error. `NSCocoaError` codes are the only portable signal here, so
+    /// this works on both the simulator and a device without knowing which volume it is.
+    public static func classify(_ error: Error) -> FileReadFailure {
+        let nsError = error as NSError
+        guard nsError.domain == NSCocoaErrorDomain else {
+            return .other(nsError.localizedDescription)
+        }
+        // The constants are spelled out because the wasm SDK the harness builds against does
+        // not export `NSFileReadVolumeUnavailableError`, and a library that cannot be compiled
+        // everywhere it is used is not portable. The values are Cocoa's and do not change.
+        switch nsError.code {
+        case 260, 4:  // NSFileReadNoSuchFileError, NSFileNoSuchFileError
+            return .missing
+        case 257, 513:  // NSFileReadNoPermissionError, NSFileWriteNoPermissionError
+            return .notPermitted
+        case 259, 256:  // NSFileReadVolumeUnavailableError, NSFileReadUnknownError
+            return .volumeUnavailable
+        default:
+            return .other(nsError.localizedDescription)
+        }
     }
 }
