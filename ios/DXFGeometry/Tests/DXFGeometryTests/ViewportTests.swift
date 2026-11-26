@@ -101,4 +101,30 @@ struct ViewportTests {
         #expect(Viewport.quantile(sorted, 2) == 100)
         #expect(Viewport.quantile([], 0.5) == 0)
     }
+
+    @Test("One bad coordinate does not erase the drawing")
+    func nonFinitePoint() {
+        // `min(infinity, .nan)` is `.nan` in Swift, so a single non-finite coordinate would
+        // make the extents NaN and the viewport divide by it: the drawing disappears, and
+        // nothing says why. A DXF can carry one.
+        var accumulator = Bounds.Accumulator()
+        accumulator.add([Point(0, 0), Point(10, 10)])
+        accumulator.add(Point(.nan, 5))
+        accumulator.add(Point(5, .infinity))
+
+        let bounds = accumulator.bounds
+        #expect(bounds != nil)
+        #expect(bounds?.minX == 0)
+        #expect(bounds?.maxX == 10)
+        #expect(accumulator.skipped == 2)
+    }
+
+    @Test("A drawing of only bad coordinates has no extents, rather than a NaN box")
+    func onlyNonFinite() {
+        var accumulator = Bounds.Accumulator()
+        accumulator.add(Point(.nan, .nan))
+        // Nothing finite was added, so there is nothing to frame — which the caller can say.
+        #expect(accumulator.bounds == nil)
+        #expect(accumulator.skipped == 1)
+    }
 }

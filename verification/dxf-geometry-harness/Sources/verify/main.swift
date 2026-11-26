@@ -1259,6 +1259,39 @@ do {
     check(pinched.scale.isFinite && pinched.scale > 0, "and stays sane")
 }
 
+section("Non-finite coordinates")
+do {
+    // `min(infinity, .nan)` is `.nan` in Swift, so one bad coordinate used to make the extents
+    // NaN, the viewport divide by it, and the drawing vanish with nothing to say why. A DXF can
+    // carry one: a value written as `1e999`, or a pair that arrived damaged.
+    var accumulator = Bounds.Accumulator()
+    accumulator.add([Point(0, 0), Point(10, 10)])
+    accumulator.add(Point(.nan, 5))
+    accumulator.add(Point(5, .infinity))
+
+    let bounds = accumulator.bounds
+    check(bounds != nil, "a finite part of the drawing still has extents")
+    check(bounds?.minX == 0 && bounds?.maxX == 10, "and they are the finite ones")
+    check(accumulator.skipped == 2, "the two bad points are counted", "(accumulator.skipped)")
+    // The extents themselves have to be numbers. Without the guard, `bounds` still exists — it is
+    // a box whose corners are NaN — so `bounds != nil` alone would pass on a corrupted drawing.
+    check(
+        bounds.map { $0.minX.isFinite && $0.maxX.isFinite && $0.minY.isFinite && $0.maxY.isFinite } == true,
+        "and the extents are finite numbers",
+        "(String(describing: bounds))")
+
+    var onlyBad = Bounds.Accumulator()
+    onlyBad.add(Point(.nan, .nan))
+    check(onlyBad.bounds == nil, "a drawing of only bad coordinates has no extents")
+
+    // And the viewport, which is what a viewer frames: it must not divide by a NaN extent.
+    let viewport = Viewport.fit(points: [Point(0, 0), Point(10, 10)], fallback: nil)
+    check(viewport != nil, "a finite drawing still frames")
+    if let viewport {
+        check(viewport.bounds.width.isFinite, "with a finite width", "(viewport.bounds.width)")
+    }
+}
+
 section("Damaged input")
 do {
     // Files arrive damaged: a truncated download, a copy that stopped half way. None of these

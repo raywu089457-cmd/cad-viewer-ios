@@ -43,10 +43,23 @@ public struct Bounds: Equatable, Sendable {
         private var minY = Double.infinity
         private var maxX = -Double.infinity
         private var maxY = -Double.infinity
+        /// Points that were not finite, and so could not be accumulated. Exposed so a caller can
+        /// report a drawing that was partly unreadable rather than silently cropping it.
+        public private(set) var skipped = 0
 
         public init() {}
 
         public mutating func add(_ point: Point) {
+            // A coordinate that is not finite would poison the whole box: `min(infinity, .nan)` is
+            // `.nan` in Swift, so one bad point in a file makes the extents NaN, the viewport
+            // divide by it, and the drawing vanish — with nothing to say why. A DXF can carry one:
+            // a value written as `1e999`, or a group code pair that arrived damaged.
+            guard point.x.isFinite, point.y.isFinite else {
+                // Counted rather than dropped silently, so a caller can say the drawing was not
+                // entirely readable.
+                skipped += 1
+                return
+            }
             minX = min(minX, point.x)
             maxX = max(maxX, point.x)
             minY = min(minY, point.y)
