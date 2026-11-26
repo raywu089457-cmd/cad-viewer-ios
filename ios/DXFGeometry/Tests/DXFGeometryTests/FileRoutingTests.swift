@@ -149,4 +149,25 @@ struct DWGHeaderTests {
     func letters() {
         #expect(!DWGHeader.looksLikeDWG(bytes("AC10AB")))
     }
+
+    @Test("A name with stray whitespace still has an engine")
+    func strayWhitespace() {
+        // Trailing whitespace survives download, cloud sync and copy-paste. Without a trim,
+        // `pathExtension` answers "dxf " and the app refuses an ordinary file.
+        #expect(DrawingKind(fileName: "plan.dxf ").canRender)
+        #expect(DrawingKind(fileName: "  plan.dxf").canRender)
+        #expect(DrawingKind(fileName: "plan.dxf
+").canRender)
+        #expect(DrawingKind(fileName: "plan.dwg	").canRender)
+
+        // Trimming must not promote a type the app cannot draw.
+        #expect(!DrawingKind(fileName: "notes.txt ").canRender)
+    }
+
+    @Test("A non-ASCII name routes on its extension, not its stem")
+    func nonASCIIStem() {
+        #expect(DrawingKind(fileName: "圖面-2024.dxf").canRender)
+        #expect(DrawingKind(fileName: "圖面-2024.dxf").fileExtension == "dxf")
+        #expect(DrawingKind(fileName: "план.dwg").canRender)
+    }
 }

@@ -19,7 +19,14 @@ public enum DrawingKind: Equatable, Sendable {
     public init(fileName: String) {
         // `pathExtension` handles "floor.plan.v2.dxf" and a name with no dot, and lowercased
         // because iOS hands over whatever the file was called.
-        let ext = (fileName as NSString).pathExtension.lowercased()
+        //
+        // Whitespace is trimmed first. A file that arrives by download, cloud sync or a
+        // paste often keeps a trailing space — `report.dxf ` — and without the trim
+        // `pathExtension` answers `"dxf "`, which is no engine's extension. The file is a
+        // perfectly ordinary DXF and the app refused it, which looks like a broken app
+        // rather than a bad name.
+        let trimmed = fileName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let ext = (trimmed as NSString).pathExtension.lowercased()
         switch ext {
         case "dxf": self = .dxf
         case "dwg": self = .dwg

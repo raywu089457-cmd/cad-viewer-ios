@@ -458,6 +458,27 @@ check(off.contains("Hidden"), "the switched-off message names the layer", "\(off
 check(off.contains("Turn the layers on"), "and says what to do")
 
 
+section("Names that are still the file they name")
+// A trailing space survives download, cloud sync and copy-paste, and without a trim
+// `pathExtension` answers "dxf " — an extension no engine has. The file is ordinary and the
+// app refuses it, which reads as a broken app rather than an odd name.
+check(DrawingKind(fileName: "plan.dxf ").canRender, "a trailing space does not hide the engine")
+check(DrawingKind(fileName: "  plan.dxf").canRender, "nor a leading one")
+check(DrawingKind(fileName: "plan.dxf\n").canRender, "nor a trailing newline")
+check(
+    DrawingKind(fileName: "plan.dwg\t").canRender,
+    "the same for DWG")
+// Trimming must not turn an unknown type into a known one.
+check(
+    !DrawingKind(fileName: "notes.txt ").canRender,
+    "a text file with a trailing space is still a text file")
+// Non-ASCII stems are ordinary here; only the extension decides.
+check(DrawingKind(fileName: "圖面-2024.dxf").canRender, "a Chinese stem still routes on the extension")
+check(
+    DrawingKind(fileName: "圖面-2024.dxf").fileExtension == "dxf",
+    "and reports the extension it found")
+
+
 section("Bounds")
 if let scene = build("""
     0
