@@ -39,9 +39,22 @@ for (const file of [...listed].sort()) {
 for (const file of [...run].sort()) {
   check(listed.has(file), `CI runs ${file}, and the README lists it`)
 }
+// Generators run when their input changes, not on every push. Listed here so the distinction is
+// visible rather than implied by an absence.
+const generators = new Set(['make-pdf.mjs'])
 for (const file of onDisk.sort()) {
-  // A file that is neither run nor documented will drift: either add it to one or remove it.
-  check(listed.has(file) || run.has(file), `${file} is either run or documented`)
+  // A check that only runs when someone remembers to type its name is a check that stops
+  // running. `check-fixture-fresh.mjs` sat on disk long after it was superseded, and
+  // `check-workflow.mjs` was never wired in at all — the one that catches a workflow with no
+  // jobs. Two of them, in opposite directions, both invisible.
+  // Generators run when their input changes, not on every push. The exclusion is named rather
+  // than implied by an absence.
+  if (generators.has(file)) {
+    check(listed.has(file), `${file} is a generator, and the README says so`)
+    continue
+  }
+  check(run.has(file), `${file} runs on CI, not only by hand`)
+  check(listed.has(file), `${file} is listed in the README`)
 }
 
 // A check that needs an argument cannot be run by hand the way the README implies. Either the
