@@ -1348,6 +1348,74 @@ do {
         LoadReadiness.verdict(samplePoints: [], hasBounds: true) == .empty,
         "extents without points are not drawable"
     )
+
+    // A real drawing cut off part way through, which is what an interrupted download or a copy
+    // that was still being written produces. Each truncation has to either parse into something
+    // drawable or be reported — never crash, and never claim a blank canvas as a success.
+    //
+    // The fixtures above are synthetic and stop in convenient places. These stop at arbitrary
+    // bytes, which is where a parser is most likely to index past the end of a group.
+    let whole = """
+    0
+    SECTION
+    2
+    ENTITIES
+    0
+    LINE
+    8
+    0
+    10
+    0.0
+    20
+    0.0
+    11
+    10.0
+    21
+    5.0
+    0
+    CIRCLE
+    8
+    0
+    10
+    20.0
+    20
+    20.0
+    40
+    3.0
+    0
+    ENDSEC
+    0
+    EOF
+    """
+    var survived = 0
+    var reported = 0
+    // Every tenth of the file, so the cut lands inside group codes, inside values and between
+    // them rather than only at the boundaries.
+    for fraction in stride(from: 0.1, through: 1.0, by: 0.1) {
+        let cut = Int(Double(whole.count) * fraction)
+        let piece = String(whole.prefix(cut))
+        // `DXF.read` throws on damage and returns nil; a crash would end the run here.
+        guard let drawing = try? DXF.read(text: piece) else {
+            reported += 1
+            continue
+        }
+        let scene = SceneBuilder().build(drawing)
+        let verdict = LoadReadiness.verdict(
+            samplePoints: scene.samplePoints, hasBounds: scene.bounds != nil)
+        if verdict == .drawable {
+            survived += 1
+        } else {
+            reported += 1
+        }
+    }
+    check(
+        survived + reported == 10,
+        "every truncation either drew or was reported, none crashed",
+        "survived \(survived), reported \(reported)"
+    )
+    // A file cut to a tenth of its length still has some entities; what matters is that the two
+    // outcomes together account for all ten cuts.
+    check(reported > 0, "a truncated drawing is not silently accepted", "reported \(reported)")
 }
 
 // MARK: - Result
