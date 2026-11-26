@@ -313,6 +313,20 @@ jobs:
         working-directory: ios/DXFGeometry
         run: swift test
 
+      # The package the app is built from. Its manifest names a GitHub dependency and a local
+      # path, and nothing resolved it: a version that does not exist, or a product name that is
+      # not exported, would only surface when someone with a Mac builds the app.
+      #
+      # Resolution is all this can do — the target is iOS, so it cannot compile here — but a
+      # manifest that resolves is a manifest whose dependency graph exists.
+      - name: Resolve the app package
+        working-directory: ios/CADViewer
+        run: swift package resolve
+
+      # Its own checkout of the same dependency, resolved just now.
+      - name: Patch the app package dependency too
+        run: ./verification/patch-swiftdxf-for-linux.sh
+
       - name: Resolve the harness
         working-directory: verification/dxf-geometry-harness
         run: swift package resolve
