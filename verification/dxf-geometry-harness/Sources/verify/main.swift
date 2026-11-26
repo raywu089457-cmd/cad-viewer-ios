@@ -103,6 +103,9 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
 }
 
 func hatchFixtureText() -> String? {
+    let mounted = URL(fileURLWithPath: "/host/verification/fixtures/hatch.dxf")
+    if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
+
     var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     for _ in 0..<5 {
         let candidate = directory
@@ -123,6 +126,9 @@ func hatchFixtureText() -> String? {
 /// dependency's own test folder — a path that exists on the machine this was written on and
 /// nowhere else, so the check skipped on CI from the day it was added.
 func attributeFixtureText() -> String? {
+    let mounted = URL(fileURLWithPath: "/host/verification/fixtures/attributes.dxf")
+    if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
+
     var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     for _ in 0..<5 {
         let candidate = directory
@@ -146,6 +152,12 @@ func attributeFixtureText() -> String? {
 ///
 /// Walks up from the working directory until it finds one.
 func sample(_ name: String) -> Data? {
+    // A wasm build can only reach what the runner mounted, which appears under /host. Checked
+    // first because the walk below finds nothing there — the guest's working directory is not the
+    // host's.
+    let mounted = URL(fileURLWithPath: "/host/samples/\(name)")
+    if let data = try? Data(contentsOf: mounted) { return data }
+
     var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     for _ in 0..<5 {
         let candidate = directory.appendingPathComponent("samples").appendingPathComponent(name)

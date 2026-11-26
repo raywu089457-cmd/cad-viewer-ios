@@ -31,8 +31,13 @@ local `SwiftDXF` checkout at the repository root, then:
 
 ```bash
 ./build-wasm.bat
-node runwasm.mjs verify.wasm
+node runwasm.mjs verify.wasm --preopen ../..
 ```
+
+`--preopen` mounts the repository into the sandbox, which is the only way a wasm module can open a
+file. Without it every check that reads a real drawing — the samples, the attribute fixture, the
+hatch fixture — skips, and a skip reads as a pass: four of them did exactly that until the paths and
+the mount were fixed.
 
 One caveat it papers over: SwiftDXF's `CodePage` guards its CoreFoundation path with
 `canImport(CoreFoundation)`, which is true on wasm but lacks `CFStringEncoding`. `mkfiles.js`
