@@ -104,9 +104,5 @@
 			</dict>
 		</dict>
 	</array>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>cadviewer</string>
-	</array>
 </dict>
 </plist>

@@ -92,7 +92,29 @@ check(/CFBundleDocumentTypes/.test(plist), 'the plist declares the document type
 check(/LSSupportsOpeningDocumentsInPlace/.test(plist), 'and supports opening files in place')
 check(/UISupportsDocumentBrowser|UIFileSharingEnabled/.test(plist), 'and shows them in Files')
 
-// 6. The bundle identifier the spec writes has to be one a device will take.
+// 6. A declared query scheme has to be one the app actually asks about.
+//
+// `LSApplicationQueriesSchemes` existed with `cadviewer` in it and nothing called `canOpenURL`.
+// A `WKURLSchemeHandler` does not need it — it registers a handler rather than asking the system
+// whether some other app can open a URL — so the declaration told a reader the app probes for
+// something it never probes for.
+const appSources = readdirSync(join(ios, 'CADViewer', 'Sources', 'CADViewer'))
+  .filter(file => file.endsWith('.swift'))
+  .map(file => readFileSync(join(ios, 'CADViewer', 'Sources', 'CADViewer', file), 'utf8'))
+  .join('\n')
+const queries = plist.match(/<key>LSApplicationQueriesSchemes<\/key>\s*<array>([\s\S]*?)<\/array>/)
+if (queries) {
+  const declared = [...queries[1].matchAll(/<string>([^<]+)<\/string>/g)].map(m => m[1])
+  check(declared.length > 0, `the plist declares ${declared.length} query scheme(s)`)
+  check(
+    /canOpenURL/.test(appSources),
+    'and the app asks the system about a URL, which is what that list is for'
+  )
+} else {
+  console.log('      no query schemes declared, which is right for a scheme handler')
+}
+
+// 7. The bundle identifier the spec writes has to be one a device will take.
 const bundleId = spec.match(/PRODUCT_BUNDLE_IDENTIFIER: (\S+)/)?.[1]
 check(bundleId !== undefined, `the app has a bundle identifier (${bundleId})`)
 check(
