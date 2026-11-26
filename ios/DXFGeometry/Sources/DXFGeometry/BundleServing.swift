@@ -11,8 +11,13 @@ public enum BundleServing {
     public static let drawingPath = "/__dwg__"
 
     /// Whether a request is for the drawing bytes rather than a bundled file.
+    ///
+    /// Compared exactly, not by suffix. `hasSuffix` answered yes for `/evil/__dwg__` and
+    /// `/a/b/__dwg__`, which are paths the page never asks for: if one ever arrives it is a bug
+    /// or a probe, and answering it with the drawing bytes hides that. The page fetches
+    /// `./__dwg__` from its own root, so `/__dwg__` is the only path meant to reach this.
     public static func isDrawingRequest(path: String) -> Bool {
-        path.hasSuffix(drawingPath)
+        path == drawingPath
     }
 
     /// The bundle-relative file a request asks for.

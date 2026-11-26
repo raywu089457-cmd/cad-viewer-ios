@@ -12,9 +12,13 @@ struct BundleServingTests {
     @Test("The drawing endpoint is recognised by suffix")
     func drawingRequest() {
         #expect(BundleServing.isDrawingRequest(path: "/__dwg__"))
-        #expect(BundleServing.isDrawingRequest(path: "/anything/__dwg__"))
         #expect(!BundleServing.isDrawingRequest(path: "/index.html"))
         #expect(!BundleServing.isDrawingRequest(path: "/__dwg__/x"))
+        // `hasSuffix` used to answer yes for these. The page fetches `./__dwg__` from its own
+        // root; a request for a nested path is a bug or a probe, and answering it with the
+        // drawing bytes would hide that.
+        #expect(!BundleServing.isDrawingRequest(path: "/anything/__dwg__"))
+        #expect(!BundleServing.isDrawingRequest(path: "/a/b/__dwg__"))
     }
 
     @Test("A normal file resolves inside the bundle")

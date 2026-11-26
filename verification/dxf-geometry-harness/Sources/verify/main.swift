@@ -805,7 +805,10 @@ do {
 
 section("Bundle serving: the drawing endpoint")
 check(BundleServing.isDrawingRequest(path: "/__dwg__"), "exact path")
-check(BundleServing.isDrawingRequest(path: "/anything/__dwg__"), "suffix path")
+// These two lines used to disagree with each other: one accepted `/anything/__dwg__` because
+// it ends with the drawing path, the other rejected `/__dwg__/x` because ending is not enough
+// in the other direction. Only the exact path is the drawing.
+check(!BundleServing.isDrawingRequest(path: "/anything/__dwg__"), "a nested path is not")
 check(!BundleServing.isDrawingRequest(path: "/index.html"), "a file is not the drawing")
 check(!BundleServing.isDrawingRequest(path: "/__dwg__/x"), "a suffix is not enough")
 
