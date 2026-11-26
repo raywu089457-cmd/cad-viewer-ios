@@ -65,6 +65,11 @@ jobs:
       - name: The XcodeGen spec matches the tree
         run: node verification/check-project-spec.mjs
 
+      # With only "Close" in the toolbar, switching drawings was: close, land on the welcome
+      # screen, tap Open, choose a file. CAD work is done across a set of sheets.
+      - name: The root screen offers closing and replacing
+        run: node verification/check-root-toolbar.mjs
+
       - name: The three format lists agree
         run: node verification/check-format-consistency.mjs
 

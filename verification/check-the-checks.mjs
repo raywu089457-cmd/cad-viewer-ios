@@ -193,6 +193,17 @@ const cases = [
     }
   },
   {
+    check: 'check-root-toolbar.mjs',
+    what: 'a root screen with no way to switch drawings without closing first',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/RootView.swift')
+      const text = readFileSync(path, 'utf8')
+      const anchor = 'Button("Open another", systemImage: "folder")'
+      assert(text, anchor, 'root-toolbar: the anchor button is gone')
+      writeFileSync(path, text.replace(anchor, 'Button("X", systemImage: "folder")'))
+    }
+  },
+  {
     check: 'check-readme.mjs',
     what: 'a README claim the tree no longer supports',
     break: root => {

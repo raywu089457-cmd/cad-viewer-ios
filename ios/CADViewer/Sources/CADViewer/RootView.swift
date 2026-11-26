@@ -84,6 +84,13 @@ struct RootView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Close", systemImage: "xmark") { reset() }
                     }
+                    // Reading a set of drawings means switching between them, and with only
+                    // "Close" that was two taps and a trip through the welcome screen every
+                    // time. The picker replaces what is open exactly as picking again from the
+                    // welcome screen would.
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Open another", systemImage: "folder") { isPickingFile = true }
+                    }
                 }
             }
         }
