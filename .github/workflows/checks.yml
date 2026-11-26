@@ -41,6 +41,12 @@ jobs:
       - name: Verify the tree matches its manifests
         run: node .github/verify-layout.mjs
 
+      # The README is what a visitor reads, and it said the app layer could only be syntax-checked
+      # for several rounds after CI had started type-checking it. Only the checkable claims are
+      # checked here; prose about why the code looks like this is not one.
+      - name: The README matches the tree
+        run: node verification/check-readme.mjs
+
       # Which scripts are checks, which are records, and whether the README agrees. Eleven
       # historical scripts used to sit beside the checks, all exiting non-zero.
       - name: Checks match their inventory

@@ -193,6 +193,18 @@ const cases = [
     }
   },
   {
+    check: 'check-readme.mjs',
+    what: 'a README claim the tree no longer supports',
+    break: root => {
+      const path = join(root, 'README.md')
+      const text = readFileSync(path, 'utf8')
+      assert(text, '**仍然未驗證**', 'readme: the anchor section is gone')
+      // The sentence that was wrong for several rounds: the README said the app layer could only
+      // be syntax-checked while CI was type-checking it.
+      writeFileSync(path, text.replace('**仍然未驗證**', '**仍然未驗證，而且證實做不到**'))
+    }
+  },
+  {
     check: 'check-inventory.mjs',
     what: 'a check that the README does not list',
     break: root => {

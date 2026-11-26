@@ -28,6 +28,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-licences.mjs` | a dependency or bundled asset that no notice accounts for, or a licence file not in the bundle |
 | `check-dwg-assets.mjs` | a worker or the wasm engine missing from the bundle, or not really a wasm module |
 | `check-dwg-controls.mjs` | a DWG page entry point Swift calls that the page never defines |
+| `check-readme.mjs` | a claim in the top-level README that the tree no longer supports — a dead link, a wrong job count, a type check it says is impossible |
 | `check-inventory.mjs` | this list drifting from what is on disk, or a bake-off script creeping into CI |
 | `make-pdf.mjs` | regenerates the PDF fixtures, so a change to either is reviewable in a diff |
 | `parse-check.sh` | a Swift syntax error, on a machine with no Apple SDK |

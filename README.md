@@ -64,18 +64,26 @@ MIME 給對（`application/wasm`、`text/javascript`），wasm 才能串流編�
 - harness：覆蓋圖元攤平、ACI 色票、取景、縮放/平移、路由、bundle 路徑逃逸、MIME、
   批次繪製、尺寸文字、hatch 實心與圖案、區塊屬性（項數以 harness 自己的輸出為準）
 - 座標與檔案交叉驗證，用與 Swift 端零共用的讀取器
-- DWG 網頁端在真實瀏覽器中載入與重開
-- 佈局、workflow 結構、API 參數標籤、主執行緒 I/O、retain cycle
+- DWG 網頁端在真實瀏覽器中載入與重開；三個 DWG 格式各開一次，外加回全圖
+- 真實圖紙切成十段，每一段不是畫出來就是被回報
+- 佈局、workflow 結構、API 參數標籤、主執行緒 I/O、retain cycle、actor 隔離
+- 每個檢查都曾在它對應的缺陷重新出現時報錯（`check-the-checks.mjs`：複製一棵樹、改壞一處、要求非零退出）
+- `project.yml` 與 `Info.plist`：路徑不存在、target 宣告兩次、開檔需要的 key
+- 授權：每個依赖與每個打進 bundle 的資產都有對應聲明
 
-**仍然未驗證，而且證實做不到**：
+型別檢查是靠 `verification/stubs/` 的**平台 stub**：把 app 用到的 SwiftUI / WebKit /
+PDFKit 介面宣告出來，就可以用真正的 `swiftc -typecheck` 檢查 app 自己的檔案。它抓到過
+5 個只靠 `-parse` 看不到的真缺陷，細節見 [verification/stubs/README.md](verification/stubs/README.md)。
 
-- SwiftUI / WebKit / PDFKit 的**型別檢查**，以及手勢手感、真機上的 scheme handler
+**仍然未驗證**：
 
-原因是這個帳號**沒有 macOS runner**：即使 repo 已公開、Actions 已啟用，`macos-14` 的
-job 仍在一秒內被取消且沒有指派 runner。我用一個探測 workflow 直接確認過。
+- 手勢手感、真機上的 scheme handler、以及 UI 實際長什麼樣
+- stub 的 `body` 從不執行，所以型別檢查證明能編譯，不證明畫面正確
+- 沒有 macOS runner：repo 已公開、Actions 已啟用，`macos-14` 的 job 仍在一秒內被取消
+  且沒有指派 runner。我用一個探測 workflow 直接確認過。
 
-所以那一層只做到語法（`swiftc -parse`）與參數標籤（`check-api-usage.mjs`）。
-凡是不需要 Apple SDK 能驗的，都驗了；剩下的寫在這裡，沒有假裝覆蓋。
+所以「能不能在真機上跑起來」沒人驗過。凡是不需要 Apple SDK 能驗的，都驗了；
+剩下的寫在這裡，沒有假裝覆蓋。
 
 ## 授權
 
