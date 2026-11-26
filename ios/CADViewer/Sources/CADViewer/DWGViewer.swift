@@ -14,6 +14,12 @@ struct DWGViewer: View {
 
     @State private var model = DWGViewerModel()
     @State private var loadError: String?
+    /// Whether the details sheet is open.
+    ///
+    /// DXF has had one since it was written; the other two had nothing, so a reader could not
+    /// find out how big the file is or how long it took. Those are the numbers that make a slow
+    /// drawing explainable rather than mysterious.
+    @State private var showsDetails = false
 
     var body: some View {
         ZStack {
@@ -49,9 +55,17 @@ struct DWGViewer: View {
                     } label: {
                         Label("Fit drawing", systemImage: "arrow.up.left.and.arrow.down.right")
                     }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showsDetails = true
+                        } label: {
+                            Label("Details", systemImage: "info.circle")
+                        }
+                    }
                 }
             }
         }
+        .sheet(isPresented: $showsDetails) { detailsSheet }
         .task {
             // Reading the file and creating the web view both touch UIKit-adjacent state, so
             // they run on the main actor.
@@ -65,6 +79,56 @@ struct DWGViewer: View {
             // out of memory after a few files.
             model.tearDown()
         }
+    }
+
+    /// What the reader can find out about the file that is open.
+    ///
+    /// The same four facts DXF shows, minus the geometry counts: the page does not report how
+    /// many entities it drew, only how long it took. Saying "entities: unknown" would be worse
+    /// than leaving the row out.
+    private var detailsSheet: some View {
+        NavigationStack {
+            List {
+                Section("Drawing") {
+                    LabeledContent("File", value: fileName)
+                    LabeledContent("Format", value: "DWG")
+                    LabeledContent("Size", value: byteCountText)
+                }
+                Section("Engine") {
+                    LabeledContent("First frame", value: renderTimeText)
+                    LabeledContent("LibreDWG", value: "WebAssembly, bundled")
+                }
+            }
+            .navigationTitle("Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showsDetails = false }
+                }
+            }
+        }
+    }
+
+    /// The file's size, read from the filesystem rather than from the page.
+    ///
+    /// The page does report it with `loading`, but only as a diagnostic it logs; nothing carries
+    /// it back through `ViewerEvent`. `FileManager` attributes rather than `URL.resourceValues`
+    /// because the key set in the latter differs between Foundation builds, and this only needs
+    /// the size.
+    private var byteCountText: String {
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+            let bytes = attributes[.size] as? Int
+        else { return "unknown" }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+
+    /// How long the page took to draw its first frame.
+    private var renderTimeText: String {
+        guard let ms = model.renderedMilliseconds else { return "still drawing" }
+        return ms < 1000 ? "\(ms) ms" : String(format: "%.1f s", Double(ms) / 1000)
     }
 }
 
@@ -93,6 +157,12 @@ final class DWGViewerModel {
     /// Tracks which load is live, so a timeout from an earlier one cannot touch a later
     /// one. The rule is in , which is unit-tested.
     @ObservationIgnored private var loadGeneration = LoadGeneration()
+    /// How long the page took to draw the first frame, as it reported it.
+    ///
+    /// The page sends this with `rendered` and nothing used it. A DWG is the slowest of the three
+    /// formats — a ten-megabyte engine has to start — and the reader had no way to see whether a
+    /// drawing took a second or ten, or to tell a slow file from a fast one.
+    var renderedMilliseconds: Int?
     @ObservationIgnored private var errorHandler: ((String) -> Void)?
 
     private static let log = Logger(subsystem: "CADViewer", category: "DWGViewer")
@@ -313,6 +383,8 @@ final class DWGViewerModel {
     fileprivate func apply(_ event: ViewerEvent) {
         if let text = event.statusText { statusText = text }
         if event.engineIsWarm { didBecomeReady = true }
+        // The page reports how long the first frame took; nothing kept it before.
+        if case .rendered(let milliseconds) = event { renderedMilliseconds = milliseconds }
         if let message = event.errorMessage {
             Self.log.error("viewer error: \(message, privacy: .public)")
             fail(message)

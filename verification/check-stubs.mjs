@@ -179,7 +179,7 @@ const builtins = new Set([
   'Equatable', 'Hashable', 'Sendable', 'Codable', 'CaseIterable', 'Comparable', 'Identifiable',
   'CustomStringConvertible', 'RawRepresentable', 'OptionSet', 'Actor', 'MainActor',
   // Foundation errors and SwiftDXF types reached through DXFGeometry.
-  'URLError', 'DXF',
+  'URLError', 'DXF', 'ByteCountFormatter', 'Int64', 'Int32', 'UInt8',
   // Foundation and SwiftUI members the stubs re-export rather than declare.
   'Binding', 'ForEach', 'Date', 'FileManager', 'NSLock', 'HTTPURLResponse', 'Bundle', 'BundleServing',
   'URLRequest', 'URLResponse', 'URLComponents', 'URLQueryItem', 'NSError', 'DispatchQueue',

@@ -14,6 +14,7 @@ struct PDFViewer: View {
     var fileName: String
 
     @State private var model = PDFViewerModel()
+    @State private var showsDetails = false
 
     var body: some View {
         ZStack {
@@ -48,9 +49,62 @@ struct PDFViewer: View {
                         )
                     }
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showsDetails = true
+                    } label: {
+                        Label("Details", systemImage: "info.circle")
+                    }
+                }
             }
         }
+        .sheet(isPresented: $showsDetails) { detailsSheet }
         .task { await model.open(url: url) }
+    }
+
+    /// What the reader can find out about the PDF that is open.
+    ///
+    /// The page count is the one number a PDF gets that the other formats do not, and it is what
+    /// tells a reader whether the sheet they are looking at is the whole drawing or the first of
+    /// six.
+    private var detailsSheet: some View {
+        NavigationStack {
+            List {
+                Section("Document") {
+                    LabeledContent("File", value: fileName)
+                    LabeledContent("Format", value: "PDF")
+                    LabeledContent("Size", value: byteCountText)
+                    LabeledContent("Pages", value: pageCountText)
+                }
+                Section("Reader") {
+                    LabeledContent("Mode", value: model.autoScales ? "Fit whole page" : "Fit width")
+                    LabeledContent("Engine", value: "PDFKit")
+                }
+            }
+            .navigationTitle("Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { showsDetails = false }
+                }
+            }
+        }
+    }
+
+    private var byteCountText: String {
+        guard
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+            let bytes = attributes[.size] as? Int
+        else { return "unknown" }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .file
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+
+    private var pageCountText: String {
+        guard let document = model.document else { return "still opening" }
+        let count = document.pageCount
+        return count == 1 ? "1 page" : "\(count) pages"
     }
 }
 

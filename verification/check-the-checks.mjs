@@ -193,6 +193,17 @@ const cases = [
     }
   },
   {
+    check: 'check-details-parity.mjs',
+    what: 'a viewer with no way to describe the file it has open',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/DWGViewer.swift')
+      const text = readFileSync(path, 'utf8')
+      const anchorText = 'private var detailsSheet'
+      assert(text, anchorText, 'details-parity: the anchor sheet is gone')
+      writeFileSync(path, text.replace(anchorText, 'private var removedSheet'))
+    }
+  },
+  {
     check: 'check-reset-completeness.mjs',
     what: 'closing a drawing while leaving the load flag set',
     break: root => {
