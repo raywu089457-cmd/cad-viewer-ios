@@ -223,9 +223,24 @@ const painted = shot === null ? { count: 0, total: 0 } : await page.evaluate(asy
   return { count, total: copy.width * copy.height }
 }, shot.toString('base64'))
 console.log('canvas      :', painted.count + ' lit pixel(s) of ' + painted.total)
-// A real drawing lights thousands of the canvas; an empty one lights none.
-const drew = painted.count > 200
-console.log('             ', drew ? 'has a drawing on it' : 'BLANK')
+// What this can and cannot say. It separates "something was drawn" from "nothing was", which is
+// the difference the event stream cannot express — a page that reports `rendered` and paints
+// nothing passes every other check in this file.
+//
+// It cannot tell a complete drawing from a half-drawn one: clipping 90% of the canvas still left
+// 2584 lit pixels, and no threshold separates that from a sparse drawing. A share of the canvas
+// rather than a flat count, because a phone canvas and a tablet canvas differ in area.
+//
+// The samples light 0.4% to 1.5%; a twentieth of a percent is below any of them and above a few
+// stray strokes.
+const floor = Math.max(500, Math.round(painted.total * 0.0005))
+const drew = painted.count >= floor
+console.log(
+  '             ',
+  drew
+    ? 'has a drawing on it (' + ((100 * painted.count) / painted.total).toFixed(2) + '% of the canvas)'
+    : 'BLANK or a fraction of one (floor ' + floor + ')'
+)
 await browser.close()
 harness.server.close()
 
