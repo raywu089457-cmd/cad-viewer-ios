@@ -91,6 +91,12 @@ public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
         case binaryDXF
         /// The file parsed, but it holds nothing to draw.
         case noGeometry
+        /// The file has geometry, but all of it is on layers it marks as off or frozen.
+        ///
+        /// Distinct from ``noGeometry`` because the two need different sentences: one says the
+        /// file is thin, the other says the file is fine and the layers are switched off, which
+        /// is something the reader can go and change.
+        case allLayersSwitchedOff([String])
     }
 
     public let id: UUID
@@ -118,6 +124,13 @@ public struct LoadFailure: Error, Identifiable, Equatable, Sendable {
             return "This is a binary DXF. Save it as ASCII DXF to open it here."
         case .noGeometry:
             return "The file parsed, but it holds no model-space geometry."
+        case let .allLayersSwitchedOff(layers):
+            // Sorted and joined here rather than at the call site so the sentence is the same
+            // wherever it is produced, and so a test can read it without a view.
+            let names = layers.sorted().prefix(3).joined(separator: ", ")
+            let more = layers.count > 3 ? " and \(layers.count - 3) more" : ""
+            return "Every drawing in this file is on a layer that is switched off or frozen: "
+                + "\(names)\(more). Turn the layers on to see them."
         }
     }
 

@@ -116,4 +116,32 @@ struct EngineReadinessTests {
         #expect(EngineReadiness.noEntityCount.contains("does not report"))
         #expect(EngineReadiness.noEntityCount.contains("DXF"))
     }
+
+    @Test("A layer that is switched off says so, and names the layers")
+    func switchedOffSaysWhichLayers() {
+        // Silent omission is the failure mode: a drawing missing a layer looks complete. The
+        // sentence has to name the layers so the reader knows what to go and switch on.
+        let one = SkippedEntities.switchedOff(["Walls": 3])
+        #expect(one.contains("3 items"))
+        #expect(one.contains("Walls"))
+
+        // Empty means nothing was hidden, and an empty string is what the caller checks.
+        #expect(SkippedEntities.switchedOff([:]).isEmpty)
+
+        // More names than fit: the count of the rest is stated rather than dropped.
+        let many = SkippedEntities.switchedOff(["A": 1, "B": 1, "C": 1, "D": 1])
+        #expect(many.contains("and 1 more"))
+    }
+
+    @Test("A file whose layers are all switched off says that, not that it is empty")
+    func allLayersOffReadsDifferently() {
+        // The reader can fix one of these two and not the other, so they cannot share a
+        // sentence.
+        let off = LoadFailure(fileName: "plan.dxf", reason: .allLayersSwitchedOff(["Hidden"])).message
+        let blank = LoadFailure(fileName: "plan.dxf", reason: .noGeometry).message
+        #expect(off != blank)
+        #expect(off.contains("Hidden"))
+        #expect(off.contains("switched off or frozen"))
+        #expect(off.contains("Turn the layers on"))
+    }
 }

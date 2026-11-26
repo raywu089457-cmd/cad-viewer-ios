@@ -17,6 +17,13 @@ public struct DrawScene: Sendable {
     /// Extents of everything above, in drawing units.
     public var bounds: Bounds?
 
+    /// Entities left out because their layer is switched off or frozen, counted per layer.
+    ///
+    /// Empty when the file says no layer is off, or when the builder was asked not to honour
+    /// the flags. Kept so a caller can tell the reader that something is not on screen — a
+    /// drawing that is silently missing layers looks like a drawing that is complete.
+    public var hiddenByLayer: [String: Int] = [:]
+
     /// Every point of every primitive, for viewport fitting.
     ///
     /// Kept separately from `bounds` because a viewer wants the dense core of the geometry,
@@ -87,10 +94,21 @@ public struct SceneBuilder {
     public var curveTolerance: Double
     /// Hard cap on segments per full circle, so a tiny arc cannot explode.
     public var maxSegmentsPerCircle: Int
+    /// Whether entities on a layer the file marks as switched off or frozen are drawn.
+    ///
+    /// DXF says a layer is off with a negative colour in group 62 and frozen with bit 1 of group
+    /// 70, and every CAD application treats both as "not there". Leaving them in draws geometry
+    /// the author hid on purpose.
+    public var hidesSwitchedOffLayers: Bool
 
-    public init(curveTolerance: Double = 0.0015, maxSegmentsPerCircle: Int = 180) {
+    public init(
+        curveTolerance: Double = 0.0015,
+        maxSegmentsPerCircle: Int = 180,
+        hidesSwitchedOffLayers: Bool = true
+    ) {
         self.curveTolerance = curveTolerance
         self.maxSegmentsPerCircle = maxSegmentsPerCircle
+        self.hidesSwitchedOffLayers = hidesSwitchedOffLayers
     }
 
     /// Flattens a drawing read by SwiftDXF.
@@ -103,8 +121,12 @@ public struct SceneBuilder {
 
         // Layer colours, so entities that inherit (ACI 256) resolve correctly.
         var layerColors: [String: Int] = [:]
+        var hiddenLayers: Set<String> = []
         for layer in drawing.layers {
             layerColors[layer.name] = layer.color
+            if hidesSwitchedOffLayers, layer.isOff || layer.isFrozen {
+                hiddenLayers.insert(layer.name)
+            }
         }
 
         // The chord error is relative to the drawing size, so a millimetre drawing and a
@@ -161,6 +183,10 @@ public struct SceneBuilder {
         }
 
         for entity in drawing.entities {
+            if let name = Self.layer(of: entity), hiddenLayers.contains(name) {
+                scene.hiddenByLayer[name, default: 0] += 1
+                continue
+            }
             switch entity {
             case let .line(a, b, layer, color):
                 add([Point(a.x, a.y), Point(b.x, b.y)], closed: false,
@@ -310,6 +336,30 @@ public struct SceneBuilder {
         scene.bounds = sceneBounds(scene, fallback: headerFallback)
         scene.samplePoints = gatherPoints(scene)
         return scene
+    }
+
+    /// The layer an entity sits on, or nil for a kind that carries none.
+    ///
+    /// Every case does carry one today; the optional is there so a kind added later without a
+    /// layer is drawn rather than silently dropped.
+    private static func layer(of entity: DXF.Entity) -> String? {
+        switch entity {
+        case let .line(_, _, layer, _): return layer
+        case let .circle(_, _, layer, _): return layer
+        case let .arc(_, _, _, _, layer, _): return layer
+        case let .ellipse(_, _, _, _, _, layer, _): return layer
+        case let .point(_, layer, _): return layer
+        case let .text(_, _, _, _, layer, _): return layer
+        case let .polyline(_, _, layer, _): return layer
+        case let .dimension(dimension): return dimension.layer
+        case let .spline(spline): return spline.layer
+        case let .hatch(hatch): return hatch.layer
+        case let .leader(leader): return leader.layer
+        case let .tolerance(tolerance): return tolerance.layer
+        case let .solid(solid): return solid.layer
+        case let .wipeout(wipeout): return wipeout.layer
+        case let .face3D(face): return face.layer
+        }
     }
 
     /// The diagonal of the geometry actually present, falling back to the header extents.

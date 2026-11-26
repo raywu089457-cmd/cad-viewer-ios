@@ -402,25 +402,61 @@ do {
 section("Layers that are switched off")
 if let text = layerFixtureText() {
     do {
-    let drawing = try DXF.read(text: text, options: DrawingReadOptions.app)
-    let scene = SceneBuilder().build(drawing)
-    // Both entities are in the file; one of them is on a layer whose colour is negative, which is
-    // how DXF says the layer is switched off. Nothing in the builder reads that flag, so both are
-    // drawn. Whether it should be is the question — this pins what happens now so a change is
-    // deliberate.
-    check(scene.polylines.count == 2, "both entities reach the scene", "(scene.polylines.count)")
-    check(
-        drawing.layers.contains { $0.isOff },
-        "and the reader reports one layer as switched off")
-    check(
-        scene.polylines.contains { $0.layer == "Hidden" },
-        "so geometry on a switched-off layer is drawn")
+        let drawing = try DXF.read(text: text, options: DrawingReadOptions.app)
+        let scene = SceneBuilder().build(drawing)
+        // The fixture has two lines, one on a layer whose colour is negative — DXF's way of
+        // saying the layer is off. Every CAD application treats that as "not there", so the
+        // builder does too: one line reaches the scene and the other is counted, not lost.
+        check(
+            drawing.layers.contains { $0.isOff },
+            "the reader reports one layer as switched off")
+        check(scene.polylines.count == 1, "only the visible layer is drawn", "\(scene.polylines.count)")
+        check(
+            !scene.polylines.contains { $0.layer == "Hidden" },
+            "nothing on the switched-off layer is drawn")
+        check(
+            scene.hiddenByLayer["Hidden"] == 1,
+            "and the omitted entity is counted, so it is not lost silently",
+            "\(scene.hiddenByLayer)")
+        // The bounds follow what is drawn, so hiding a layer cannot leave the drawing off-centre.
+        check(
+            scene.bounds == nil || scene.bounds!.maxY < 5,
+            "the hidden line does not stretch the extents")
+        check(
+            SkippedEntities.switchedOff(scene.hiddenByLayer).contains("switched off or frozen"),
+            "and there is a sentence saying why it is missing")
+
+        // Asked not to honour the flags, both lines come back — so the behaviour is a setting,
+        // not an accident, and a caller that wants everything can have it.
+        let all = SceneBuilder(hidesSwitchedOffLayers: false).build(drawing)
+        check(all.polylines.count == 2, "the old behaviour is one argument away")
+        check(all.hiddenByLayer.isEmpty, "and it counts nothing as hidden")
     } catch {
-        check(false, "the layer fixture parses", "(error)")
+        check(false, "the layer fixture parses", "\(error)")
     }
 } else {
     check(false, "the layer fixture is readable")
 }
+
+section("What the layer message says")
+let one = SkippedEntities.switchedOff(["Walls": 3])
+check(one.contains("3 items"), "the count is in the sentence", "\(one)")
+check(one.contains("Walls"), "and the layer name is too")
+check(
+    one.contains("switched off or frozen"),
+    "and the reason is not guessed at")
+check(SkippedEntities.switchedOff([:]).isEmpty, "nothing hidden says nothing")
+let many = SkippedEntities.switchedOff(["A": 1, "B": 1, "C": 1, "D": 1])
+check(many.contains("and 1 more"), "four names show three and count the rest")
+
+// A file whose every layer is switched off is not an empty file, and the reader can fix
+// one of those. Sharing a sentence would tell them the wrong thing.
+let off = LoadFailure(fileName: "plan.dxf", reason: .allLayersSwitchedOff(["Hidden"])).message
+let blank = LoadFailure(fileName: "plan.dxf", reason: .noGeometry).message
+check(off != blank, "the two empty outcomes read differently")
+check(off.contains("Hidden"), "the switched-off message names the layer", "\(off)")
+check(off.contains("Turn the layers on"), "and says what to do")
+
 
 section("Bounds")
 if let scene = build("""

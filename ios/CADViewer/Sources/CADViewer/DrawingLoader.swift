@@ -98,6 +98,15 @@ enum DrawingLoader {
             LoadReadiness.verdict(
                 samplePoints: scene.samplePoints, hasBounds: scene.bounds != nil) == .drawable
         else {
+            // Nothing to draw can mean two different things, and they need different answers:
+            // a thin file, or a file whose layers are all switched off. The second one the
+            // reader can fix, so name the layers.
+            if !scene.hiddenByLayer.isEmpty {
+                return .failure(
+                    LoadFailure(
+                        fileName: name,
+                        reason: .allLayersSwitchedOff(Array(scene.hiddenByLayer.keys))))
+            }
             return .failure(LoadFailure(fileName: name, reason: .noGeometry))
         }
 

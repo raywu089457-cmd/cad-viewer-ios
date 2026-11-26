@@ -26,6 +26,29 @@ public enum SkippedEntities {
         let plural = total == 1 ? "" : "s"
         return "\(total) item\(plural) not shown: \(shown)\(more)."
     }
+
+    /// What to say when layers were left out because the file marks them as off or frozen.
+    ///
+    /// Silent omission is worse than showing too much: a drawing that is missing a layer looks
+    /// complete, and the reader cannot tell whether the file is thin or the viewer is. The count
+    /// and the layer names make the difference visible without being an error.
+    public static func switchedOff(
+        _ hidden: [String: Int],
+        shownNames: Int = 3
+    ) -> String {
+        let total = hidden.values.reduce(0, +)
+        guard total > 0 else { return "" }
+
+        let names = hidden.keys.sorted()
+        let limit = max(shownNames, 1)
+        let shown = names.prefix(limit).joined(separator: ", ")
+        let remaining = names.count - min(limit, names.count)
+        let more = remaining > 0 ? " and \(remaining) more" : ""
+        let items = total == 1 ? "item is" : "items are"
+        let layers = names.count == 1 ? "layer" : "layers"
+        return "\(total) \(items) on \(names.count) \(layers) switched off or frozen, so not "
+            + "drawn: \(shown)\(more)."
+    }
 }
 
 /// Groups drawable primitives so the renderer issues as few commands as possible.

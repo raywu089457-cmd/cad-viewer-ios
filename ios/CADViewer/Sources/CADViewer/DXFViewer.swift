@@ -162,6 +162,11 @@ struct DXFViewer: View {
             if !drawing.skipped.isEmpty {
                 Text(SkippedEntities.summary(drawing.skipped))
             }
+            // Layers the file marks as off or frozen are not drawn, which is what a CAD
+            // application does. Saying so keeps a thin drawing from looking complete.
+            if !drawing.scene.hiddenByLayer.isEmpty {
+                Text(SkippedEntities.switchedOff(drawing.scene.hiddenByLayer))
+            }
         }
         .font(.caption)
         .padding(.horizontal, 12)
