@@ -102,6 +102,24 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         """
 }
 
+func layerFixtureText() -> String? {
+    let mounted = URL(fileURLWithPath: "/host/verification/fixtures/layers.dxf")
+    if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
+
+    var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    for _ in 0..<5 {
+        let candidate = directory
+            .appendingPathComponent("verification")
+            .appendingPathComponent("fixtures")
+            .appendingPathComponent("layers.dxf")
+        if let text = try? String(contentsOf: candidate, encoding: .utf8) { return text }
+        let parent = directory.deletingLastPathComponent()
+        if parent.path == directory.path { break }
+        directory = parent
+    }
+    return nil
+}
+
 func hatchFixtureText() -> String? {
     let mounted = URL(fileURLWithPath: "/host/verification/fixtures/hatch.dxf")
     if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
@@ -379,6 +397,29 @@ do {
     } else {
         check(false, "layer fixture parses")
     }
+}
+
+section("Layers that are switched off")
+if let text = layerFixtureText() {
+    do {
+    let drawing = try DXF.read(text: text, options: DrawingReadOptions.app)
+    let scene = SceneBuilder().build(drawing)
+    // Both entities are in the file; one of them is on a layer whose colour is negative, which is
+    // how DXF says the layer is switched off. Nothing in the builder reads that flag, so both are
+    // drawn. Whether it should be is the question — this pins what happens now so a change is
+    // deliberate.
+    check(scene.polylines.count == 2, "both entities reach the scene", "(scene.polylines.count)")
+    check(
+        drawing.layers.contains { $0.isOff },
+        "and the reader reports one layer as switched off")
+    check(
+        scene.polylines.contains { $0.layer == "Hidden" },
+        "so geometry on a switched-off layer is drawn")
+    } catch {
+        check(false, "the layer fixture parses", "(error)")
+    }
+} else {
+    check(false, "the layer fixture is readable")
 }
 
 section("Bounds")
