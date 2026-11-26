@@ -37,5 +37,5 @@ not tried on R2018 because it was already the one being kept.
 | `cmp-native-r12.png`, `cmp-native-2018.png` | native rendering beside the web one, for comparing |
 
 The `.svg` files are the vector originals those PNGs came from; `dim3.*` and `cmp-native-*.svg`
-were the dimension-text investigation, and `e2018.json` is the flattened scene for
-`example_2018.dwg`.
+were the dimension-text investigation. The flattened scene for `example_2018.dwg` is not kept: it
+is generated, it is a megabyte, and the harness checks it (`e2018.json`, gitignored).

@@ -11,6 +11,7 @@
 //
 //   node verification/check-readme.mjs
 
+import { execFileSync } from 'node:child_process'
 import { readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -115,8 +116,21 @@ for (const file of subReadmes) {
   // after a picture is renamed.
   const named = [...text.matchAll(/`([a-z0-9][a-z0-9._-]*\.(?:png|svg|json|html))`/g)].map(m => m[1])
   for (const name of new Set(named)) {
-    const beside = join(repo, dirname(file), name)
-    check(existsSync(beside), `${file} names ${name}, and it is beside it`)
+    const relative = join(dirname(file), name)
+    if (existsSync(join(repo, relative))) {
+      check(true, `${file} names ${name}, and it is beside it`)
+      continue
+    }
+    // A name can be one the README gives for a file a checkout does not have — generated output,
+    // for instance. Asking git is exact, and it is the same answer a fresh clone would get.
+    let ignored = false
+    try {
+      execFileSync('git', ['check-ignore', '-q', relative], { cwd: repo, stdio: 'ignore' })
+      ignored = true
+    } catch {
+      ignored = false
+    }
+    check(ignored, `${file} names ${name}, which is not there and not ignored`)
   }
   // Every command it tells a reader to run has to exist.
   for (const match of text.matchAll(/^\s*\.\/([a-z][a-z0-9-]*\.(?:sh|bat))$/gm)) {
