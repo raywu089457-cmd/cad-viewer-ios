@@ -327,6 +327,13 @@ jobs:
         working-directory: verification/dxf-geometry-harness
         run: swift run -c release verify
 
+      # The DXF renderer is this project own code; the other two hand their drawing to PDFKit
+      # and to a bundled engine. Nothing ever ran `--svg`, so what it produced was unchecked.
+      - name: The renderer draws what the file says
+        working-directory: verification/dxf-geometry-harness
+        run: |
+          binary="$(swift build -c release --show-bin-path)/scenecheck"
+          node ../check-render-output.mjs "$binary" ../fixtures/circles.dxf ../fixtures/circles.svg
       - name: Check the committed snapshot is current
         working-directory: verification/dxf-geometry-harness
         run: |

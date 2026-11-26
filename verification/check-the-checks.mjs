@@ -193,6 +193,27 @@ const cases = [
     }
   },
   {
+    check: 'check-render-output.mjs',
+    what: 'a renderer that drops a shape the file contains',
+    // The wasm build is what this machine has; CI builds the same tool natively and passes it
+    // as a plain path. Both are handled by the check.
+    args: [
+      'work:verification/dxf-geometry-harness/scenecheck.wasm',
+      'work:verification/fixtures/circles.dxf',
+      'work:verification/fixtures/circles.svg',
+      'work:verification/dxf-geometry-harness/runwasm.mjs'
+    ],
+    break: root => {
+      const path = join(root, 'verification/fixtures/circles.dxf')
+      const text = readFileSync(path, 'utf8')
+      const anchorText = 'CIRCLE'
+      assert(text, anchorText, 'render-output: the fixture has no CIRCLE to remove')
+      // Dropping an entity is the defect: the file says two circles and the renderer draws one.
+      const at = text.indexOf(anchorText)
+      writeFileSync(path, text.slice(0, at) + 'REMOVED' + text.slice(at + anchorText.length))
+    }
+  },
+  {
     check: 'check-safe-area.mjs',
     what: 'a viewer that stops at the home indicator',
     break: root => {
@@ -306,7 +327,7 @@ function assert(text, anchor, message) {
 const failures = []
 const results = []
 
-for (const { check, what, break: breakIt, requiresBuiltBundle } of cases) {
+for (const { check, what, break: breakIt, requiresBuiltBundle, args: extraArgs } of cases) {
   const script = join(here, check)
   if (!existsSync(script)) {
     failures.push(`${check}: no such check`)
@@ -343,7 +364,13 @@ for (const { check, what, break: breakIt, requiresBuiltBundle } of cases) {
     let passed = true
     let detail = ''
     try {
-      execFileSync(process.execPath, [join(work, 'verification', check)], {
+      // Some checks take arguments: a binary to run, a fixture to feed it. `extraArgs` are
+      // resolved against the copied tree so a relative path points at the copy.
+      const argv = [join(work, 'verification', check)]
+      for (const arg of extraArgs ?? []) {
+        argv.push(arg.startsWith('work:') ? join(work, arg.slice(5)) : arg)
+      }
+      execFileSync(process.execPath, argv, {
         cwd: work,
         stdio: 'pipe',
         timeout: 120_000

@@ -30,7 +30,8 @@ const onDisk = readdirSync(here).filter(f => f.endsWith('.mjs') || f.endsWith('.
 // Against the workflow: whatever CI runs has to be documented, and vice versa.
 const workflow = readFileSync(join(here, '..', '.github', 'workflows', 'checks.yml'), 'utf8')
 const run = new Set(
-  [...workflow.matchAll(/verification\/([a-z0-9.-]+\.(?:mjs|sh))/g)].map(m => m[1])
+  // Two forms: from the repository root, and from inside a working directory such as the harness.
+  [...workflow.matchAll(/(?:verification\/|\.\.\/)([a-z0-9.-]+\.(?:mjs|sh))/g)].map(m => m[1])
 )
 
 for (const file of [...listed].sort()) {

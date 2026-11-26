@@ -23,6 +23,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-project-spec.mjs` |  naming a path that is gone, a target declared twice, or an Info.plist key a drawing needs |
 | `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |
+| `check-render-output.mjs` | the DXF renderer drawing the wrong number of shapes, a shape with no coordinates, or one with no stroke |
 | `test-dwg-damaged.mjs` | a truncated DWG crashing or leaving the page waiting — it draws a partial file, and that limit is recorded rather than asserted away |
 | `check-safe-area.mjs` | a viewer stopping at the home indicator, so the same drawing sits differently per format |
 | `check-details-parity.mjs` | a viewer with no way to tell the reader anything about the file it has open |
