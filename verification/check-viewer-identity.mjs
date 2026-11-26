@@ -26,14 +26,24 @@ const check = (ok, what) => {
 }
 
 // Every `.id(…)` that identifies a viewer, with what it is given.
-const ids = [...root.matchAll(/\.id\(([^)]*)\)/g)].map(m => m[1].trim())
+// `.id(…)` as a line, because the argument contains parentheses of its own —
+// `ViewerID(file: …, open: …)` — and a bracket-matching pattern split one call into two.
+const ids = root
+  .split('\n')
+  .filter(line => /^\s*\.id\(/.test(line))
+  .map(line => line.trim().replace(/^\.id\(/, '').replace(/\)$/, '').trim())
 check(ids.length === 3, `three viewers are identified (${ids.length} found)`)
 
 for (const id of ids) {
-  // A bare name is the bug. `source` and `standardizedFileURL` are both fine: one is the URL
-  // stored with the loaded drawing, the other the URL the route already holds.
-  const byName = /^(name|fileName|drawing\.name)$/.test(id)
-  check(!byName, `.id(${id}) is a file, not a name`)
+  // A bare name is the bug. A URL is what a viewer's identity has to be.
+  check(!/^(name|fileName|drawing\.name)$/.test(id), `.id(${id}) is not a bare file name`)
+
+  // And the identity has to change when the same file is opened twice. Without the open counter
+  // a drawing edited on disk and reopened here showed the version from before the edit: the id
+  // was unchanged, so SwiftUI kept the viewer and its loaded page. For DWG and PDF the reset and
+  // the reopen happen in one run loop tick, so nothing rendered the intermediate state that would
+  // have forced a rebuild.
+  check(/open:\s*openCount/.test(id), `.id(${id}) changes on every open`)
 }
 
 // A URL identity has to be standardised, or the same file reached two ways is two identities.

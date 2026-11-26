@@ -23,6 +23,19 @@ struct RootView: View {
         }
     }
 
+    /// What a viewer is rebuilt in response to.
+    ///
+    /// The file alone was not enough: reopening the same file left the `.id()` unchanged, and
+    /// SwiftUI kept the viewer with its loaded page. For DWG and PDF the reset and the reopen
+    /// happen in one run loop tick, so the intermediate `nil` never renders and nothing forces a
+    /// rebuild — a drawing edited on disk and reopened showed the version from before the edit.
+    ///
+    /// The counter is part of the identity so every open produces a new one.
+    private struct ViewerID: Hashable {
+        var file: URL
+        var open: Int
+    }
+
     @State private var opened: Opened?
     @State private var failure: LoadFailure?
     @State private var isLoading = false
@@ -32,6 +45,15 @@ struct RootView: View {
     /// abandoned one land later and replace the file the reader actually chose.
     @State private var loadGeneration = LoadGeneration()
     @State private var isPickingFile = false
+    /// Bumped on every open, and part of each viewer's identity.
+    ///
+    /// The identity is the file, so a viewer is not rebuilt when a different file is opened — but
+    /// that also meant it was not rebuilt when the *same* file was opened again. A drawing edited
+    /// and saved externally, then reopened here, showed the version from before the edit: the
+    /// `.id()` was unchanged and SwiftUI kept the viewer, with its `@State` model and its loaded
+    /// page. `reset()` sets `opened` to nil and back within one run loop tick for DWG and PDF, so
+    /// SwiftUI never renders the intermediate state that would have forced a rebuild.
+    @State private var openCount = 0
 
     var body: some View {
         NavigationStack {
@@ -43,16 +65,16 @@ struct RootView: View {
                     // `@State` transform keeps the previous drawing's centre and scale: the
                     // second file would open showing the first file's view of the world.
                     DXFViewer(drawing: drawing)
-                        .id(drawing.source)
+                        .id(ViewerID(file: drawing.source, open: openCount))
                 case .dwg(let url, let name):
                     // Identified by file for the same reason as the DXF viewer: its `@State`
                     // model carries the loaded page, and a new drawing on the same instance
                     // would keep the previous one's web view.
                     DWGViewer(url: url, fileName: name)
-                        .id(url.standardizedFileURL)
+                        .id(ViewerID(file: url.standardizedFileURL, open: openCount))
                 case .pdf(let url, let name):
                     PDFViewer(url: url, fileName: name)
-                        .id(url.standardizedFileURL)
+                        .id(ViewerID(file: url.standardizedFileURL, open: openCount))
                 case nil:
                     welcome
                 }
@@ -177,6 +199,9 @@ struct RootView: View {
     /// Routes a file to the engine that can show it.
     private func open(_ url: URL) {
         reset()
+        // Part of the viewers' identity, so reopening the same file rebuilds the viewer and
+        // re-reads it. See `openCount`.
+        openCount += 1
         let name = url.lastPathComponent
 
         switch DrawingKind(fileName: name) {
