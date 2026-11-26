@@ -66,6 +66,13 @@ public enum BundleServing {
     ///
     /// The cross-origin pair is what lets the wasm engine use shared memory; without them
     /// WebKit may refuse to instantiate it in a worker.
+    ///
+    /// `no-store` is deliberate, and it costs a reload of the seventeen-megabyte engine each time
+    /// the page comes back. The bundle is a fixed set of files served from the app itself, so
+    /// there is nothing to gain from caching it between launches and something to lose while
+    /// developing: a rebuilt viewer would keep showing the previous one, with no way to tell.
+    /// The engine is warm across drawings within one launch either way — that is the reuse that
+    /// matters, and it is `DrawingHandoff`'s job, not the cache's.
     public static func headers(mime: String, byteCount: Int) -> [String: String] {
         [
             "Content-Type": mime,
