@@ -203,6 +203,12 @@ jobs:
 
       # Every DWG format the samples cover, because the engine handles them differently and a
       # format nothing opens is a format nothing checks. R2000 was in the tree and untested.
+      # A truncated DWG is the case the engine handles worst: it draws whatever it could parse and
+      # reports success. This does not fail on that — the app cannot fix it — it fails on a crash
+      # or a page left waiting, and records the rest.
+      - name: A damaged DWG settles one way or the other
+        run: node verification/test-dwg-damaged.mjs "$PWD/ios/web/dist" "$PWD/samples/example_2018.dwg"
+
       - name: Reopen every sample drawing
         run: |
           node verification/test-dwg-reopen.mjs \

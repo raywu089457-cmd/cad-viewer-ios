@@ -82,6 +82,14 @@ PDFKit 介面宣告出來，就可以用真正的 `swiftc -typecheck` 檢查 app
 - 沒有 macOS runner：repo 已公開、Actions 已啟用，`macos-14` 的 job 仍在一秒內被取消
   且沒有指派 runner。我用一個探測 workflow 直接確認過。
 
+**引擎的限制，不是這個 app 能修的**：
+
+- **被截斷的 DWG 會畫出部分內容而不報錯**。把 `example_2018.dwg` 切成 10%–95%，
+  六個切口全部都回報 `rendered`。LibreDWG 接受它能解析的部分，不給筆數也不給警告，
+  所以 app 無法分辨一張完整的圖和一張殘缺的圖。DXF 有 `skipped` 計數，DWG 沒有。
+  DWG 的詳細面板把這件事寫給使用者看，而不是假装圖是完整的。
+  （`verification/test-dwg-damaged.mjs` 跑這六個切口，並在不是每個切口都得到結果時失敗。）
+
 所以「能不能在真機上跑起來」沒人驗過。凡是不需要 Apple SDK 能驗的，都驗了；
 剩下的寫在這裡，沒有假裝覆蓋。
 
