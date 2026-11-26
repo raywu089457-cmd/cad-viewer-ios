@@ -19,6 +19,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-retain-cycles.mjs` | a message handler registered strongly, which leaks the page and its wasm engine |
 | `check-actor-isolation.mjs` | `@Observable` state without `@MainActor`, a data race on the UI |
 | `check-mime-coverage.mjs` | an extension in the built bundle with no MIME type, which WebKit downloads instead of rendering |
+| `check-raw-escapes.mjs` | a raw newline or tab where a Swift escape was meant — it compiles locally in the harness copy and fails only on CI, so CI is where it was found both times |
 | `check-pdf-reading-setup.mjs` | the PDF view left at its document-reading defaults, with a page gap interrupting a drawing |
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-project-spec.mjs` |  naming a path that is gone, a target declared twice, or an Info.plist key a drawing needs |

@@ -143,6 +143,12 @@ jobs:
       - name: The notices match what ships
         run: node verification/check-licences.mjs --require-bundle
 
+      # A backslash-n written through a Node here-doc arrives as a real newline, and the Swift
+      # file then fails to compile — on CI only, because the local harness builds a copy of the
+      # geometry sources and never compiles the test targets. Two of these got through.
+      - name: No raw control characters where a Swift escape was meant
+        run: node verification/check-raw-escapes.mjs
+
       # The page names two worker files by path; nothing in the module graph knows they are
       # needed. A missing one loads, reports ready, and fails on the first multi-line text.
       # The resource folder ships one hand-written page instead of seventeen megabytes of

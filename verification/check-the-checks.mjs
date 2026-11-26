@@ -340,6 +340,27 @@ const cases = [
       assert(text, 'case "txt", "md"', 'mime-coverage: the .txt case is not there to remove')
       writeFileSync(path, text.replace('        case "txt", "md": return "text/plain; charset=utf-8"\n', ''))
     }
+  },
+  {
+    check: 'check-raw-escapes.mjs',
+    what: 'a real newline where a Swift escape was meant',
+    break: root => {
+      const path = join(root, 'ios/DXFGeometry/Tests/DXFGeometryTests/FileRoutingTests.swift')
+      const text = readFileSync(path, 'utf8')
+      assert(
+        text,
+        'DrawingKind(fileName: "plan.dxf")',
+        'raw-escapes: the anchor is gone'
+      )
+      // A real newline inside the literal, which is exactly what a here-doc used to produce.
+      writeFileSync(
+        path,
+        text.replace(
+          'DrawingKind(fileName: "plan.dxf")',
+          'DrawingKind(fileName: "plan.dxf\nBROKEN")'
+        )
+      )
+    }
   }
 ]
 

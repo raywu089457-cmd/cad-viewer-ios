@@ -156,9 +156,8 @@ struct DWGHeaderTests {
         // `pathExtension` answers "dxf " and the app refuses an ordinary file.
         #expect(DrawingKind(fileName: "plan.dxf ").canRender)
         #expect(DrawingKind(fileName: "  plan.dxf").canRender)
-        #expect(DrawingKind(fileName: "plan.dxf
-").canRender)
-        #expect(DrawingKind(fileName: "plan.dwg	").canRender)
+        #expect(DrawingKind(fileName: "plan.dxf\n").canRender)
+        #expect(DrawingKind(fileName: "plan.dwg\t").canRender)
 
         // Trimming must not promote a type the app cannot draw.
         #expect(!DrawingKind(fileName: "notes.txt ").canRender)
