@@ -73,6 +73,11 @@ jobs:
       # file while the first parsed left a spinner with no way out.
       # DXF had a details sheet; DWG and PDF had nothing, so a reader could not find out how
       # big the file was or how long it took. The app knew and said none of it.
+      # PDF filled the screen from the day it was written; DXF and DWG cut a strip off at the
+      # home indicator. The same drawing sat differently depending on its format.
+      - name: All three viewers fill the screen
+        run: node verification/check-safe-area.mjs
+
       - name: Every viewer describes the file it has open
         run: node verification/check-details-parity.mjs
 

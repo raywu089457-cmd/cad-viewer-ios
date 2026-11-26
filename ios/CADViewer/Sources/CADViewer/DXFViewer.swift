@@ -50,6 +50,10 @@ struct DXFViewer: View {
             .overlay(alignment: .bottomTrailing) { controls }
             .overlay(alignment: .top) { outsideHint }
         }
+        // On the reader rather than on the canvas, so `proxy.size` includes the strip and `fit`
+        // frames the drawing into the space it actually occupies. Applied to the canvas alone,
+        // the picture would extend under the home indicator while being scaled as if it did not.
+        .ignoresSafeArea(edges: .bottom)
         .navigationTitle(drawing.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

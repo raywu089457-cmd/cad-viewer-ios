@@ -32,7 +32,10 @@ struct DWGViewer: View {
                     Text(loadError)
                 }
             } else if let webView = model.webView {
+                // Same reason as the DXF canvas: a drawing is a picture, and stopping it at the
+                // home indicator cuts a strip off the bottom of what is being read.
                 WebViewHost(webView: webView)
+                    .ignoresSafeArea(edges: .bottom)
             }
 
             if let status = model.statusText, loadError == nil {
@@ -97,6 +100,20 @@ struct DWGViewer: View {
                 Section("Engine") {
                     LabeledContent("First frame", value: renderTimeText)
                     LabeledContent("LibreDWG", value: "WebAssembly, bundled")
+                }
+                // DXF reports how many entities it drew and how many it could not. This engine
+                // reports neither, so a drawing that is quietly missing its 3D solids would look
+                // complete. Saying which numbers do not exist is the honest version of not having
+                // them: a reader looking for a count finds out why there is none, rather than
+                // assuming the drawing is whole.
+                Section {
+                    Text(
+                        "The DWG engine does not report how many entities it drew, so a drawing "
+                        + "missing its 3D solids or tables looks complete. DXF shows that count; "
+                        + "this format cannot."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Details")

@@ -193,6 +193,17 @@ const cases = [
     }
   },
   {
+    check: 'check-safe-area.mjs',
+    what: 'a viewer that stops at the home indicator',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/DWGViewer.swift')
+      const text = readFileSync(path, 'utf8')
+      const anchorText = '.ignoresSafeArea(edges: .bottom)'
+      assert(text, anchorText, 'safe-area: the anchor modifier is gone')
+      writeFileSync(path, text.split(anchorText).join('// removed'))
+    }
+  },
+  {
     check: 'check-details-parity.mjs',
     what: 'a viewer with no way to describe the file it has open',
     break: root => {
