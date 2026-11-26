@@ -41,7 +41,7 @@ func check(_ condition: Bool, _ label: String, _ detail: @autoclosure () -> Stri
 /// "279 passed" and "277 passed, 2 skipped" are different claims about the same run.
 func skip(_ label: String) {
     skipped += 1
-    print("SKIP  (label)")
+    print("SKIP  \(label)")
 }
 
 func nearly(_ a: Double, _ b: Double, _ epsilon: Double = 1e-9) -> Bool {
@@ -100,6 +100,26 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         0
         EOF
         """
+}
+
+/// A file from `samples/`, found from wherever the harness happens to run.
+///
+/// The CI job runs this from `verification/dxf-geometry-harness`, and the wasm build runs from
+/// the same place, so `../samples` is `verification/samples` — which does not exist. Hard-coding
+/// a relative path meant three checks that open a real drawing skipped every time, and a skip
+/// reads as a pass in the summary.
+///
+/// Walks up from the working directory until it finds one.
+func sample(_ name: String) -> Data? {
+    var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    for _ in 0..<5 {
+        let candidate = directory.appendingPathComponent("samples").appendingPathComponent(name)
+        if let data = try? Data(contentsOf: candidate) { return data }
+        let parent = directory.deletingLastPathComponent()
+        if parent.path == directory.path { break }
+        directory = parent
+    }
+    return nil
 }
 
 func build(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -> DrawScene? {
@@ -386,8 +406,8 @@ do {
     // almost all on INSERT entities that the expansion resolves. What is left is the 49
     // geometric entities that still carry it, and they must take their layer colour rather
     // than all being white.
-    if let sample = try? Data(contentsOf: URL(fileURLWithPath: "../samples/example_r12.dxf")),
-       let drawing = try? DXF.read(data: sample, options: DrawingReadOptions.app) {
+    if let bytes = sample("example_r12.dxf"),
+       let drawing = try? DXF.read(data: bytes, options: DrawingReadOptions.app) {
         let scene = SceneBuilder().build(drawing)
         let white = RGB(1, 1, 1)
         let painted = scene.polylines.filter { $0.color != white }.count
@@ -1338,8 +1358,8 @@ do {
 
     // A real file, so the signature is confirmed against what LibreDWG writes rather than only
     // against strings written here.
-    if let sample = try? Data(contentsOf: URL(fileURLWithPath: "../samples/example_2018.dwg")) {
-        let found = DWGHeader.version(of: sample) ?? ("no signature" as String)
+    if let bytes = sample("example_2018.dwg") {
+        let found = DWGHeader.version(of: bytes) ?? ("no signature" as String)
         check(found == "AC1032", "the real sample is R2018", found)
     } else {
         skip("no sample reachable here, so the signature was checked only against strings")
