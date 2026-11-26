@@ -102,6 +102,26 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         """
 }
 
+/// The block-attribute fixture, found the same way a sample is.
+///
+/// It carries four attributes across three block references and used to be read out of the
+/// dependency's own test folder — a path that exists on the machine this was written on and
+/// nowhere else, so the check skipped on CI from the day it was added.
+func attributeFixtureText() -> String? {
+    var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    for _ in 0..<5 {
+        let candidate = directory
+            .appendingPathComponent("verification")
+            .appendingPathComponent("fixtures")
+            .appendingPathComponent("attributes.dxf")
+        if let text = try? String(contentsOf: candidate, encoding: .utf8) { return text }
+        let parent = directory.deletingLastPathComponent()
+        if parent.path == directory.path { break }
+        directory = parent
+    }
+    return nil
+}
+
 /// A file from `samples/`, found from wherever the harness happens to run.
 ///
 /// The CI job runs this from `verification/dxf-geometry-harness`, and the wasm build runs from
@@ -1089,11 +1109,10 @@ do {
     // asked, and the app never asked. A drawing of parts came out as outlines with no labels.
     //
     // The fixture is a real one from the DXF library, which carries four attributes across
-    // three block references.
-    let sample = "../../SwiftDXF/Tests/SwiftDXFTests/Fixtures/attributes.dxf"
-    if let text = try? String(
-        contentsOf: URL(fileURLWithPath: sample), encoding: .utf8)
-    {
+    // three block references. It is copied into this repository rather than read out of the
+    // dependency's checkout: that checkout sits at a path only this machine has, so the check
+    // skipped on CI every time — and a skip reads as a pass in the summary.
+    if let text = attributeFixtureText() {
         var options = DXF.ReadOptions()
         options.expandBlocks = true
         options.expandAttributes = true
