@@ -244,10 +244,13 @@ final class DWGViewerModel {
                 byteCount: data.count, pageCanAcceptDirectly: handlesDrawing)
             if handoff == .directly {
                 let base64 = data.base64EncodedString()
-                // A file name may hold a quote, which would end the JavaScript string.
-                let escaped = fileName.replacingOccurrences(
-                    of: "'", with: "\\'")
-                let script = "window.cadOpenDwg('\(base64)', '\(escaped)', 100)"
+                // Built as JSON, not by replacing one character in the name. Hand-rolled
+                // escaping covers the quote and misses the backslash and the newline: a name
+                // like `back\slash.dwg` reaches the page as `back\slash.dwg` with `\s` inside,
+                // which is not a JavaScript escape, and a real newline in a name ends the
+                // literal outright. JSON string encoding already handles all of it.
+                let nameLiteral = JavaScriptLiteral.quoteOrEmpty(fileName)
+                let script = "window.cadOpenDwg('\(base64)', \(nameLiteral), 100)"
                 do {
                     _ = try await webView.evaluateJavaScript(script)
                     return

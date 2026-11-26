@@ -102,6 +102,10 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         """
 }
 
+func quoteChar() -> String { String(UnicodeScalar(34)) }
+func apostrophe() -> String { String(UnicodeScalar(39)) }
+func backslash() -> String { String(UnicodeScalar(92)) }
+
 func layerFixtureText() -> String? {
     let mounted = URL(fileURLWithPath: "/host/verification/fixtures/layers.dxf")
     if let text = try? String(contentsOf: mounted, encoding: .utf8) { return text }
@@ -507,6 +511,45 @@ do {
     check(Set(all).count == 4, "the four read failures read differently")
 }
 
+
+section("A file name survives being put in a script")
+// The page is handed the name inside a JavaScript string. Replacing the quote by hand covers
+// one character and misses the two that break the call: a backslash starts an escape the script
+// does not define, and a newline ends the literal outright.
+do {
+    let plain = JavaScriptLiteral.quoteOrEmpty("plan.dwg")
+    check(plain == quoteChar() + "plan.dwg" + quoteChar(),
+          "an ordinary name comes back quoted", plain)
+
+    // A single quote needs no escape inside a double-quoted literal, and the JSON encoder
+    // always produces double quotes. What matters is that the literal still closes exactly once
+    // and the name survives — the old code wrapped the name in single quotes, where it did matter.
+    let quote = JavaScriptLiteral.quoteOrEmpty("it" + apostrophe() + "s.dwg")
+    check(quote.contains("it" + apostrophe() + "s.dwg"),
+          "a name with a quote arrives unchanged inside a double-quoted literal", quote)
+    check(
+        quote.hasPrefix(quoteChar()) && quote.hasSuffix(quoteChar()),
+        "and the literal still closes once", quote)
+
+    let back = JavaScriptLiteral.quoteOrEmpty("back" + backslash() + "slash.dwg")
+    check(
+        back.contains("back" + backslash() + backslash() + "slash"),
+        "a backslash is doubled, not passed through as an escape", back)
+
+    let newline = JavaScriptLiteral.quoteOrEmpty("two" + String(UnicodeScalar(10)) + "lines.dwg")
+    check(
+        !newline.contains(String(UnicodeScalar(10))),
+        "a newline in a name does not end the string", newline)
+
+    // U+2028 is a line terminator in JavaScript and not in JSON. Rare, and exactly the kind of
+    // character that arrives in a name from somewhere else.
+    if let sepScalar = UnicodeScalar(0x2028) {
+        let sep = JavaScriptLiteral.quoteOrEmpty("a" + String(sepScalar) + "b")
+        check(
+            !sep.contains(String(sepScalar)),
+            "U+2028 is escaped too, being a line terminator in JavaScript", sep)
+    }
+}
 
 section("Bounds")
 if let scene = build("""
