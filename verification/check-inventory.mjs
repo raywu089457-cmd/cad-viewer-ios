@@ -42,7 +42,9 @@ for (const file of [...run].sort()) {
 }
 // Generators run when their input changes, not on every push. Listed here so the distinction is
 // visible rather than implied by an absence.
-const generators = new Set(['make-pdf.mjs'])
+// `check-render-output` needs node and the Swift CI image has none. Kept in the tree, run by hand
+// on a machine that has both, and named here so the absence is a decision rather than an oversight.
+const generators = new Set(['make-pdf.mjs', 'check-render-output.mjs'])
 for (const file of onDisk.sort()) {
   // A check that only runs when someone remembers to type its name is a check that stops
   // running. `check-fixture-fresh.mjs` sat on disk long after it was superseded, and
