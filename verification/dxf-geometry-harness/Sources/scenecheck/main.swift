@@ -414,12 +414,31 @@ if let verifySVGPath {
     if let committed = FileManager.default.contents(atPath: verifySVGPath),
         let expected = String(data: committed, encoding: .utf8)
     {
-        let normalise: (String) -> [String] = { text in
-            text.split(separator: "\n").map {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines)
-            }.filter { !$0.isEmpty }
+        // Compared as shapes rather than as text. A number formatted on Linux and on Windows can
+        // differ in the last digit, and the same drawing should not fail on that. Every token is
+        // compared, numbers to a thousandth of a unit.
+        let tokens: (String) -> [String] = { text in
+            text.split(whereSeparator: { $0.isWhitespace }).map(String.init)
         }
-        verdict(normalise(expected) == normalise(document), "\(verifySVGPath) matches the rendering")
+        let want = tokens(expected)
+        let got = tokens(document)
+        var mismatch: String? = nil
+        if want.count != got.count {
+            mismatch = "expected (want.count) token(s), produced (got.count)"
+        } else {
+            for (index, pair) in zip(want, got).enumerated() {
+                let (a, b) = pair
+                if a == b { continue }
+                if let x = Double(a), let y = Double(b), abs(x - y) < 0.001 { continue }
+                mismatch = "token (index): expected (a.prefix(40)), produced (b.prefix(40))"
+                break
+            }
+        }
+        if let mismatch {
+            verdict(false, "\(verifySVGPath) differs — \(mismatch)")
+        } else {
+            verdict(true, "\(verifySVGPath) matches the rendering (\(want.count) token(s))")
+        }
     } else {
         print("SKIP  \(verifySVGPath) is not readable here, so it was not compared")
     }
