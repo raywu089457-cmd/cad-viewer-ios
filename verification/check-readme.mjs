@@ -48,6 +48,19 @@ check(linked.length > 0, `the README links to ${linked.length} local file(s)`)
 for (const link of new Set(linked)) {
   check(existsSync(join(repo, link)), `${link} exists`)
 }
+// Images are not `](…)` links, so the loop above does not see them: a README whose first
+// screen shows a broken image is broken in the place everyone looks first, and nothing
+// reported it. Captured from `src="…"` and from `src=…` without quotes, which Markdown allows.
+const images = [
+  ...[...readme.matchAll(/<img[^>]+src="([^"]+)"/g)].map(m => m[1]),
+  ...[...readme.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)].map(m => m[1]),
+].filter(src => !/^https?:/.test(src))
+check(images.length > 0, `the README shows ${images.length} local image(s)`)
+for (const src of new Set(images)) {
+  // A path may carry a title after a space, as in `![alt](path "title")`.
+  const path = src.split(/\s+/)[0]
+  check(existsSync(join(repo, path)), `${path} exists`)
+}
 
 // 3. A claim that the app layer is type-checked has to be backed by the stubs and the step.
 const claimsTypeCheck = /swiftc -typecheck|型別檢查/.test(readme)

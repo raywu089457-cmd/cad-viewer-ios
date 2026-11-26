@@ -304,16 +304,16 @@ const cases = [
   },
   {
     check: 'check-readme.mjs',
-    what: 'a README claim the tree no longer supports',
+    what: 'a README whose first screen shows a broken image',
     break: root => {
       const path = join(root, 'README.md')
       const text = readFileSync(path, 'utf8')
-      assert(text, '**仍然未驗證**', 'readme: the anchor section is gone')
-      // The sentence that was wrong for several rounds: the README said the app layer could only
-      // be syntax-checked while CI was type-checking it.
-      writeFileSync(path, text.replace('**仍然未驗證**', '**仍然未驗證，而且證實做不到**'))
-    }
-  },
+      const anchor = 'src="shots/native-dxf-drawing.png"'
+      assert(text, anchor, 'readme: the anchor image is gone')
+      // Images are not `](…)` links, so the link loop never saw them: a broken image on the first
+      // screen is the staleness a reader forgives least, in the place they look first.
+      writeFileSync(path, text.replace(anchor, 'src="shots/missing.png"'))
+    }  },
   {
     check: 'check-inventory.mjs',
     what: 'a check that the README does not list',
