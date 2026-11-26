@@ -285,11 +285,19 @@ jobs:
       #
       # Worth keeping anyway: a snapshot that quietly stops matching is how the independent
       # check becomes decoration.
-      - name: Cross-check a drawing with circles and lines
+      # Two drawings: a fixture with circles and lines, and a real one. The cross-check parses the
+      # DXF itself and compares that against what the Swift pipeline produced, so it is the only
+      # check here that can catch the pipeline agreeing with itself. The real drawing has ten
+      # top-level LINE entities — its other 1444 are inside blocks, which this parser does not
+      # expand — and ten is ten more than the fixture alone proves.
+      - name: Cross-check the drawings
         run: |
           node $GITHUB_WORKSPACE/verification/verify-coordinates.mjs \
             $GITHUB_WORKSPACE/verification/fixtures/circles.dxf \
             $GITHUB_WORKSPACE/verification/fixtures/circles.json
+          node $GITHUB_WORKSPACE/verification/verify-coordinates.mjs \
+            $GITHUB_WORKSPACE/samples/example_r12.dxf \
+            $GITHUB_WORKSPACE/verification/fixtures/r12.json
   swift-tests:
     name: Geometry tests and harness
     runs-on: ubuntu-latest
