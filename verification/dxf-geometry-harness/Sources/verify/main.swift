@@ -102,6 +102,21 @@ func dxf(_ entities: String, extents: (Double, Double, Double, Double)? = nil) -
         """
 }
 
+func hatchFixtureText() -> String? {
+    var directory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    for _ in 0..<5 {
+        let candidate = directory
+            .appendingPathComponent("verification")
+            .appendingPathComponent("fixtures")
+            .appendingPathComponent("hatch.dxf")
+        if let text = try? String(contentsOf: candidate, encoding: .utf8) { return text }
+        let parent = directory.deletingLastPathComponent()
+        if parent.path == directory.path { break }
+        directory = parent
+    }
+    return nil
+}
+
 /// The block-attribute fixture, found the same way a sample is.
 ///
 /// It carries four attributes across three block references and used to be read out of the
@@ -959,12 +974,11 @@ do {
     // models the boundary but not the pattern lines, so a patterned hatch has to be outlined:
     // drawing it as a solid block of colour says the section is filled, which is wrong.
     //
-    // The fixture is passed on the command line, because a hand-written HATCH needs the full
-    // boundary-path encoding and is easy to get subtly wrong. Without one, nothing is
-    // claimed — a silent pass here would be worse than no check.
-    if hatchSamplePath.isEmpty {
-        skip("no hatch sample supplied, so solidity was not checked")
-    } else if let text = hatchSampleText(), let drawing = try? DXF.read(text: text) {
+    // The fixture is a patterned hatch lifted from a real drawing. It used to come from a
+    // command-line argument, which meant the check skipped on every CI run — and a skip reads as
+    // a pass in the summary. A file in the repository is what makes it run.
+    let hatchText = hatchSampleText() ?? hatchFixtureText()
+    if let text = hatchText, let drawing = try? DXF.read(text: text) {
         let fills = SceneBuilder().build(drawing).fills
         check(!fills.isEmpty, "the sample has hatches", "\(fills.count)")
         check(fills.contains { $0.isSolid }, "at least one is a solid fill")
@@ -973,7 +987,7 @@ do {
         let boundaryless = fills.filter { $0.outer.count < 3 }
         check(boundaryless.isEmpty, "every fill has a boundary", "\(boundaryless.count) without")
     } else {
-        check(false, "the hatch sample is readable at \(hatchSamplePath)")
+        check(false, "the hatch fixture is readable")
     }
 
     // A SOLID entity is always a fill.
