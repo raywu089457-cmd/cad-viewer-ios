@@ -216,6 +216,18 @@ const cases = [
     }
   },
   {
+    check: 'check-build-script.mjs',
+    what: 'a build script writing somewhere the app does not look',
+    break: root => {
+      const path = join(root, 'ios/web/build-for-ios.sh')
+      const text = readFileSync(path, 'utf8')
+      const anchorText = '../CADViewer/Sources/CADViewer/Resources/dwgviewer'
+      assert(text, anchorText, 'build-script: the destination is gone')
+      // A copy to the wrong folder is a build that succeeds without its engine.
+      writeFileSync(path, text.replace(anchorText, '../CADViewer/Sources/CADViewer/Resources/elsewhere'))
+    }
+  },
+  {
     check: 'check-placeholder.mjs',
     what: 'a placeholder page that claims to be ready',
     break: root => {

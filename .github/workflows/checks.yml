@@ -148,6 +148,11 @@ jobs:
       # The resource folder ships one hand-written page instead of seventeen megabytes of
       # generated JavaScript. That page is the whole of what a fresh clone shows for a DWG, and
       # nothing else would notice if it were deleted while tidying.
+      # Step one of the README. A wrong destination there means the app builds without its
+      # engine, and the failure surfaces much later as a DWG that opens to the placeholder.
+      - name: The build script writes where the app looks
+        run: node verification/check-build-script.mjs
+
       - name: The placeholder says what to run
         run: node verification/check-placeholder.mjs
       - name: The DWG page has its assets

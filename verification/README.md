@@ -32,6 +32,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-viewer-identity.mjs` | a viewer identified by file name, so a same-named file in another folder is not rebuilt |
 | `check-the-checks.mjs` | a check that passes on a tree where the defect it names has been put back |
 | `check-licences.mjs` | a dependency or bundled asset that no notice accounts for, or a licence file not in the bundle |
+| `check-build-script.mjs` | the web build script writing somewhere the manifest does not copy from |
 | `check-placeholder.mjs` | the page a fresh clone ships instead of the viewer, deleted or claiming to be ready |
 | `check-dwg-assets.mjs` | a worker or the wasm engine missing from the bundle, or not really a wasm module |
 | `check-dwg-controls.mjs` | a DWG page entry point Swift calls that the page never defines |
