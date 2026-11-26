@@ -196,6 +196,6 @@ struct DWGHeaderTests {
 
         // Four failures, four sentences.
         let all = [FileReadFailure.missing, .notPermitted, .volumeUnavailable, .other("x")]
-        #expect(Set(all.map(.message)).count == 4)
+        #expect(Set(all.map { $0.message }).count == 4)
     }
 }

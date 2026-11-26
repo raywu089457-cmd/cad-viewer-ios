@@ -87,9 +87,21 @@ for (const target of targets) {
         }
       }
 
+      // A map/mapValues/filter call reaching a member with a leading dot instead of a key path.
+      // Writing a backslash through a here-doc drops it, so `\.message` arrives as `.message`
+      // — which compiles as a *reference* to a member, not a key path, and fails only once the
+      // type checker tries to infer a generic. That happened twice.
+      const code = body.split('//')[0]
+
+      const keyPath = code.match(/\.(?:map|compactMap|flatMap|filter|first\s*\{\s*\})\s*\(\s*\.\w+\s*\)/)
+      if (keyPath) {
+        problems.push(
+          `${relative(root, file)}:${i + 1}: \`${keyPath[0].trim()}\` looks like a key path with ` +
+            'its backslash missing'
+        )
+      }
       // An odd number of quotes means the literal never closes on that line. Comments are
       // stripped from the end so an apostrophe or quote in prose cannot trip it.
-      const code = body.split('//')[0]
       if (unescapedQuotes(code) % 2 === 1) {
         problems.push(
           `${relative(root, file)}:${i + 1}: an odd number of quotes — the literal runs off the line`
