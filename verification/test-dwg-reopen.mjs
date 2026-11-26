@@ -184,9 +184,23 @@ console.log('zoom to fit :', zoomed ? 'ran' : 'did NOT run')
 const zoomedAgain = zoomEntry ? await page.evaluate(() => window.cadZoomToFit()) : false
 console.log('zoom again  :', zoomedAgain ? 'ran' : 'did NOT run')
 
+// An error that escapes a promise has to reach the native side. Without the listeners the page
+// would sit on "Opening…" with nothing said, and the reader would be left guessing between a
+// slow engine and a broken one — the two cases look identical from the outside.
+const beforeError = events.length
+await page.evaluate(() => {
+  Promise.reject(new Error('deliberate, from the test'))
+})
+await waitFor(list => list.slice(beforeError).some(e => e.event === 'error'))
+const reported = events.slice(beforeError).filter(e => e.event === 'error')
+console.log('rejection   :', reported.length > 0 ? 'reported' : 'SILENT')
+if (reported.length > 0) {
+  console.log('              "' + String(reported[0].message).slice(0, 60) + '"')
+}
+
 await browser.close()
 harness.server.close()
 
-const ok = hasEntry && firstLoad.includes('rendered') && restOk && zoomEntry && zoomed && zoomedAgain
+const ok = hasEntry && firstLoad.includes('rendered') && restOk && zoomEntry && zoomed && zoomedAgain && reported.length > 0
 console.log(ok ? 'PASS' : 'FAIL')
 process.exit(ok ? 0 : 1)

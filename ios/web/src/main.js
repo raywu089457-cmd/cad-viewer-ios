@@ -27,6 +27,9 @@ const WORKER_URLS = {
 
 const statusEl = document.getElementById('status')
 
+/** The drawing currently being opened, so an uncaught error can name it. */
+let currentName = null
+
 /** Posts a message to the native side; a no-op in a plain browser. */
 function post(event, detail = {}) {
   try {
@@ -208,6 +211,26 @@ window.cadOpenDwg = (base64, name, circleSides) =>
     name || 'drawing.dwg',
     circleSides || 100
   )
+
+// An error that escapes a promise or an event handler would otherwise vanish into the web
+// view's console, which nobody sees on a device. The page would sit on "Opening…" with nothing
+// said — the reader would be left guessing between a slow engine and a broken one.
+//
+// Both are reported the same way the caught ones are, so the native side has one path.
+addEventListener('unhandledrejection', event => {
+  const reason = event.reason
+  const message = reason instanceof Error ? reason.message : String(reason)
+  console.error('unhandled rejection', reason)
+  post('error', { name: currentName || 'drawing.dwg', message: 'The engine failed: ' + message })
+})
+
+addEventListener('error', event => {
+  // Resource load failures fire here with a target but no message; those are covered by the
+  // asset check, and reporting every missing image as an engine failure would be noise.
+  if (!event.message) return
+  console.error('uncaught error', event.error)
+  post('error', { name: currentName || 'drawing.dwg', message: 'The engine failed: ' + event.message })
+})
 
 post('ready')
 await openFromNative()
