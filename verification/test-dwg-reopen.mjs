@@ -198,9 +198,37 @@ if (reported.length > 0) {
   console.log('              "' + String(reported[0].message).slice(0, 60) + '"')
 }
 
+// A page that reports `rendered` and draws nothing satisfies every check above. Take a screenshot
+// and count what is on it: the engine draws into a WebGL canvas, which cannot be read back
+// through `drawImage` without `preserveDrawingBuffer`, so the screenshot is what reached the
+// screen.
+// The canvas element, not the page: the status line and buttons are lit either way, so a
+// full-page screenshot passes on a blank canvas.
+const element = await page.$('canvas')
+const shot = element ? await element.screenshot({ type: 'png' }) : null
+const painted = shot === null ? { count: 0, total: 0 } : await page.evaluate(async base64 => {
+  const image = new Image()
+  image.src = 'data:image/png;base64,' + base64
+  await image.decode()
+  const copy = document.createElement('canvas')
+  copy.width = image.width
+  copy.height = image.height
+  const context = copy.getContext('2d')
+  context.drawImage(image, 0, 0)
+  const data = context.getImageData(0, 0, copy.width, copy.height).data
+  let count = 0
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i] + data[i + 1] + data[i + 2] > 180) count += 1
+  }
+  return { count, total: copy.width * copy.height }
+}, shot.toString('base64'))
+console.log('canvas      :', painted.count + ' lit pixel(s) of ' + painted.total)
+// A real drawing lights thousands of the canvas; an empty one lights none.
+const drew = painted.count > 200
+console.log('             ', drew ? 'has a drawing on it' : 'BLANK')
 await browser.close()
 harness.server.close()
 
-const ok = hasEntry && firstLoad.includes('rendered') && restOk && zoomEntry && zoomed && zoomedAgain && reported.length > 0
+const ok = hasEntry && firstLoad.includes('rendered') && restOk && zoomEntry && zoomed && zoomedAgain && reported.length > 0 && drew
 console.log(ok ? 'PASS' : 'FAIL')
 process.exit(ok ? 0 : 1)
