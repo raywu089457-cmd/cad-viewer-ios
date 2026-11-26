@@ -305,14 +305,38 @@ public struct SceneBuilder {
                     )
                 }
 
+            case let .tolerance(tolerance):
+                // A feature control frame is boxes and symbols; the renderer draws text. Drawing
+                // each row as its written form keeps the annotation in view instead of dropping
+                // it entirely, which is what used to happen — no geometry, no skip recorded,
+                // nothing on screen and no way to know something was there.
+                //
+                // Rows stack along the frame's own y axis, one text height apart, so a composite
+                // frame still reads as a frame rather than one run-on line.
+                let step = reference * 0.02
+                let rotation = Self.angleDegrees(
+                    of: Point(tolerance.direction.x, tolerance.direction.y))
+                for (row, frame) in tolerance.frames.enumerated() where !frame.raw.isEmpty {
+                    scene.texts.append(
+                        TextItem(
+                            string: frame.raw,
+                            position: Point(
+                                tolerance.insertion.x,
+                                tolerance.insertion.y - Double(row) * step),
+                            height: 0,
+                            rotationDegrees: rotation,
+                            color: resolvedColor(for: tolerance.color, layer: tolerance.layer),
+                            layer: tolerance.layer,
+                            attachment: .baselineLeft
+                        )
+                    )
+                }
+
             case let .wipeout(wipeout):
                 guard wipeout.boundary.count >= 3 else { break }
                 add(
                     wipeout.boundary.map { Point($0.x, $0.y) },
                     closed: true, index: wipeout.color, layer: wipeout.layer)
-
-            case .tolerance:
-                break
             }
         }
 
@@ -379,6 +403,17 @@ public struct SceneBuilder {
     }
 
     // MARK: - Dimensions
+
+    /// The rotation a feature control frame's box of rows runs at, in degrees.
+    ///
+    /// `direction` is the frame's x axis, which a block expansion may have scaled, so only its
+    /// angle matters. A degenerate direction falls back to horizontal rather than to a NaN angle
+    /// that would put the text nowhere.
+    private static func angleDegrees(of direction: Point) -> Double {
+        guard direction.x.isFinite, direction.y.isFinite else { return 0 }
+        guard direction.x != 0 || direction.y != 0 else { return 0 }
+        return atan2(direction.y, direction.x) * 180 / .pi
+    }
 
     /// Draws a `DIMENSION` from its definition points.
     ///

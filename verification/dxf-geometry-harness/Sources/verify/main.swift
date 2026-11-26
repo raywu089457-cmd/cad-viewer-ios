@@ -591,6 +591,41 @@ do {
 }
 
 
+section("A feature control frame is drawn, not dropped")
+// `TOLERANCE` was the one entity kind the builder switched on and then did nothing about:
+// no geometry, no entry in `skipped`, nothing on screen. A drawing whose GD&T frames were the
+// point of it looked complete without them.
+do {
+    let source = [
+        "0", "SECTION", "2", "ENTITIES",
+        "0", "TOLERANCE", "8", "GD", "10", "5", "20", "7",
+        "1", "{\\Fgdt;i}%%v0.012%%v%%vB",
+        "0", "ENDSEC", "0", "EOF",
+    ].joined(separator: "\n")
+
+    if let drawing = try? DXF.read(text: source, options: DrawingReadOptions.app) {
+        check(
+            drawing.entities.contains { if case .tolerance = $0 { return true } else { return false } },
+            "the reader keeps the tolerance")
+        let scene = SceneBuilder().build(drawing)
+        check(!scene.texts.isEmpty, "and the scene has a label for it", String(scene.texts.count))
+        if let first = scene.texts.first {
+            check(
+                !first.string.isEmpty,
+                "the label carries the frame the file wrote",
+                first.string)
+            check(first.layer == "GD", "on the layer it was drawn on", first.layer)
+            check(
+                abs(first.position.x - 5) < 0.001 && abs(first.position.y - 7) < 0.001,
+                "at the insertion point the file gives",
+                "\\(first.position)")
+        }
+    } else {
+        check(false, "a tolerance fixture parses")
+    }
+}
+
+
 section("Bounds")
 if let scene = build("""
     0
