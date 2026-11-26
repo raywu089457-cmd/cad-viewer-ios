@@ -47,7 +47,11 @@ ml-example/
 ff-test/
 swift-test/
 SwiftDXF-wasm/
-*.svg
+# Screenshots for manual comparison; the renderer snapshot under verification/ is a fixture
+# that a check compares against, so only the screenshot directories are ignored.
+/shots/**/*.svg
+/*.svg
+/ios/**/*.svg
 *.err
 parse_err.txt
 shots/native*.html
