@@ -33,8 +33,21 @@ public struct Bounds: Equatable, Sendable {
         self.maxY = maxY
     }
 
-    public var width: Double { maxX - minX }
-    public var height: Double { maxY - minY }
+    /// Extents, which can overflow even when both corners are finite.
+    ///
+    /// `maxX - minX` with `1e308` and `-1e308` is infinity, and an infinite width makes the
+    /// fitted scale zero. The subtraction is done in a way that reports the largest finite value
+    /// rather than infinity, so a drawing that vast is framed rather than discarded — a DXF can
+    /// carry such numbers, and a reader would otherwise see nothing.
+    public var width: Double { Self.extent(from: minX, to: maxX) }
+    public var height: Double { Self.extent(from: minY, to: maxY) }
+
+    private static func extent(from lower: Double, to upper: Double) -> Double {
+        let difference = upper - lower
+        // Finite input, infinite result: the drawing is larger than a Double can express, and the
+        // largest expressible extent is the honest answer.
+        return difference.isFinite ? difference : .greatestFiniteMagnitude
+    }
     public var isEmpty: Bool { width <= 0 || height <= 0 }
 
     /// Grows a bounds value to include a point, starting from an empty box.

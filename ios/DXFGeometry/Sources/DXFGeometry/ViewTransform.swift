@@ -60,6 +60,14 @@ public struct ViewTransform: Equatable, Sendable {
     static let minRelativeZoom: Double = 1.0 / 2000
     static let maxRelativeZoom: Double = 200
 
+    /// The middle of two numbers, computed without adding them.
+    ///
+    /// `(a + b) / 2` overflows when both are large, and a DXF can carry coordinates that large.
+    /// Half of each, plus half of the difference, stays finite whenever the inputs are.
+    static func midpoint(_ a: Double, _ b: Double) -> Double {
+        a / 2 + b / 2
+    }
+
     /// A transform that fits `bounds` inside `viewSize` with a small margin.
     public static func fitting(
         _ bounds: Bounds,
@@ -76,9 +84,12 @@ public struct ViewTransform: Equatable, Sendable {
         let scale = candidate.isFinite && candidate > 0 ? candidate : 1
         return ViewTransform(
             scale: scale,
+            // `(minX + maxX) / 2` overflows when both corners are large: `1e308 + 1e308` is
+            // infinity, and an infinite centre puts the whole drawing off screen even though the
+            // corners themselves are finite. This form cannot overflow.
             center: Point(
-                (bounds.minX + bounds.maxX) / 2,
-                (bounds.minY + bounds.maxY) / 2
+                Self.midpoint(bounds.minX, bounds.maxX),
+                Self.midpoint(bounds.minY, bounds.maxY)
             ),
             viewSize: ScreenSize(width: width, height: height)
         )

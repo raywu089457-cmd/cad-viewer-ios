@@ -127,4 +127,25 @@ struct ViewportTests {
         #expect(accumulator.bounds == nil)
         #expect(accumulator.skipped == 1)
     }
+
+    @Test("A drawing at the edge of Double is still framed")
+    func enormous() {
+        // `(minX + maxX) / 2` is infinity for these corners, and an infinite centre puts the
+        // drawing off screen while both numbers involved are perfectly finite.
+        let bounds = Bounds(minX: 1e308, minY: 1e308, maxX: 1e308, maxY: 1e308)
+        #expect(bounds.width.isFinite)
+
+        let framed = ViewTransform.fitting(bounds, in: ScreenSize(width: 390, height: 844))
+        #expect(framed.center.x.isFinite)
+        #expect(framed.center.y.isFinite)
+        #expect(framed.scale.isFinite && framed.scale > 0)
+    }
+
+    @Test("A spread wider than a Double reports a finite extent")
+    func overflowingExtent() {
+        // `1e308 - (-1e308)` is infinity, which made the fitted scale zero.
+        let bounds = Bounds(minX: -1e308, minY: 0, maxX: 1e308, maxY: 10)
+        #expect(bounds.width.isFinite)
+        #expect(bounds.width > 0)
+    }
 }

@@ -1284,6 +1284,20 @@ do {
     onlyBad.add(Point(.nan, .nan))
     check(onlyBad.bounds == nil, "a drawing of only bad coordinates has no extents")
 
+    // Huge but finite coordinates. `(minX + maxX) / 2` is infinity for these, and an infinite
+    // centre puts the drawing off screen even though both corners are ordinary numbers.
+    var far = Bounds.Accumulator()
+    far.add([Point(1e308, 1e308), Point(1e308, 1e308)])
+    if let hugeBounds = far.bounds {
+        check(hugeBounds.width.isFinite, "a huge drawing has a finite extent", "(hugeBounds.width)")
+        let framed = ViewTransform.fitting(hugeBounds, in: ScreenSize(width: 390, height: 844))
+        check(framed.center.x.isFinite, "and a finite horizontal centre", "(framed.center.x)")
+        check(framed.center.y.isFinite, "and a finite vertical centre", "(framed.center.y)")
+        check(framed.scale.isFinite && framed.scale > 0, "and a usable scale", "(framed.scale)")
+    } else {
+        check(false, "a drawing at the edge of Double still has extents")
+    }
+
     // And the viewport, which is what a viewer frames: it must not divide by a NaN extent.
     let viewport = Viewport.fit(points: [Point(0, 0), Point(10, 10)], fallback: nil)
     check(viewport != nil, "a finite drawing still frames")
