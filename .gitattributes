@@ -1,0 +1,6 @@
+# Snapshots and fixtures are compared byte for byte by a check. A line-ending conversion would
+# make them differ on one platform and not the other, which is the kind of failure that looks like
+# the renderer changed.
+verification/fixtures/*.svg -text
+verification/fixtures/*.dxf -text
+verification/fixtures/*.json -text
