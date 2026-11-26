@@ -216,6 +216,18 @@ const cases = [
     }
   },
   {
+    check: 'check-placeholder.mjs',
+    what: 'a placeholder page that claims to be ready',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/Resources/dwgviewer/index.html')
+      const text = readFileSync(path, 'utf8')
+      const anchorText = 'event: "error"'
+      assert(text, anchorText, 'placeholder: the error post is gone')
+      // A page that says ready leaves the app waiting for a drawing that cannot come.
+      writeFileSync(path, text.replace(anchorText, 'event: "ready"'))
+    }
+  },
+  {
     check: 'check-safe-area.mjs',
     what: 'a viewer that stops at the home indicator',
     break: root => {

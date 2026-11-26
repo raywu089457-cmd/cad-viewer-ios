@@ -145,6 +145,11 @@ jobs:
 
       # The page names two worker files by path; nothing in the module graph knows they are
       # needed. A missing one loads, reports ready, and fails on the first multi-line text.
+      # The resource folder ships one hand-written page instead of seventeen megabytes of
+      # generated JavaScript. That page is the whole of what a fresh clone shows for a DWG, and
+      # nothing else would notice if it were deleted while tidying.
+      - name: The placeholder says what to run
+        run: node verification/check-placeholder.mjs
       - name: The DWG page has its assets
         run: node verification/check-dwg-assets.mjs --require-bundle
 
