@@ -536,7 +536,7 @@ do {
         back.contains("back" + backslash() + backslash() + "slash"),
         "a backslash is doubled, not passed through as an escape", back)
 
-    let newline = JavaScriptLiteral.quoteOrEmpty("two" + String(UnicodeScalar(10)) + "lines.dwg")
+    let newline = JavaScriptLiteral.quoteOrEmpty("two" + String(UnicodeScalar(UInt32(10))!) + "lines.dwg")
     check(
         !newline.contains(String(UnicodeScalar(10))),
         "a newline in a name does not end the string", newline)
@@ -550,6 +550,46 @@ do {
             "U+2028 is escaped too, being a line terminator in JavaScript", sep)
     }
 }
+
+section("A byte-order mark in front of the first group code")
+// Windows editors write a BOM by default. The reader expects a group code at byte zero, finds
+// three bytes of BOM instead, and returns a drawing with no entities — no error, no geometry,
+// a blank canvas reported as success.
+do {
+    let body = [
+        "0", "SECTION", "2", "ENTITIES",
+        "0", "LINE", "8", "0", "10", "0", "20", "0", "11", "10", "21", "5",
+        "0", "ENDSEC", "0", "EOF",
+    ].joined(separator: "\n")
+    let clean = Data(body.utf8)
+    let marked = Data(DXFByteOrderMark.utf8) + clean
+
+    check(DXFByteOrderMark.present(in: marked), "the mark is detected")
+    check(!DXFByteOrderMark.present(in: clean), "and is not invented where there is none")
+    check(
+        DXFByteOrderMark.stripping(from: marked) == clean,
+        "stripping returns the file that follows it")
+    check(
+        DXFByteOrderMark.stripping(from: clean) == clean,
+        "a file without one is passed through unchanged")
+
+    // The behaviour that matters: what the reader sees before and after.
+    if let withMark = try? DXF.read(text: String(decoding: marked, as: UTF8.self), options: DrawingReadOptions.app),
+        let without = try? DXF.read(text: String(decoding: clean, as: UTF8.self), options: DrawingReadOptions.app)
+    {
+        check(
+            without.entities.count == 1,
+            "the plain file reads as one entity",
+            String(without.entities.count))
+        check(
+            withMark.entities.count == 0,
+            "and the marked one reads as none, which is the defect",
+            String(withMark.entities.count))
+    } else {
+        check(false, "both forms parse")
+    }
+}
+
 
 section("Bounds")
 if let scene = build("""

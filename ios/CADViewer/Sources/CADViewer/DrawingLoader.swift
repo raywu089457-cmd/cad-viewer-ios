@@ -76,6 +76,12 @@ enum DrawingLoader {
             return .failure(LoadFailure(fileName: name, reason: .binaryDXF))
         }
 
+        // A UTF-8 BOM is three bytes before the first group code, and the reader expects a
+        // group code there. Without this the whole file reads as zero entities: no error, no
+        // geometry, a blank canvas. Windows editors add a BOM by default, so a drawing saved
+        // there and mailed on is exactly the file this would refuse to draw.
+        let payload = DXFByteOrderMark.stripping(from: data)
+
         let started = Date()
         // The options the app opens with, shared with the tests so both exercise the same
         // configuration: expanding blocks, skipping paper space and expanding attributes all
@@ -83,7 +89,7 @@ enum DrawingLoader {
         let options = DrawingReadOptions.app
         let drawing: DXF.Drawing
         do {
-            drawing = try DXF.read(data: data, options: options)
+            drawing = try DXF.read(data: payload, options: options)
         } catch {
             return .failure(
                 LoadFailure(
