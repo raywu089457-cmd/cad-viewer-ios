@@ -40,6 +40,54 @@ for (const [index, line] of lines.entries()) {
   }
 }
 
+// A step is introduced by `- name:` at six spaces. A `run:` or `working-directory:` at the same
+// indentation with no `- name:` above it is a key with no step to belong to, which makes the
+// whole document unparseable — GitHub then reports a run with no jobs and names it after the
+// file, which reads like an infrastructure problem rather than a syntax error.
+// A `- name:` introduces a step, and the keys under it belong to that step. When one of them
+// appears at the same indentation as a step key with no `- name:` since the last one, a step
+// has lost its header — which is what happened when an edit deleted a `- name:` line and left
+// its `working-directory:` behind. GitHub then reports a run with no jobs named after the file.
+// Inside one step a key may appear once. A repeated `run:` at the same indentation means a
+// step header was deleted and its body joined the step above — which is what happened here:
+// an edit removed `- name: Check the committed snapshot is current` and left its
+// `working-directory:` and `run:` behind, so the document still parsed but the job described
+// something nobody wrote.
+let currentStepKeys = new Set()
+for (const [index, line] of lines.entries()) {
+  if (/^ {6}- /.test(line)) { currentStepKeys = new Set(); continue }
+  const key = line.match(/^ {8}([a-z][a-z-]*):/)
+  if (!key) continue
+  if (currentStepKeys.has(key[1])) {
+    problems.push(
+      "line " + (index + 1) + ": a second " + key[1] + ": in one step, which means a step header"
+        + " was deleted and its body joined the one above"
+    )
+    break
+  }
+  currentStepKeys.add(key[1])
+}
+let sawName = true
+for (const [index, line] of lines.entries()) {
+  // A step may start with `- name:` or with `- uses:`; either begins one.
+  if (/^ {6}- (name|uses):/.test(line)) { sawName = true; continue }
+  // A step key at eight spaces with no `- name:` since the last step or job boundary.
+  if (/^ {8}(run|uses|working-directory|with|env):/.test(line) && !sawName) {
+    problems.push("line " + (index + 1) + ": a step key with no - name: before it")
+    break
+  }
+  // A job boundary resets it: the next step starts with its own name.
+  if (/^ {2}[a-z][a-z0-9-]*:$/.test(line)) sawName = true
+}
+let stepOpen = false
+for (const [index, line] of lines.entries()) {
+  if (/^ {6}- name:/.test(line)) { stepOpen = true; continue }
+  if (/^ {2}[a-z][a-z0-9-]*:$/.test(line) || /^ {4}[a-z][a-z-]*:$/.test(line)) { stepOpen = false; continue }
+  if (/^ {8}(run|uses|working-directory):/.test(line) && !stepOpen) {
+    problems.push("line " + (index + 1) + ": a step key with no name above it")
+    break
+  }
+}
 if (!/^jobs:/m.test(text)) problems.push('no jobs section')
 
 if (problems.length > 0) {
