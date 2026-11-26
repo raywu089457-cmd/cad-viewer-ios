@@ -327,6 +327,14 @@ jobs:
         working-directory: verification/dxf-geometry-harness
         run: swift run -c release verify
 
+      # The DXF renderer is the one format whose drawing is entirely this project code. `--svg`
+      # existed since the harness was written and no check ever ran it, so what it produced was
+      # uninspected. The assertions live in the tool, because this image carries no node.
+      - name: The renderer draws what the file says
+        working-directory: verification/dxf-geometry-harness
+        run: |
+          binary="$(swift build -c release --show-bin-path)/scenecheck"
+          "$binary" --verify-svg ../fixtures/circles.svg < ../fixtures/circles.dxf
       - name: Check the committed snapshot is current
         working-directory: verification/dxf-geometry-harness
         run: |

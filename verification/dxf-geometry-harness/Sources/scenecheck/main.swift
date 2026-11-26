@@ -277,7 +277,8 @@ if wantJSON {
     exit(0)
 }
 
-guard wantSVG, let bounds = viewport?.bounds else { exit(0) }
+// `--verify-svg` produces the same document and then checks it, so it needs one built.
+guard wantSVG || args.contains("--verify-svg"), let bounds = viewport?.bounds else { exit(0) }
 
 // A margin so strokes near the edge are not clipped, and the same y-flip the web uses.
 let pad = max(bounds.width, bounds.height) * 0.05
@@ -336,8 +337,7 @@ for text in scene.texts {
             + "font-family=\"Helvetica, Arial, sans-serif\">\(escapes(text.string))</text>")
 }
 
-print(
-    """
+let document = """
     <svg xmlns="http://www.w3.org/2000/svg" \
     viewBox="\(bounds.minX - pad) \(-(bounds.maxY + pad)) \(viewWidth) \(viewHeight)" \
     width="\(Int(pixelWidth))" height="\(Int(pixelHeight))">
@@ -346,4 +346,90 @@ print(
     <g transform="scale(1,-1)">
     \(body.joined(separator: "\n"))
     </g></svg>
-    """)
+    """
+
+// `--verify-svg <path>`: compare the rendering against a committed snapshot, and check that what
+// came out is drawable at all. The assertions live here rather than in a script because the image
+// this runs in carries no node, and a rendering nobody inspects is the same as no rendering.
+let verifySVGIndex = args.firstIndex(of: "--verify-svg")
+let verifySVGPath = verifySVGIndex.flatMap { index in
+    index + 1 < args.count ? args[index + 1] : nil
+}
+
+if let verifySVGPath {
+    var failed = 0
+    func verdict(_ ok: Bool, _ what: String) {
+        print((ok ? "ok    " : "FAIL  ") + what)
+        if !ok { failed += 1 }
+    }
+
+    // Every shape the renderer emitted, with the path data between the quotes.
+    var paths: [String] = []
+    var scanning = document.startIndex
+    while let open = document.range(of: "<path d=\"", range: scanning..<document.endIndex) {
+        guard let close = document.range(of: "\"", range: open.upperBound..<document.endIndex)
+        else { break }
+        paths.append(String(document[open.upperBound..<close.lowerBound]))
+        scanning = close.upperBound
+    }
+
+    // Closed paths come from circles, open ones from lines. Comparing against the entity counts
+    // in the file is what says the renderer drew what was asked for rather than something else.
+    let closed = paths.filter { $0.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("Z") }
+    let open = paths.count - closed.count
+    verdict(
+        closed.count == counts.circle,
+        "\(closed.count) closed path(s) for \(counts.circle) CIRCLE entit(ies)")
+    verdict(
+        open == counts.line,
+        "\(open) open path(s) for \(counts.line) LINE entit(ies)")
+
+    // A path whose `d` holds no digits is a shape that draws nothing, and an element count would
+    // never notice it.
+    let coordinateLess = paths.filter { $0.rangeOfCharacter(from: .decimalDigits) == nil }
+    verdict(coordinateLess.isEmpty, "every path carries coordinates")
+
+    // Correct geometry that is not painted is invisible to every geometry check.
+    var strokes = 0
+    var strokeLess = 0
+    var strokeScan = document.startIndex
+    while let open = document.range(of: "<path ", range: strokeScan..<document.endIndex) {
+        guard let close = document.range(of: "/>", range: open.upperBound..<document.endIndex)
+        else { break }
+        let element = document[open.upperBound..<close.lowerBound]
+        if element.contains("stroke=\"#") { strokes += 1 }
+        else if element.contains("stroke=\"none\"") || !element.contains("stroke=") {
+            strokeLess += 1
+        }
+        strokeScan = close.upperBound
+    }
+    verdict(strokes == paths.count, "every path has a stroke (\(strokes) of \(paths.count))")
+    verdict(strokeLess == 0, "and none is stroke-less, which would draw nothing")
+
+    // The snapshot, so a change to the rendering is visible rather than absorbed.
+    //
+    // WASI Foundation cannot open a path, so the comparison only runs where the tool is built
+    // natively — which is CI. Skipping it there is said out loud: a check that quietly does less
+    // depending on where it runs is a check whose green means different things.
+    if let committed = FileManager.default.contents(atPath: verifySVGPath),
+        let expected = String(data: committed, encoding: .utf8)
+    {
+        let normalise: (String) -> [String] = { text in
+            text.split(separator: "\n").map {
+                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+            }.filter { !$0.isEmpty }
+        }
+        verdict(normalise(expected) == normalise(document), "\(verifySVGPath) matches the rendering")
+    } else {
+        print("SKIP  \(verifySVGPath) is not readable here, so it was not compared")
+    }
+
+    if failed > 0 {
+        print("\n\(failed) rendering problem(s)")
+        exit(1)
+    }
+    print("\nthe renderer produced \(paths.count) drawable path(s)")
+    exit(0)
+}
+
+print(document)

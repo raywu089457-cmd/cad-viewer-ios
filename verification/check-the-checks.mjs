@@ -192,25 +192,27 @@ const cases = [
       writeFileSync(path, text.replace('window.cadZoomToFit = ', 'const removedExport = '))
     }
   },
+
   {
-    check: 'check-render-output.mjs',
-    what: 'a renderer that drops a shape the file contains',
-    // The wasm build is what this machine has; CI builds the same tool natively and passes it
-    // as a plain path. Both are handled by the check.
-    args: [
+    check: 'scenecheck-verify-svg',
+    what: 'a renderer that drops an entity the file contains',
+    // The check lives inside the Swift tool: `--verify-svg` renders and asserts in one run.
+    command: [
+      'verification/dxf-geometry-harness/runwasm.mjs',
       'work:verification/dxf-geometry-harness/scenecheck.wasm',
-      'work:verification/fixtures/circles.dxf',
-      'work:verification/fixtures/circles.svg',
-      'work:verification/dxf-geometry-harness/runwasm.mjs'
+      '--verify-svg',
+      'work:verification/fixtures/circles.svg'
     ],
+    // The drawing goes in on stdin, the same way the tool is fed everywhere else.
+    input: 'work:verification/fixtures/circles.dxf',
     break: root => {
       const path = join(root, 'verification/fixtures/circles.dxf')
       const text = readFileSync(path, 'utf8')
-      const anchorText = 'CIRCLE'
-      assert(text, anchorText, 'render-output: the fixture has no CIRCLE to remove')
-      // Dropping an entity is the defect: the file says two circles and the renderer draws one.
-      const at = text.indexOf(anchorText)
-      writeFileSync(path, text.slice(0, at) + 'REMOVED' + text.slice(at + anchorText.length))
+      assert(text, 'CIRCLE', 'render-output: the fixture has no CIRCLE to break')
+      // A file that says two circles while the renderer draws one is the defect: the counts no
+      // longer agree with what the file asked for.
+      const at = text.indexOf('CIRCLE')
+      writeFileSync(path, text.slice(0, at) + 'REMOVED' + text.slice(at + 6))
     }
   },
   {
@@ -327,9 +329,11 @@ function assert(text, anchor, message) {
 const failures = []
 const results = []
 
-for (const { check, what, break: breakIt, requiresBuiltBundle, args: extraArgs } of cases) {
+for (const { check, what, break: breakIt, requiresBuiltBundle, args: extraArgs, command, input } of cases) {
   const script = join(here, check)
-  if (!existsSync(script)) {
+  // A case may be a script in this directory, or a command run against the copied tree. The
+  // second form is for a check that lives inside a Swift tool, which has no script file.
+  if (!command && !existsSync(script)) {
     failures.push(`${check}: no such check`)
     continue
   }
@@ -366,12 +370,16 @@ for (const { check, what, break: breakIt, requiresBuiltBundle, args: extraArgs }
     try {
       // Some checks take arguments: a binary to run, a fixture to feed it. `extraArgs` are
       // resolved against the copied tree so a relative path points at the copy.
-      const argv = [join(work, 'verification', check)]
+      const argv = command
+        ? [join(work, command[0]), ...command.slice(1)]
+        : [join(work, 'verification', check)]
       for (const arg of extraArgs ?? []) {
         argv.push(arg.startsWith('work:') ? join(work, arg.slice(5)) : arg)
       }
+      const stdin = input ? readFileSync(join(work, input.slice(5))) : undefined
       execFileSync(process.execPath, argv, {
         cwd: work,
+        input: stdin,
         stdio: 'pipe',
         timeout: 120_000
       })
