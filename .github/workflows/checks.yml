@@ -299,3 +299,11 @@ jobs:
           # points to a millionth, which is what the check was always about.
           "$binary" --verify-fresh ../fixtures/circles.json < ../fixtures/circles.dxf
 
+      # A synthetic fixture cut at tidy boundaries is not what a damaged file looks like. This
+      # cuts a real drawing at each tenth of its bytes, where a download would have stopped.
+      - name: A truncated drawing is handled at every cut
+        working-directory: verification/dxf-geometry-harness
+        run: |
+          binary="$(swift build -c release --show-bin-path)/scenecheck"
+          "$binary" --truncations ../../samples/example_r12.dxf
+

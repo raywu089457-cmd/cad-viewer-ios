@@ -23,13 +23,68 @@ func log(_ message: String) {
     FileHandle.standardError.write((message + "\n").data(using: .utf8)!)
 }
 
-// WASI Foundation cannot read a file by URL, so the bytes come in on stdin.
-let data = FileHandle.standardInput.readDataToEndOfFile()
+// Normally the bytes come in on stdin, because WASI Foundation cannot read a file by URL. A native
+// build can, so `--file <path>` exists for checks that cut a real drawing into pieces and need to
+// run the tool once per piece: stdin can only be consumed once.
+let fileIndex = args.firstIndex(of: "--file")
+let filePath = fileIndex.flatMap { index in
+    index + 1 < args.count ? args[index + 1] : nil
+}
+
+let data: Data
+if let filePath {
+    guard let read = FileManager.default.contents(atPath: filePath) else {
+        log("cannot read \(filePath)")
+        exit(2)
+    }
+    data = read
+} else {
+    data = FileHandle.standardInput.readDataToEndOfFile()
+}
 guard !data.isEmpty else {
     log("no input")
     exit(2)
 }
 let text = String(decoding: data, as: Unicode.ASCII.self)
+
+// `--truncations`: cut this drawing at each tenth of its bytes and report what every cut did.
+//
+// The harness does the same with a synthetic fixture, which stops in tidy places — after a
+// complete entity, between sections. A file arrives damaged by being cut off wherever a download
+// stopped, which lands inside a group code or halfway through a coordinate. This runs the real
+// file through the same `DXF.read` and `LoadReadiness` the app uses.
+if args.contains("--truncations") {
+    let options = DrawingReadOptions.app
+    var drew = 0
+    var reported = 0
+    for tenth in 1...10 {
+        let cut = data.count * tenth / 10
+        let piece = String(decoding: data.prefix(cut), as: Unicode.ASCII.self)
+        guard let partial = try? DXF.read(text: piece, options: options) else {
+            reported += 1
+            print("      \(cut) of \(data.count) bytes: reported")
+            continue
+        }
+        let partScene = SceneBuilder().build(partial)
+        let verdict = LoadReadiness.verdict(
+            samplePoints: partScene.samplePoints, hasBounds: partScene.bounds != nil)
+        if verdict == .drawable {
+            drew += 1
+            print("      \(cut) of \(data.count) bytes: drew")
+        } else {
+            reported += 1
+            print("      \(cut) of \(data.count) bytes: reported")
+        }
+    }
+    // Every cut lands in exactly one of the two, and a build that drew all ten would mean
+    // truncation is invisible — the reader would be shown a partial drawing with nothing saying so.
+    if drew + reported == 10 && reported > 0 {
+        print("TRUNCATIONS OK — \(drew) drew, \(reported) reported")
+        exit(0)
+    }
+    print("TRUNCATIONS FAILED — \(drew) drew, \(reported) reported")
+    exit(1)
+}
 
 // The app's own options, so this tool shows what the app shows. Paper space is skipped, the
 // web viewers show model space, and comparing like with like is the whole point of this tool.
