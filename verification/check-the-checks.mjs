@@ -105,12 +105,15 @@ const cases = [
   },
   {
     check: 'check-viewer-identity.mjs',
-    what: 'a viewer identified by file name',
+    what: 'a viewer whose identity does not change when the same file is reopened',
     break: root => {
       const path = join(root, 'ios/CADViewer/Sources/CADViewer/RootView.swift')
       const text = readFileSync(path, 'utf8')
-      assert(text, '.id(drawing.source)', 'viewer-identity: the anchor .id is gone')
-      writeFileSync(path, text.replace('.id(drawing.source)', '.id(drawing.name)'))
+      const anchor = '.id(ViewerID(file: drawing.source, open: openCount))'
+      assert(text, anchor, 'viewer-identity: the anchor .id is gone')
+      // The file alone was the identity before, which meant reopening an edited drawing kept the
+      // viewer and its loaded page.
+      writeFileSync(path, text.replace(anchor, '.id(drawing.source)'))
     }
   },
   {
