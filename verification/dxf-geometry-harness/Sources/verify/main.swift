@@ -431,6 +431,16 @@ do {
     check(
         !EngineReadiness.noViewerURL.isEmpty,
         "a URL that cannot be built still says something")
+
+    // The details sheet says which number it does not have. A drawing missing its 3D solids
+    // looks complete otherwise, and the reader has no way to tell.
+    check(
+        EngineReadiness.noEntityCount.contains("does not report"),
+        "the details sheet admits the count is missing")
+    check(
+        EngineReadiness.noEntityCount.contains("DXF"),
+        "and says which format would have shown it")
+
     check(
         Set([
             EngineReadiness.timeoutMessage, EngineReadiness.missingBundle,

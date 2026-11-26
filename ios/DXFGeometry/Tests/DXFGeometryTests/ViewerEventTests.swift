@@ -108,4 +108,12 @@ struct EngineReadinessTests {
         ]
         #expect(all.count == 4)
     }
+
+    @Test("The details sheet admits the count it does not have")
+    func noEntityCount() {
+        // A drawing missing its 3D solids looks complete without this, and the reader cannot
+        // tell. The message says which number is absent and which format would show it.
+        #expect(EngineReadiness.noEntityCount.contains("does not report"))
+        #expect(EngineReadiness.noEntityCount.contains("DXF"))
+    }
 }

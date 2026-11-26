@@ -107,11 +107,7 @@ struct DWGViewer: View {
                 // them: a reader looking for a count finds out why there is none, rather than
                 // assuming the drawing is whole.
                 Section {
-                    Text(
-                        "The DWG engine does not report how many entities it drew, so a drawing "
-                        + "missing its 3D solids or tables looks complete. DXF shows that count; "
-                        + "this format cannot."
-                    )
+                    Text(EngineReadiness.noEntityCount)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 }

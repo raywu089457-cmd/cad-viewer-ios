@@ -277,6 +277,15 @@ public enum EngineReadiness {
     public static let notADWG =
         "This file does not start with a DWG version header. It may have been renamed."
 
+    /// What the details sheet says about a number it does not have.
+    ///
+    /// DXF reports how many entities it drew and how many it could not; this engine reports
+    /// neither. A drawing missing its 3D solids therefore looks complete, and the reader has no
+    /// way to tell. Saying which numbers do not exist is the honest version of not having them.
+    public static let noEntityCount =
+        "The DWG engine does not report how many entities it drew, so a drawing missing its "
+        + "3D solids or tables looks complete. DXF shows that count; this format cannot."
+
     /// A URL the page can be loaded from could not be built. This is a fault in the app rather
     /// than in the file, but saying so is better than a blank screen.
     public static let noViewerURL = "Could not build the viewer URL."
