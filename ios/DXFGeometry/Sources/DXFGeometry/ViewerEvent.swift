@@ -263,4 +263,21 @@ public enum EngineReadiness {
     public static let timeoutMessage =
         "The DWG engine did not report ready. Close the drawing and open it again; "
         + "if that does not help, the viewer itself may not have loaded."
+
+    // The rest of the DWG path's failures, here for the same reason: each was a string literal
+    // inside a method that nothing could call without a web view, so none of them was checked.
+
+    /// The bundle the page is served from is not in the app. Only a rebuild fixes this, so the
+    /// script is named rather than left for the reader to find.
+    public static let missingBundle =
+        "The DWG viewer was not bundled with the app. Run ios/web/build-for-ios.sh and rebuild."
+
+    /// The bytes do not begin with a DWG version signature — the one format check this path can
+    /// make, since the engine accepts anything.
+    public static let notADWG =
+        "This file does not start with a DWG version header. It may have been renamed."
+
+    /// A URL the page can be loaded from could not be built. This is a fault in the app rather
+    /// than in the file, but saying so is better than a blank screen.
+    public static let noViewerURL = "Could not build the viewer URL."
 }

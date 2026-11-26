@@ -94,4 +94,18 @@ struct EngineReadinessTests {
         // A false failure on a big file is worse than a spinner that lasts longer than needed.
         #expect(EngineReadiness.patience >= .seconds(30))
     }
+
+    @Test("Each DWG failure says what happened, and they are not the same message")
+    func dwgFailures() {
+        // Each was a literal inside a method that needs a web view, so none could be checked.
+        #expect(EngineReadiness.missingBundle.contains("build-for-ios.sh"))
+        #expect(EngineReadiness.notADWG.contains("renamed"))
+        #expect(!EngineReadiness.noViewerURL.isEmpty)
+
+        let all: Set<String> = [
+            EngineReadiness.timeoutMessage, EngineReadiness.missingBundle,
+            EngineReadiness.notADWG, EngineReadiness.noViewerURL,
+        ]
+        #expect(all.count == 4)
+    }
 }

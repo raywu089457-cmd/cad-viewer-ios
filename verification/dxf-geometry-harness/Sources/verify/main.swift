@@ -419,6 +419,25 @@ do {
     check(message.contains("Close the drawing"), "the timeout says what to try first")
     check(message.contains("viewer itself"), "and names the other possibility")
     check(message.count > 80, "it is more than a shrug", "(message.count) chars")
+    // The rest of the DWG path's failures were literals inside methods that need a web view, so
+    // nothing could call them. Each is checked for the one thing that makes it useful: it says
+    // what the reader can do, or at least that the fault is not theirs.
+    check(
+        EngineReadiness.missingBundle.contains("build-for-ios.sh"),
+        "a missing bundle names the script that fixes it")
+    check(
+        EngineReadiness.notADWG.contains("renamed"),
+        "a wrong header suggests what probably happened")
+    check(
+        !EngineReadiness.noViewerURL.isEmpty,
+        "a URL that cannot be built still says something")
+    check(
+        Set([
+            EngineReadiness.timeoutMessage, EngineReadiness.missingBundle,
+            EngineReadiness.notADWG, EngineReadiness.noViewerURL,
+        ]).count == 4,
+        "the four failures read differently, so a log says which one happened")
+
     // A generous wait: a false failure on a large drawing is worse than a longer spinner.
     check(EngineReadiness.patience >= .seconds(30), "the wait is generous")
 }

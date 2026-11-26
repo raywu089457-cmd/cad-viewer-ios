@@ -200,7 +200,7 @@ final class DWGViewerModel {
               FileManager.default.fileExists(atPath: viewerPath + "/index.html")
         else {
             Self.log.error("the dwgviewer folder is missing from the app bundle")
-            fail("The DWG viewer was not bundled with the app. Run ios/web/build-for-ios.sh and rebuild.")
+            fail(EngineReadiness.missingBundle)
             return
         }
         let viewerRoot = URL(fileURLWithPath: viewerPath)
@@ -225,7 +225,7 @@ final class DWGViewerModel {
         // check this path can have, and it is cheap: six bytes, before anything is handed over.
         guard DWGHeader.looksLikeDWG(data) else {
             Self.log.error("not a DWG: the first bytes are not a version signature")
-            fail("This file does not start with a DWG version header. It may have been renamed.")
+            fail(EngineReadiness.notADWG)
             return
         }
 
@@ -312,7 +312,7 @@ final class DWGViewerModel {
         components.path = "/index.html"
         components.queryItems = [URLQueryItem(name: "name", value: fileName)]
         guard let pageURL = components.url else {
-            fail("Could not build the viewer URL.")
+            fail(EngineReadiness.noViewerURL)
             return
         }
 
