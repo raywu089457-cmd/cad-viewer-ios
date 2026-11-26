@@ -193,6 +193,20 @@ const cases = [
     }
   },
   {
+    check: 'check-reset-completeness.mjs',
+    what: 'closing a drawing while leaving the load flag set',
+    break: root => {
+      const path = join(root, 'ios/CADViewer/Sources/CADViewer/RootView.swift')
+      const text = readFileSync(path, 'utf8')
+      const start = text.indexOf('private func reset()')
+      const line = '        isLoading = false'
+      const at = text.indexOf(line, start)
+      if (at < start) throw new Error('reset-completeness: the anchor line is gone')
+      // Removing it is the defect: the flag stays set, and the open button is disabled by it.
+      writeFileSync(path, text.slice(0, at) + text.slice(at + line.length + 1))
+    }
+  },
+  {
     check: 'check-welcome-claims.mjs',
     what: 'a welcome line describing an app this is not',
     break: root => {

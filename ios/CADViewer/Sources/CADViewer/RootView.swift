@@ -249,6 +249,11 @@ struct RootView: View {
     private func reset() {
         opened = nil
         failure = nil
+        // A load that is still parsing belongs to a file the reader has moved on from. Clearing
+        // the flag here matters as much as bumping the generation: the abandoned task returns
+        // early and never resets it, and the open button is disabled while it is set — so
+        // picking a second file quickly left the screen on a spinner with no way forward.
+        isLoading = false
         // Any load already in flight belongs to a file the reader has moved on from. Bumping
         // the generation here means its result is discarded rather than drawn over the next
         // one, which `open` calls after this.

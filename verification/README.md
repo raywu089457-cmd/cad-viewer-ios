@@ -23,6 +23,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-pdf-fixtures.mjs` | the PDF open verdict disagreeing with the files it judges |
 | `check-project-spec.mjs` |  naming a path that is gone, a target declared twice, or an Info.plist key a drawing needs |
 | `check-format-consistency.mjs` | a format in the router, the plist and the picker disagreeing — the picker greys out a file with nothing to say why |
+| `check-reset-completeness.mjs` | closing a drawing leaving state set — `isLoading` stranded a reader on a spinner with the open button disabled |
 | `check-welcome-claims.mjs` | the welcome screen describing behaviour the code does not have |
 | `check-root-toolbar.mjs` | the root screen offering no way to switch drawings without closing first |
 | `check-viewer-identity.mjs` | a viewer identified by file name, so a same-named file in another folder is not rebuilt |
