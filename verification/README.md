@@ -37,6 +37,7 @@ Two different things live under this directory, and they are worth keeping apart
 | `check-placeholder.mjs` | the page a fresh clone ships instead of the viewer, deleted or claiming to be ready |
 | `check-dwg-assets.mjs` | a worker or the wasm engine missing from the bundle, or not really a wasm module |
 | `check-dwg-controls.mjs` | a DWG page entry point Swift calls that the page never defines |
+| `check-mac-guide.mjs` | a count in `ios/BUILD-ON-MAC.md` that no longer matches the tree — the reader only finds out by following a stale step |
 | `check-readme.mjs` | a claim in the top-level README that the tree no longer supports — a dead link, a wrong job count, a type check it says is impossible |
 | `check-inventory.mjs` | this list drifting from what is on disk, or a bake-off script creeping into CI |
 | `make-pdf.mjs` | regenerates the PDF fixtures, so a change to either is reviewable in a diff |

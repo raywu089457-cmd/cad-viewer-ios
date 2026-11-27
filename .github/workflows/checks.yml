@@ -44,6 +44,11 @@ jobs:
       # The README is what a visitor reads, and it said the app layer could only be syntax-checked
       # for several rounds after CI had started type-checking it. Only the checkable claims are
       # checked here; prose about why the code looks like this is not one.
+      # A setup guide is the one document nobody re-reads before trusting it. Every count in it
+      # can go stale silently, and the reader finds out by following a step that no longer works.
+      - name: The Mac guide matches the tree
+        run: node verification/check-mac-guide.mjs
+
       - name: The README matches the tree
         run: node verification/check-readme.mjs
 

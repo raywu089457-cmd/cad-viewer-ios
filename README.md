@@ -40,6 +40,10 @@ xcodegen generate
 open CADViewer.xcodeproj
 ```
 
+上真機要簽名、要在真機上驗什麼、以及為什麼第一步不能跳，寫在
+[`ios/BUILD-ON-MAC.md`](ios/BUILD-ON-MAC.md)。那份文件裡的每個數字都由
+`verification/check-mac-guide.mjs` 對照這棵樹檢查，所以它過期會讓 CI 紅。
+
 ## 四個容易踩的坑
 
 **DWG 不能用 `file://`。** `fetch`、Web Worker、`WebAssembly.instantiateStreaming` 在上面
